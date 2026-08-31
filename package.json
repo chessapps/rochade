@@ -1,0 +1,16 @@
+{
+  "name": "seebach",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "api:types": "pnpm --filter @seebach/api-client run generate",
+    "dev:hall": "pnpm --filter @seebach/hall run dev",
+    "dev:admin": "pnpm --filter @seebach/admin run dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

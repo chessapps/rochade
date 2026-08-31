@@ -10,3 +10,5 @@ build/
 node_modules/
 apps/*/dist/
 .env
+dist/
+openapi.json
