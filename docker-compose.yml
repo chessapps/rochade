@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: seebach
       POSTGRES_PASSWORD: seebach
       POSTGRES_DB: seebach
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,14 +14,26 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:seebach@postgres:5432/seebach
+      # Bootstrap auth: the bearer token is taken as the staff subject.
+      # Replace with SEEBACH_OIDC_ISSUER once Zitadel is in front of this.
+      SEEBACH_DEV_AUTH_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      - api
     ports:
-      - "8000:8000"
+      - "8080:8080"
 
 volumes:
   pgdata:

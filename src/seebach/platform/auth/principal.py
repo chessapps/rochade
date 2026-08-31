@@ -70,7 +70,10 @@ def _staff_principal(credential: str) -> Principal:
     if config.oidc_issuer:
         return _oidc_principal(credential)
     if not config.dev_auth_enabled:
-        raise Unauthenticated("staff authentication is not configured")
+        raise Unauthenticated(
+            "staff authentication is not configured; set SEEBACH_OIDC_ISSUER, or "
+            "SEEBACH_DEV_AUTH_ENABLED=true for local development"
+        )
     # Bootstrap mode for M1-M3: the bearer value is the subject. Zitadel lands
     # in M4 and the API only ever sees a standard OIDC JWT, so nothing else
     # changes when it does.

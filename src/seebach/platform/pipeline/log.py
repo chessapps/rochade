@@ -32,12 +32,15 @@ def log(message: Message, ctx: Context, nxt: Next) -> Any:
     return result
 
 
+# `message`, `args`, `exc_info`, `name` and friends are reserved on LogRecord:
+# passing one through `extra` raises rather than being ignored, so every key
+# here is deliberately prefixed.
 def _fields(ctx: Context, name: str, started: float, *, outcome: str) -> dict[str, Any]:
     return {
-        "message": name,
-        "outcome": outcome,
-        "duration_ms": round((time.perf_counter() - started) * 1000, 2),
-        "request_id": ctx.request_id,
-        "principal": ctx.principal.subject,
-        "principal_kind": ctx.principal.kind.value,
+        "seebach_message": name,
+        "seebach_outcome": outcome,
+        "seebach_duration_ms": round((time.perf_counter() - started) * 1000, 2),
+        "seebach_request_id": ctx.request_id,
+        "seebach_principal": ctx.principal.subject,
+        "seebach_principal_kind": ctx.principal.kind.value,
     }

@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: seebach
+          POSTGRES_PASSWORD: seebach
+          POSTGRES_DB: seebach
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seebach"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      SEEBACH_TEST_DATABASE_URL: postgresql+psycopg://seebach:seebach@127.0.0.1:5432/seebach
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv
+      - run: uv pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          uv run ruff check src tests
+          uv run ruff format --check src tests
+      - name: Types
+        run: uv run mypy
+      - name: Tests
+        run: uv run pytest -q
+      - name: Migrations match the models
+        env:
+          SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:seebach@127.0.0.1:5432/seebach
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r run typecheck
+      - run: pnpm -r run test
+      - run: pnpm -r run build
+
+  contract:
+    # The generated client is checked in, so a backend change that alters the
+    # API must show up as a diff here rather than as a runtime surprise.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: uv venv && uv pip install -e "."
+      - run: uv run python scripts/dump_openapi.py
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run api:types
+      - name: The checked-in client matches the API
+        run: git diff --exit-code packages/api-client/src/schema.d.ts

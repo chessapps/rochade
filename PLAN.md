@@ -239,16 +239,29 @@ Shared `packages/api-client` generated from the FastAPI OpenAPI schema (`openapi
 
 ## Build order
 
-| Milestone | Deliverable |
-|---|---|
-| **M0** | **Vega round-trip spike.** Go/no-go for the whole design. Throwaway code only. |
-| **M1** | Repo skeleton, `docker compose`, Alembic baseline, mediator + pipeline, CI (ruff, mypy, pytest), and `trf/` parse + serialize with passthrough fidelity. |
-| **M2** | Import: `preview_import` diff → `import_round` populating tournament / section / round / game. Arbiter can load a Vega file and see the boards. |
-| **M3** | Device tokens + QR issue/revoke, hall PWA with the 3 screens and the offline queue. **Players can enter results.** |
-| **M4** | Arbiter queue, dispute resolution, `release_round`, `export_round` with freeze. **Loop closes — full round-trip working.** |
-| **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. |
+| Milestone | Deliverable | Status |
+|---|---|---|
+| **M0** | **Vega round-trip spike.** Go/no-go for the whole design. Throwaway code only. | **not run** — needs a licensed Vega install and a real tournament file |
+| **M1** | Repo skeleton, `docker compose`, Alembic baseline, mediator + pipeline, CI (ruff, mypy, pytest), and `trf/` parse + serialize with passthrough fidelity. | done |
+| **M2** | Import: `preview_import` diff → `import_round` populating tournament / section / round / game. Arbiter can load a Vega file and see the boards. | done |
+| **M3** | Device tokens + QR issue/revoke, hall PWA with the 3 screens and the offline queue. **Players can enter results.** | done |
+| **M4** | Arbiter queue, dispute resolution, `release_round`, `export_round` with freeze. **Loop closes — full round-trip working.** | done, against our own files |
+| **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | blocked on M0 |
 
-Zitadel can be deferred until M4 — M1–M3 can run with a single bootstrapped arbiter account — if it turns out to be a distraction early.
+Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer token *is* the subject, gated behind `SEEBACH_DEV_AUTH_ENABLED`, which is off by default — an insecure auth mode has to be asked for. The OIDC path is written and wired; it activates on `SEEBACH_OIDC_ISSUER`. The API only ever sees a standard OIDC JWT either way, so nothing but configuration changes when Zitadel lands.
+
+### What "done" means here, and what it does not
+
+M1–M4 are done in the sense that the loop closes: 125 backend tests, 14 frontend tests, and a smoke test that runs the whole cycle against the `docker compose` stack — create, preview, import, issue a QR token, claim from a device, retry, release, export, confirm the round is frozen.
+
+It is **not** done in the sense that matters most. Every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether Vega will merge-import a file we generated, and it remains the go/no-go for the whole design. Until it runs, the honest description of this codebase is: a complete implementation of a round trip with one unverified end.
+
+Three things M0 should also settle now that the code exists and raises the questions concretely:
+
+1. **Board numbers are ours, not Vega's.** TRF does not carry them, so we derive them by ordering white players by starting rank. Vega prints its own numbers on the pairing slips and they will not match. The hall app is search-by-name so this is cosmetic, but it needs checking against a real pairing slip before a pilot.
+2. **Points are recomputed on export.** A file with results filled in but stale points is internally inconsistent, so `export_round` rewrites columns 81-84. Whether Vega cares, or objects, is unknown.
+3. **`XXR` and rounds present can disagree.** We treat the highest round with pairings as the round being imported, and the declared count as the tournament length. Real Vega files should confirm that is the right reading.
+
 
 ---
 

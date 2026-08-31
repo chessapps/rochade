@@ -1,0 +1,17 @@
+# Both frontends and the reverse proxy in one image: the hall app and the admin
+# app are served from the same origin as the API, so the phone never deals with
+# CORS on a venue network that may be rewriting things.
+FROM node:22-slim AS build
+RUN corepack enable
+WORKDIR /src
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages ./packages
+COPY apps ./apps
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @seebach/hall run build && pnpm --filter @seebach/admin run build
+
+FROM caddy:2-alpine
+COPY --from=build /src/apps/hall/dist /srv/hall
+COPY --from=build /src/apps/admin/dist /srv/admin
+COPY Caddyfile /etc/caddy/Caddyfile

@@ -7,9 +7,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SEEBACH_", env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://seebach:seebach@localhost:5432/seebach"
-    #: Bootstrap staff subject, used before Zitadel is wired up (M1-M3).
-    dev_staff_subject: str = "dev-arbiter"
-    dev_auth_enabled: bool = True
+    #: Accept a bearer token as the staff subject verbatim, with no verification.
+    #: This is how M1-M3 run before Zitadel is wired up, and it is off by
+    #: default: an insecure auth mode must be asked for, never inherited.
+    dev_auth_enabled: bool = False
 
     oidc_issuer: str = ""
     oidc_audience: str = "seebach-api"

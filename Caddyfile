@@ -1,0 +1,28 @@
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /health {
+		reverse_proxy api:8000
+	}
+
+	handle /admin* {
+		uri strip_prefix /admin
+		root * /srv/admin
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Everything else is the hall app, so the QR code can point at
+	# /hall/<tournament-id> and land on it directly.
+	handle {
+		root * /srv/hall
+		try_files {path} /index.html
+		file_server
+	}
+}

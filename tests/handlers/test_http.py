@@ -15,6 +15,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from seebach.app import create_app
+from seebach.platform.config import settings
 from seebach.platform.db import get_session
 from tests.conftest import ARBITER, OWNER
 
@@ -22,7 +23,13 @@ pytestmark = pytest.mark.db
 
 
 @pytest.fixture
-def client(engine: Engine, session: Session) -> Iterator[TestClient]:
+def client(
+    engine: Engine, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[TestClient]:
+    # Dev auth is off by default, so the edge tests turn it on explicitly --
+    # which is also a test that it is genuinely off until asked for.
+    monkeypatch.setenv("SEEBACH_DEV_AUTH_ENABLED", "true")
+    settings.cache_clear()
     app = create_app()
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
 
@@ -33,6 +40,7 @@ def client(engine: Engine, session: Session) -> Iterator[TestClient]:
     app.dependency_overrides[get_session] = override
     with TestClient(app) as built:
         yield built
+    settings.cache_clear()
 
 
 def staff(subject: str = ARBITER.subject) -> dict[str, str]:
@@ -170,3 +178,17 @@ def test_a_conflict_becomes_a_409(client: TestClient, round1_text: str) -> None:
     response = client.post(f"/api/rounds/{imported['round_id']}/release", json={}, headers=staff())
     assert response.status_code == 409
     assert response.json()["details"]["empty_boards"] == [1, 2, 3, 4]
+
+
+def test_dev_auth_is_off_unless_asked_for(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An insecure auth mode must be opted into, never inherited."""
+    monkeypatch.delenv("SEEBACH_DEV_AUTH_ENABLED", raising=False)
+    monkeypatch.delenv("SEEBACH_OIDC_ISSUER", raising=False)
+    settings.cache_clear()
+    try:
+        with TestClient(create_app()) as client:
+            response = client.get("/api/tournaments", headers=staff())
+        assert response.status_code == 401
+        assert "not configured" in response.json()["message"]
+    finally:
+        settings.cache_clear()
