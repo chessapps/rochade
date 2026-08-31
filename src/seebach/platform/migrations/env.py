@@ -5,7 +5,11 @@ from seebach.platform.config import settings
 from seebach.shared.models import Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings().database_url)
+# Only fall back to the configured database. A caller that already supplied a
+# URL -- the test suite pointing at a throwaway container, for instance -- must
+# win, or every migration silently runs somewhere else.
+if not config.get_main_option("sqlalchemy.url", None):
+    config.set_main_option("sqlalchemy.url", settings().database_url)
 target_metadata = Base.metadata
 
 

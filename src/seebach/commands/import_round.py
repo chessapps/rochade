@@ -140,8 +140,13 @@ def build_plan(
 
     existing = _load_existing(session, tournament.id, section_name)
     expected = max(existing.rounds, default=0) + 1 if existing.rounds else 1
+    # A TRF is a whole-tournament document, so the first import may legitimately
+    # arrive mid-event carrying rounds 1..N -- an arbiter adopting the tool for
+    # round 4 of a five-round open is the normal case, not an error. Ordering
+    # only means something once we already hold rounds.
+    first_import = not existing.rounds
     # Re-importing the round we already hold is a re-pair, not a mistake.
-    is_expected = file_round in (expected, expected - 1)
+    is_expected = first_import or file_round in (expected, expected - 1)
 
     pairings = trf.pairings(file_round)
     plan = ImportPlan(
@@ -178,7 +183,7 @@ def build_plan(
             f"round {file_round} has already been exported to Vega; "
             "re-importing it would overwrite results Vega already has"
         )
-    if file_round > expected:
+    if not first_import and file_round > expected:
         plan.blocked_by.append(
             f"round {file_round - 1} has not been imported yet -- rounds must arrive in order"
         )
