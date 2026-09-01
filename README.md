@@ -20,8 +20,12 @@ hands the results back each round.
 
 Which manager is an adapter choice, not an architecture — see
 `src/seebach/interchange/`. Every adapter declares what it *cannot* do, and
-ships `UNVERIFIED` until someone has watched it work; `spikes/README.md` is the
-round-trip spike that turns those flags into facts.
+ships `UNVERIFIED` until someone has watched it work.
+
+| Manager | Status | Read more |
+|---|---|---|
+| **Swiss-Manager** | **verified** against 15.0.0.3 — TRF16 out, its pairing file back in, merges into the open tournament | [arbiter guide](docs/arbiter-guide-swiss-manager.md) · [what was observed](docs/m0-swiss-manager.md) |
+| **Vega** | unverified — TRF16 both ways is what the manual says | [how to run the spike](spikes/README.md) |
 
 See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 

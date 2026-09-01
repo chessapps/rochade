@@ -110,21 +110,14 @@ it exactly as a FIDE-rated one does.
 
 ## Milestone 0 — the spike that gates everything
 
-**Context.** M1–M4 are built and the loop closes, but every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether a real tournament manager will take our file back. It is unrun, and it still gates the pilot.
+**Context.** M1–M4 are built and the loop closes, but until M0 ran every TRF the system had ever read or written was produced by us. M0 is the only thing that can tell us whether a real tournament manager will take our file back, and it gates the pilot.
 
-Two things changed the shape of it:
+**Swiss-Manager: run on 2026-09-02, and the loop closes** — `docs/m0-swiss-manager.md` is the record, `tests/fixtures/swiss_manager/` the files. Two things it settled that the plan had wrong:
 
-- **Swiss-Manager is available now**, and **both Swiss-Manager and Vega must work** — different clubs run different programs. The interchange format therefore has to become a seam rather than a hardcoded assumption.
-- The version history on swiss-manager.at lists TRF only as an export, so the
-  earlier draft of this plan assumed the inbound leg would need PGN or XML.
-  **The running build says otherwise**: `Datei → FIDE-Datenformat importieren
-  TRF16` exists in 15.0.0.3, and it read our seed with every result code, title,
-  rating and federation intact (see `spikes/FINDINGS.md`). What is *not* yet
-  known is whether that import **merges into the tournament that is already
-  open** or creates a second one — which is the difference between rank 1 and
-  rank 3 in the friction ranking above, and is what check 3 decides.
+- The version history lists TRF only as an export, so the earlier draft expected the inbound leg to need PGN or XML. The running build has `Datei → FIDE-Datenformat importieren TRF16` — but it **creates a new tournament every time** (rank 3 in the friction ranking above). The path that merges into the open tournament is `Extras → Daten Import/Export → Spielerauslosung`, a program-specific pairing file two menus away. That is the adapter's `writes_format`.
+- **Both Swiss-Manager and Vega must work** — different clubs run different programs — and they do not use the same inbound format, so the interchange is a seam, not an assumption. Vega remains unrun.
 
-So M0 splits into two legs that may need different formats:
+M0 therefore has two legs that may need different formats:
 
 - **Outbound** — can the manager emit the round that has been *paired but not played*?
 - **Inbound** — will it take our results back, merge them, and pair the next round?
@@ -151,7 +144,6 @@ If check 3 fails for every format, the arbiter is retyping results and the value
 |---|---|
 | `inspect_export.py` | Point at any manager export; reports checks 1, 2, 4 and 7 in one pass, including a column ruler for TRF16/26 drift. Reads *through the real adapter*, so a pass is evidence about the shipped code. |
 | `fill_results.py` | Take an export, fill round N with results, emit TRF16. Uses `seebach.trf` deliberately — that library is what is under test. |
-| `to_pgn_results.py` | The same results as a headers-only PGN, for `File / Import PGN-File (results)`. Must report what it drops: PGN has no forfeit or bye vocabulary. |
 | `compare_exports.py` | Diff two manager exports for check 5 — players added/removed, which boards moved. |
 | `README.md` | The recipe below, plus a checklist with a column per program to fill in. |
 
@@ -208,6 +200,14 @@ src/seebach/
 ```
 
 `Capabilities` is part of the interface, not a footnote: **an adapter must declare what it cannot do** — whether it exports an unplayed round, whether it merges on import, which result codes survive the trip. The admin app reads those to decide what to warn about, so a lossy path (PGN cannot express `+ - H U Z`) is visible before an arbiter commits to it rather than discovered at a real event.
+
+### What Swiss-Manager taught the port
+
+The adapter that came out of M0 is not the one the plan sketched. It reads TRF16 and writes **Swiss-Manager's own pairing file** (`Extras → Daten Import/Export → Spielerauslosung`), because that is the path that merges into the open tournament; the TRF16 import creates a new one. Three consequences landed in the shared code rather than the adapter:
+
+- `ResultEntry` carries both sides. A double forfeit is `("-", "-")`; mirroring white's code cannot say so, and neither format should be handed a `+` nobody earned.
+- `export_round` writes only what changed since import. A bye the manager allocated, or any result it exported with the round, goes back as it came — neither counted nor checked against the adapter's vocabulary. Without this, every Swiss-Manager export was refused over the `U` on the bye row.
+- Byes are the manager's. The Swiss-Manager adapter writes a row for the pairing-allocated bye exactly as exported and none for a half-point or zero-point bye, because in Swiss-Manager those are player statuses, not pairings, and a row would turn one into a pairing.
 
 ### Sequencing — and the one risk worth naming
 
@@ -440,12 +440,12 @@ Shared `packages/api-client` generated from the FastAPI OpenAPI schema (`openapi
 
 | Milestone | Deliverable | Status |
 |---|---|---|
-| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **running** — seed imported into Swiss-Manager, check 2 passed; check 1 (the gate) and check 3 pending |
+| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **Swiss-Manager: done, the loop closes** (`docs/m0-swiss-manager.md`). **Vega: not run.** |
 | **M1** | Repo skeleton, `docker compose`, Alembic baseline, mediator + pipeline, CI (ruff, mypy, pytest), and `trf/` parse + serialize with passthrough fidelity. | done |
 | **M2** | Import: `preview_import` diff → `import_round` populating tournament / section / round / game. Arbiter can load a Vega file and see the boards. | done |
 | **M3** | Device tokens + QR issue/revoke, hall PWA with the 3 screens and the offline queue. **Players can enter results.** | done |
 | **M4** | Arbiter queue, dispute resolution, `release_round`, `export_round` with freeze. **Loop closes — full round-trip working.** | done, against our own files |
-| **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | blocked on M0 |
+| **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | **unblocked for Swiss-Manager clubs**; Vega clubs wait on the Vega leg of M0 |
 
 Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer token *is* the subject, gated behind `SEEBACH_DEV_AUTH_ENABLED`, which is off by default — an insecure auth mode has to be asked for. The OIDC path is written and wired; it activates on `SEEBACH_OIDC_ISSUER`. The API only ever sees a standard OIDC JWT either way, so nothing but configuration changes when Zitadel lands.
 
@@ -453,14 +453,13 @@ Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer 
 
 M1–M4 are done in the sense that the loop closes: 125 backend tests, 14 frontend tests, and a smoke test that runs the whole cycle against the `docker compose` stack — create, preview, import, issue a QR token, claim from a device, retry, release, export, confirm the round is frozen.
 
-It is **not** done in the sense that matters most. Every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether a real manager will take a file we generated, and it remains the go/no-go for the whole design. Until it runs, the honest description of this codebase is: a complete implementation of a round trip with one unverified end.
+With Swiss-Manager it is now done in the sense that matters too: a real manager exported a round it had paired, took our results back into the same tournament, and paired the next one — twice. The Vega end is still unverified, and the admin app says so beside the manager picker.
 
-Three things M0 should also settle now that the code exists and raises the questions concretely:
+Three questions the code raised that the Swiss-Manager run has now settled:
 
-1. **Board numbers are ours, not the manager's.** TRF does not carry them, so we derive them by ordering white players by starting rank. The manager prints its own numbers on the pairing slips and they will not match. The hall app is search-by-name so this is cosmetic, but it needs checking against a real pairing slip before a pilot.
-2. ~~**Points are recomputed on export.**~~ **Fixed.** The spike kit's check 4 caught it on its first run: recomputing the whole points column asserted our reading of every code in the file, including the pairing-allocated bye -- and what a PAB is worth is a tournament regulation, not a property of the letter `U`. Some events award 1 point, some 0.5. Points now move by the *delta* of results we actually wrote, so a number we were never told cannot be corrupted. M0 should still confirm a manager accepts the adjusted column.
-3. **`XXR` and rounds present can disagree.** We treat the highest round with pairings as the round being imported, and the declared count as the tournament length. Real Vega files should confirm that is the right reading.
-
+1. **Board numbers.** TRF does not carry them. They are derived in the FIDE order — higher score of the two players, then the sum, then the higher-ranked player's start rank, byes last — and that reproduced Swiss-Manager's pairing list on every board of every round observed. The hall app shows the same numbers as the printed slip.
+2. **Points on export.** Moved by the delta of what we wrote, never recomputed — and for Swiss-Manager not written at all, since its results go back in a pairing file. The recompute would have overwritten the arbiter's bye setting; Swiss-Manager's TRF import was watched inferring that setting from the points column.
+3. **`XXR` and rounds present.** Swiss-Manager writes neither `XXR` nor honours it; its round count travels as `142 N`, which the parser now reads. The highest round with pairings is the round being imported. Still to confirm against real Vega files.
 
 ---
 

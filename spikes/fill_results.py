@@ -6,10 +6,9 @@
 Goes through the real adapter, so what this writes is what the product writes.
 Feed the output to the manager and see whether it merges -- that is the check.
 
-Board numbers here are *ours*: TRF does not carry them, so we derive them by
-ordering white players by rank, and they will not match the numbers printed on
-the manager's pairing slips. Use `inspect_export.py` to see which board is
-which before choosing results.
+Board numbers follow the FIDE order, which matched Swiss-Manager's pairing list; check
+whether Vega prints the same before trusting them -- `inspect_export.py` shows
+which board is which.
 """
 
 from __future__ import annotations
