@@ -181,9 +181,12 @@ export function App() {
 
   const runExport = (round: RoundSummary) =>
     run(async () => {
+      // A forced release leaves its unconfirmed boards behind; the freeze
+      // dialog has just said so, and that is the one consent the export needs.
+      const unfinished = round.empty + round.disputed > 0;
       const { data, error } = await api.POST("/api/rounds/{round_id}/export", {
         params: { path: { round_id: round.id } },
-        body: { force: false },
+        body: { force: unfinished },
       });
       setExporting(null);
       if (error) {

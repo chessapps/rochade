@@ -21,7 +21,7 @@ from seebach.features.imports.import_round import ImportRound
 from seebach.features.imports.preview_import import PreviewImport
 from seebach.features.rounds.export_round import ExportRound
 from seebach.features.rounds.release_round import ReleaseRound
-from seebach.interchange import ResultEntry, manager_for
+from seebach.interchange import InterchangeError, ResultEntry, manager_for
 from seebach.platform.errors import Conflict
 from seebach.shared.enums import GameResult
 from seebach.shared.models import Round, Tournament
@@ -158,3 +158,19 @@ def test_a_double_forfeit_survives_the_trf_leg_too() -> None:
     row_white = next(line for line in out.content.splitlines() if line.startswith("001    4 "))
     row_black = next(line for line in out.content.splitlines() if line.startswith("001    2 "))
     assert row_white[118] == "-" and row_black[118] == "-"
+
+
+def test_a_result_for_a_board_the_file_does_not_have_is_refused() -> None:
+    manager = manager_for("swiss_manager")
+    document = manager.read_round(read("round3_paired.trf"))
+    with pytest.raises(InterchangeError, match="have no board"):
+        manager.write_results(
+            document, 3, [ResultEntry(white_rank=42, white_result="1", black_result="0")], stem="x"
+        )
+
+
+def test_a_dangling_opponent_is_a_readable_error_not_a_crash() -> None:
+    # Baumann's round-1 opponent becomes a player the file does not have.
+    text = read("round3_paired.trf").replace("    5 w 1     2 b =", "   77 w 1     2 b =")
+    with pytest.raises(InterchangeError, match="no such player"):
+        manager_for("swiss_manager").read_round(text)

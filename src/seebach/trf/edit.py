@@ -53,6 +53,11 @@ def set_result(
     mirrored = mirror(code) if opponent_code is None else opponent_code
     if not is_known(mirrored):
         raise ValueError(f"unknown TRF result code {mirrored!r}")
+    if mirrored != mirror(code) and (code, mirrored) != ("-", "-"):
+        raise ValueError(
+            f"result {code!r}/{mirrored!r} is not a game: the opponent of {code!r} "
+            f"scores {mirror(code)!r}"
+        )
     was = opponent_entry.result
     opponent_entry.result = mirrored
     _move_points(trf, opponent, points_for(mirrored) - points_for(was))

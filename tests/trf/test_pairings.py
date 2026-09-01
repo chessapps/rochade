@@ -80,3 +80,16 @@ def test_every_player_appears_exactly_once_per_round(round3_text: str) -> None:
     for round_no in (1, 2, 3):
         seen = [r for p in trf.pairings(round_no) for r in (p.white, p.black) if r is not None]
         assert sorted(seen) == sorted(trf.players)
+
+
+def test_board_order_third_key_is_the_higher_scorers_rank() -> None:
+    """Built so that max and sum tie on two boards and only the third key decides.
+
+    Boards 1v4 (scores ½ and 1½) and 2v3 (1½ and ½) tie on both. Swiss-Manager
+    put 2v3 first -- rank 2 is the higher scorer there, rank 4 on the other --
+    which is the FIDE rule and not "the lower of the two ranks".
+    """
+    trf = parse((SM / "tiebreak_probe_ours.trf").read_bytes())
+    ours = [(p.board, p.white, p.black) for p in trf.pairings(3) if not p.is_bye]
+    assert ours == _sm_boards("tiebreak_probe_pairings_by_sm.txt", 3)
+    assert ours == [(1, 5, 8), (2, 2, 3), (3, 1, 4), (4, 6, 7)]

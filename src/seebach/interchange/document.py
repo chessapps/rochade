@@ -82,7 +82,8 @@ class RoundDocument:
         return [
             round_no
             for round_no, rows in sorted(self.pairings.items())
-            if rows and all(row.white_result == " " for row in rows if not row.is_bye)
+            if (games := [row for row in rows if not row.is_bye])
+            and all(row.white_result == " " for row in games)
         ]
 
 

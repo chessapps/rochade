@@ -174,3 +174,14 @@ def test_trf06_folds_characters_cp1252_cannot_carry() -> None:
     assert "?ukasz" in out
     # Fixed columns are preserved: substitution is one character for one.
     assert len(out) == len(serialize(trf, Dialect.TRF16))
+
+
+def test_an_explicit_opponent_code_must_make_a_game(round3_text: str) -> None:
+    """("-", "-") is the one pair that is not a mirror; anything else is refused."""
+    trf = parse(round3_text)
+    game = next(p for p in trf.pairings(3) if not p.is_bye)
+    set_result(trf, 3, game.white, "-", opponent_code="-")
+    assert trf.player(game.white).round(3).result == "-"
+    assert trf.player(game.black).round(3).result == "-"
+    with pytest.raises(ValueError, match="not a game"):
+        set_result(trf, 3, game.white, "1", opponent_code="1")

@@ -589,6 +589,18 @@ export function FreezeWarning({
           From that point {managerLabel} owns it: nothing here can change a result
           again, which is what stops the two systems disagreeing.
         </p>
+        {round.empty + round.disputed > 0 && (
+          <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {round.empty + round.disputed} board{round.empty + round.disputed === 1 ? "" : "s"}{" "}
+            {round.empty > 0 && round.disputed > 0
+              ? "have no result or are disputed"
+              : round.empty > 0
+                ? "have no result"
+                : "are disputed"}
+            . They go into the file blank and you enter them in {managerLabel} by hand.
+            The export is recorded as forced.
+          </p>
+        )}
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"

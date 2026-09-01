@@ -23,14 +23,27 @@ def read_document(content: str) -> RoundDocument:
     except TrfParseError as exc:
         raise InterchangeError(str(exc), line_no=exc.line_no) from exc
 
+    def name_of(rank: int, round_no: int) -> str:
+        player = trf.players.get(rank)
+        if player is None:
+            # Some row points at an opponent that has no 001 line. The file is
+            # damaged; the import preview is where that should be said.
+            raise InterchangeError(
+                f"round {round_no} pairs a player with starting rank {rank}, "
+                "but the file has no such player"
+            )
+        return player.name
+
     pairings = {
         round_no: [
             PairingRow(
                 board=pairing.board,
                 white_rank=pairing.white,
-                white_name=trf.players[pairing.white].name,
+                white_name=name_of(pairing.white, round_no),
                 black_rank=pairing.black,
-                black_name=(trf.players[pairing.black].name if pairing.black is not None else None),
+                black_name=(
+                    name_of(pairing.black, round_no) if pairing.black is not None else None
+                ),
                 white_result=pairing.white_result,
                 black_result=pairing.black_result,
             )

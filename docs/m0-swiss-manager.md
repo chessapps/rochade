@@ -72,6 +72,22 @@ Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS
   Whether the importer checks them against the player is **unverified**.
 - Import was run twice on round 4 with the same file; the second run changed
   nothing. Re-import is idempotent.
+- **`Brett` is ignored on import.** A file with boards 1 and 2 swapped left
+  Swiss-Manager's numbering untouched. Rows are matched by players, so our board
+  numbers cannot harm it even where they differ.
+- **The pairings in the file win.** A file with the players of boards 3 and 4
+  swapped *re-paired the round* to match, silently
+  (`probe_stale_pairing_we_sent.txt` → `probe_stale_pairing_sm_after.txt`).
+  That is what makes the import merge, and it is also the one hazard in the
+  loop: results sent back from a stale export undo a re-pairing the arbiter
+  made in between. Re-importing the correct file restored the round. The hand-
+  off card and the arbiter guide say so.
+- A bogus `IdentW` (1234567 for a player with no FIDE id) was accepted without
+  comment. Whatever `Ident` is for, the importer does not check it against the
+  player.
+- Importing a pairing file for a round that does not exist yet **creates the
+  round** with those pairings, unplayed, once `Runden` allows it. (Swiss-Manager
+  went unresponsive for a few seconds doing so, then recovered.)
 
 ---
 
@@ -119,6 +135,17 @@ pairing file across rounds 1, 3 and 4, are the FIDE order:
 
 Scores are the points column, i.e. before the round. Deriving boards this way
 reproduced Swiss-Manager's numbers on every board of every round we looked at.
+
+The third key was then tested on its own: `tiebreak_probe_ours.trf` has two
+boards tied on both the higher score and the sum -- `1v4` (½ and 1½) and `2v3`
+(1½ and ½). Swiss-Manager numbered `2v3` before `1v4`
+(`tiebreak_probe_pairings_by_sm.txt`): the key is the start rank of the player
+**holding the higher score** (2, against 4), not the lower rank of the pair
+(which would have put `1v4` first). A first draft of the code had the latter.
+
+Also learnt on the way: the TRF16 import **drops a round that has no
+results**, so a paired-but-unplayed round cannot be brought into Swiss-Manager
+through TRF at all -- only through the pairing file.
 
 ---
 

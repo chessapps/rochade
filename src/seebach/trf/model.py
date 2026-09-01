@@ -134,9 +134,11 @@ class TrfFile:
         TRF carries no board numbers, so they are derived -- and derived the way
         the managers print them, which is the FIDE order: the higher score of
         the two players first, then the sum of their scores, then the start rank
-        of the higher-ranked player; byes after every real game. Scores are the
-        players' points *before* the round. Swiss-Manager's pairing lists matched
-        this on every board of every round M0 looked at.
+        of the player *with* that higher score (the lower rank when they are
+        level); byes after every real game. Scores are the players' points
+        *before* the round. Swiss-Manager's pairing lists matched this on every
+        board of every round M0 looked at, including a round built so that the
+        third key alone decided two boards.
 
         Still not an identity: a re-pair renumbers boards, which is why nothing
         downstream may treat a board as more than a label.
@@ -166,8 +168,12 @@ class TrfFile:
 
         def board_key(game: tuple[int, int | None, str, str]) -> tuple[float, float, int]:
             white, black = game[0], game[1]
-            scores = [before.get(white, 0.0), before.get(black, 0.0) if black is not None else 0.0]
-            return (-max(scores), -sum(scores), min(white, black) if black is not None else white)
+            if black is None:
+                return (-before.get(white, 0.0), -before.get(white, 0.0), white)
+            ws, bs = before.get(white, 0.0), before.get(black, 0.0)
+            # Level scores: the lower rank. Otherwise whoever holds the higher score.
+            leader = min(white, black) if ws == bs else (white if ws > bs else black)
+            return (-max(ws, bs), -(ws + bs), leader)
 
         real = sorted((g for g in games if g[1] is not None), key=board_key)
         byes = sorted((g for g in games if g[1] is None), key=board_key)

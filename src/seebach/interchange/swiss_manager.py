@@ -50,6 +50,9 @@ class SwissManager:
             "file. The results land in the open tournament; pair the next round as usual."
         ),
         notes=(
+            "The results file also carries the pairings, and Swiss-Manager takes them: if a "
+            "round was re-paired there after it was exported here, export it again and "
+            "re-import it here before sending results back, or the re-pairing is undone.",
             "The export needs round dates (Eingabe → Termine für die einzelnen Runden).",
             "Names arrive as Swiss-Manager exports them: «Surname,Given», transliterated for "
             "the tournament's own federation (Müller → Mueller).",
@@ -69,6 +72,7 @@ class SwissManager:
         stem: str,
     ) -> ManagerFile:
         by_white = {entry.white_rank: entry for entry in results}
+        unplaced = set(by_white)
         lines: list[PairingLine] = []
         for row in document.board_rows(round_number):
             if row.is_bye:
@@ -88,6 +92,7 @@ class SwissManager:
                 )
                 continue
             entry = by_white.get(row.white_rank)
+            unplaced.discard(row.white_rank)
             white, black = (entry.white_result, entry.black_result) if entry else (" ", " ")
             lines.append(
                 PairingLine(
@@ -100,6 +105,11 @@ class SwissManager:
                     white_id=_ident(document, row.white_rank),
                     black_id=_ident(document, row.black_rank),
                 )
+            )
+        if unplaced:
+            raise InterchangeError(
+                f"results for white players {sorted(unplaced)} have no board in round "
+                f"{round_number} of the file this round was imported from"
             )
         try:
             content = render_pairing_file(lines)

@@ -69,8 +69,11 @@ pair the next round — back to step 1.
   transliterated for the tournament's own federation (`Müller` → `Mueller`).
   Players find their board by typing part of their name, so this rarely matters.
 - Titles (FM, WFM…) are not in the export. Cosmetic.
-- If you re-pair a round after exporting it (a late entrant), export again and
-  re-import in Seebach. The preview shows exactly which boards moved and which
-  entered results would be dropped; nothing is applied until you accept it.
+- **If you re-pair a round after exporting it** (a late entrant, a correction),
+  export again and re-import in Seebach **before** sending results back. The
+  results file carries the pairings too, and Swiss-Manager takes them: a file
+  built from the old pairings would quietly undo your re-pairing. Seebach's
+  preview shows exactly which boards moved and which entered results would be
+  dropped; nothing is applied until you accept it.
 - A half-point bye or a withdrawal is set in Swiss-Manager before pairing, as
   always. Seebach shows it and never writes it back.
