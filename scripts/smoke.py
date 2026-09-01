@@ -2,7 +2,7 @@
 
 Not part of the test suite: this exercises the deployment, not the code --
 migrations applied on boot, Caddy routing, both apps served, and one full round
-trip through the real HTTP surface.
+trip through the real HTTP surface for each manager adapter.
 """
 
 import pathlib
@@ -12,12 +12,19 @@ import time
 import httpx
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080"
-TRF = (pathlib.Path(__file__).parent.parent / "tests/fixtures/round1_pairings.trf").read_bytes()
+FIXTURES = pathlib.Path(__file__).parent.parent / "tests/fixtures"
+TRF = (FIXTURES / "round1_pairings.trf").read_bytes()
+#: A real Swiss-Manager export: round 3 paired and unplayed, rounds 1-2 played.
+SM_TRF = (FIXTURES / "swiss_manager/round3_paired.trf").read_bytes()
+SM_HEADER = "Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS"
 staff = {"Authorization": "Bearer smoke-arbiter"}
+
+# Adapter notes carry arrows and umlauts; a cp1252 console must not be what fails.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 
 
 def check(label: str, condition: bool, detail: str = "") -> None:
-    print(f"{'PASS' if condition else 'FAIL'}  {label}{f' -- {detail}' if detail else ''}")
+    print(f"{'PASS' if condition else 'FAIL'}  {label}{f' -- {detail}' if not condition else ''}")
     if not condition:
         raise SystemExit(1)
 
@@ -42,16 +49,16 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     check("admin app is served at /admin", '<div id="root">' in http.get("/admin/").text)
 
     managers = http.get("/api/managers", headers=staff)
-    check(
-        "manager adapters are listed",
-        managers.status_code == 200 and any(m["key"] == "vega" for m in managers.json()),
-        managers.text,
-    )
+    keys = {m["key"] for m in managers.json()} if managers.status_code == 200 else set()
+    check("manager adapters are listed", keys >= {"vega", "swiss_manager"}, managers.text)
+    verified = {m["key"]: m["verified"] for m in managers.json()}
+    check("Swiss-Manager is the verified one", verified["swiss_manager"] and not verified["vega"])
 
     created = http.post("/api/tournaments", json={"name": "Smoke Open"}, headers=staff)
     check("create tournament", created.status_code == 201, created.text)
     tournament = created.json()["id"]
 
+    # --- section A, through the Vega adapter ---------------------------------
     content = TRF.decode("utf-8")
     preview = http.post(
         f"/api/tournaments/{tournament}/imports/preview",
@@ -108,4 +115,52 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     frozen = http.post(f"/api/rounds/{round_id}/export", json={}, headers=staff)
     check("round is frozen after export", frozen.status_code == 409, frozen.text)
 
-print("\nthe loop closes end to end against the compose stack")
+    # --- section B, a real Swiss-Manager export, in the same tournament --------
+    sm_content = SM_TRF.decode("utf-8")
+    sm_import = http.post(
+        f"/api/tournaments/{tournament}/imports",
+        json={"section_name": "B", "content": sm_content, "manager": "swiss_manager"},
+        headers=staff,
+    )
+    check("import a Swiss-Manager export as B", sm_import.status_code == 201, sm_import.text)
+    check("it is round 3", sm_import.json()["round_number"] == 3, sm_import.text)
+    sm_round = sm_import.json()["round_id"]
+
+    detail = http.get(f"/api/tournaments/{tournament}", headers=staff).json()
+    labels = {s["name"]: s["manager_label"] for s in detail["sections"]}
+    check("sections name managers", labels == {"A": "Vega", "B": "Swiss-Manager"}, str(labels))
+
+    # Section A is exported and frozen, so the hall shows B's open round only:
+    # four games and the bye, greyed out as already entered.
+    hall = http.get(f"/api/tournaments/{tournament}/boards", headers=phone).json()["boards"]
+    check("hall shows the open round only", len(hall) == 5, str(len(hall)))
+    check("the bye is shown as entered", [b["entered"] for b in hall if b["is_bye"]] == [True])
+    sm_boards = sorted((b for b in hall if not b["is_bye"]), key=lambda b: b["board"])
+    check(
+        "board numbers are Swiss-Manager's",
+        [b["white_name"] for b in sm_boards][:2] == ["Mueller,Tobias", "Baumann,Lukas"],
+        str([(b["board"], b["white_name"]) for b in sm_boards]),
+    )
+
+    for board in sm_boards:
+        http.post(
+            f"/api/games/{board['game_id']}/claim",
+            json={"result": "white_win"},
+            headers={**phone, "Idempotency-Key": f"smoke-sm-{board['game_id']}"},
+        )
+    released = http.post(f"/api/rounds/{sm_round}/release", json={}, headers=staff)
+    check("release B", released.status_code == 200, released.text)
+    sm_export = http.post(f"/api/rounds/{sm_round}/export", json={}, headers=staff)
+    check("export B", sm_export.status_code == 200, sm_export.text)
+    body = sm_export.json()
+    lines = body["content"].splitlines()
+    check("B is a pairing file", body["filename"] == "B-round3.txt" and lines[0] == SM_HEADER)
+    check(
+        "every board and the bye are rows",
+        len(lines) == 6 and lines[-1].endswith(";6;-1;0;0;;0:0;0;;"),
+        body["content"],
+    )
+    check("results spelt for Swiss-Manager", all(";1;0;;1:0;" in ln for ln in lines[1:5]), lines[1])
+    check("hand-off names the menu", "Daten Import/Export" in body["next_step"], body["next_step"])
+
+print("\nthe loop closes end to end against the compose stack, for both managers")
