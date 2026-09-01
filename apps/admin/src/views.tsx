@@ -59,7 +59,7 @@ export function SectionPanel({
 }: {
   detail: TournamentDetail;
   onRelease: (round: RoundSummary) => void;
-  onExport: (round: RoundSummary) => void;
+  onExport: (round: RoundSummary, managerLabel: string) => void;
   busy: boolean;
 }) {
   return (
@@ -69,7 +69,7 @@ export function SectionPanel({
           <header className="flex items-baseline justify-between border-b border-slate-100 px-4 py-3">
             <h2 className="font-semibold">Section {section.name}</h2>
             <p className="text-sm text-slate-500">
-              {section.players} players
+              {section.manager_label} · {section.players} players
               {section.declared_rounds ? ` · ${section.declared_rounds} rounds` : ""}
             </p>
           </header>
@@ -95,9 +95,10 @@ export function SectionPanel({
                   <td className="px-4 py-3 text-right">
                     <RoundActions
                       round={round}
+                      managerLabel={section.manager_label}
                       busy={busy}
                       onRelease={onRelease}
-                      onExport={onExport}
+                      onExport={(r) => onExport(r, section.manager_label)}
                     />
                   </td>
                 </tr>
@@ -108,7 +109,8 @@ export function SectionPanel({
       ))}
       {(detail.sections ?? []).length === 0 && (
         <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-500">
-          No sections yet. Import a Vega file to begin.
+          No sections yet. Export the paired round from your tournament manager and
+          import it below.
         </p>
       )}
     </div>
@@ -131,11 +133,13 @@ function BoardCounts({ round }: { round: RoundSummary }) {
 
 function RoundActions({
   round,
+  managerLabel,
   busy,
   onRelease,
   onExport,
 }: {
   round: RoundSummary;
+  managerLabel: string;
   busy: boolean;
   onRelease: (round: RoundSummary) => void;
   onExport: (round: RoundSummary) => void;
@@ -162,7 +166,7 @@ function RoundActions({
           onClick={() => onExport(round)}
           className="rounded-lg bg-emerald-700 px-3 py-1.5 text-white disabled:opacity-50"
         >
-          Export for Vega
+          Export for {managerLabel}
         </button>
       )}
     </span>
@@ -202,7 +206,7 @@ export function ImportPanel({
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4">
-      <h2 className="font-semibold">Import a Vega file</h2>
+      <h2 className="font-semibold">Import the paired round</h2>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-sm">
@@ -228,7 +232,7 @@ export function ImportPanel({
           />
         </label>
         <label className="flex flex-col text-sm">
-          <span className="text-slate-500">TRF file</span>
+          <span className="text-slate-500">Exported file</span>
           <input
             type="file"
             accept=".trf,.txt,text/plain"
@@ -310,9 +314,11 @@ function ManagerNotice({ manager }: { manager: ManagerSummary }) {
     manager.exports_unplayed_round === "unverified" || manager.merges_on_import === "unverified";
   return (
     <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-      <p className="text-slate-600">
-        Reads <code>{manager.reads_format}</code>, writes <code>{manager.writes_format}</code>.
-      </p>
+      {manager.export_howto && (
+        <p className="text-slate-800">
+          <span className="font-medium">In {manager.label}:</span> {manager.export_howto}
+        </p>
+      )}
       {unverified && (
         <p className="mt-1 text-amber-800">
           Not yet verified against the real program. What we believe about{" "}
@@ -563,21 +569,25 @@ export function DevicePanel({
 
 export function FreezeWarning({
   round,
+  managerLabel,
   onConfirm,
   onCancel,
 }: {
   round: RoundSummary;
+  managerLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
       <div className="max-w-md rounded-xl bg-white p-5">
-        <h2 className="text-lg font-semibold">Export round {round.number} to Vega</h2>
+        <h2 className="text-lg font-semibold">
+          Export round {round.number} for {managerLabel}
+        </h2>
         <p className="mt-2 text-sm text-slate-600">
-          This writes the results into the file and freezes the round. From that
-          point Vega owns it: nothing here can change a result again, which is
-          what stops the two systems disagreeing.
+          This writes the results into a file for {managerLabel} and freezes the round.
+          From that point {managerLabel} owns it: nothing here can change a result
+          again, which is what stops the two systems disagreeing.
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <button
@@ -597,5 +607,32 @@ export function FreezeWarning({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Shown once the export has been downloaded. The arbiter is about to switch to
+ * the manager, so this is the moment for the one instruction that matters --
+ * in the manager's own menu terms -- and nothing else.
+ */
+export function Handoff({
+  handoff,
+  onDismiss,
+}: {
+  handoff: { filename: string; manager_label: string; next_step: string; round: number };
+  onDismiss: () => void;
+}) {
+  return (
+    <section className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950">
+      <p className="font-medium">
+        Round {handoff.round} exported as <code>{handoff.filename}</code> and frozen.
+      </p>
+      <p className="mt-2">
+        <span className="font-medium">Now in {handoff.manager_label}:</span> {handoff.next_step}
+      </p>
+      <button type="button" onClick={onDismiss} className="mt-3 underline">
+        done
+      </button>
+    </section>
   );
 }

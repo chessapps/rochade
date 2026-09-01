@@ -485,8 +485,12 @@ export interface components {
             content: string;
             /** Manager */
             manager: string;
+            /** Manager Label */
+            manager_label: string;
             /** File Format */
             file_format: string;
+            /** Next Step */
+            next_step: string;
             /** Boards Written */
             boards_written: number;
             /** Boards Left Blank */
@@ -693,6 +697,16 @@ export interface components {
             verified: boolean;
             /** Result Codes Out */
             result_codes_out?: string[];
+            /**
+             * Export Howto
+             * @default
+             */
+            export_howto: string;
+            /**
+             * Import Howto
+             * @default
+             */
+            import_howto: string;
             /** Notes */
             notes?: string[];
         };
@@ -937,6 +951,10 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Manager */
+            manager: string;
+            /** Manager Label */
+            manager_label: string;
             /** Players */
             players: number;
             /** Declared Rounds */

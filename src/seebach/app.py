@@ -24,7 +24,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Seebach",
         version="0.1.0",
-        summary="Digital result entry for Vega-run chess tournaments",
+        summary="Digital result entry for chess tournaments run in Swiss-Manager or Vega",
     )
 
     app.add_middleware(

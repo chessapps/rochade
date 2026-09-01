@@ -22,16 +22,16 @@ export function planNotes(plan: ImportPlan): PlanNote[] {
     notes.push({ severity: "blocking", text: reason });
   }
 
-  // Vega is authoritative for earlier rounds, so a disagreement is expected --
-  // an arbiter correcting round 2 in Vega is normal. It is never applied
+  // The manager is authoritative for earlier rounds, so a disagreement is expected --
+  // an arbiter correcting round 2 there is normal. It is never applied
   // silently, though: it is the one thing that must be read before importing.
   for (const disagreement of plan.disagreements ?? []) {
     notes.push({
       severity: "acknowledge",
       text:
         `Round ${disagreement.round_number}, ${disagreement.white_name} vs ` +
-        `${disagreement.black_name ?? "bye"}: Vega says "${disagreement.theirs}", ` +
-        `we hold "${disagreement.ours}". Vega wins.`,
+        `${disagreement.black_name ?? "bye"}: the manager says "${disagreement.theirs}", ` +
+        `we hold "${disagreement.ours}". The manager wins.`,
     });
   }
 

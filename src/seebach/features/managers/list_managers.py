@@ -31,6 +31,10 @@ class ManagerSummary(BaseModel):
     #: "we watched it work".
     verified: bool
     result_codes_out: list[str] = Field(default_factory=list)
+    #: One menu path each -- what the arbiter does in the manager before and
+    #: after a round here. Shown at those two moments and nowhere else.
+    export_howto: str = ""
+    import_howto: str = ""
     notes: list[str] = Field(default_factory=list)
 
 
@@ -50,6 +54,8 @@ def handle(query: ListManagers, ctx: Context) -> list[ManagerSummary]:
             merges_on_import=manager.capabilities.merges_on_import,
             verified=manager.capabilities.verified,
             result_codes_out=sorted(manager.capabilities.result_codes_out),
+            export_howto=manager.capabilities.export_howto,
+            import_howto=manager.capabilities.import_howto,
             notes=list(manager.capabilities.notes),
         )
         for manager in available()

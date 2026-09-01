@@ -44,7 +44,7 @@ def require_open(round_: Round) -> None:
     """
     if round_.state is RoundState.EXPORTED:
         raise RoundFrozen(
-            "this round has been exported to Vega and is read-only",
+            "this round has been exported to the manager and is read-only",
             round_number=round_.number,
         )
     if round_.state is not RoundState.OPEN:

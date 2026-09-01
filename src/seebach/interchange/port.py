@@ -51,6 +51,12 @@ class Capabilities:
     #: not always the same format.
     reads_format: str = ""
     writes_format: str = ""
+    #: The two things an arbiter does per round, each as the one menu path in
+    #: the manager that does it. Shown at the moment they are needed: the export
+    #: instruction beside the import form, the import instruction with the file
+    #: we hand back. Everything else about the program goes in `notes`.
+    export_howto: str = ""
+    import_howto: str = ""
     notes: tuple[str, ...] = ()
 
     def drops(self, codes: Sequence[str]) -> list[str]:

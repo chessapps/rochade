@@ -59,7 +59,7 @@ describe("reading an import plan", () => {
 
     expect(notes).toHaveLength(1);
     expect(notes[0]?.severity).toBe("acknowledge");
-    expect(notes[0]?.text).toContain("Vega wins");
+    expect(notes[0]?.text).toContain("The manager wins");
     // It does not stop the import -- Vega is authoritative for earlier rounds.
     expect(canImport(plan({ disagreements: notes.length ? undefined : [] }))).toBe(true);
   });

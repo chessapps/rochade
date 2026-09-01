@@ -18,6 +18,7 @@ import {
 import {
   DevicePanel,
   FreezeWarning,
+  Handoff,
   ImportPanel,
   QueuePanel,
   SectionPanel,
@@ -33,12 +34,17 @@ export function App() {
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
 
   const [managers, setManagers] = useState<ManagerSummary[]>([]);
-  const [manager, setManager] = useState("vega");
+  const [manager, setManager] = useState("");
   const [section, setSection] = useState("A");
   const [content, setContent] = useState("");
   const [filename, setFilename] = useState("");
   const [plan, setPlan] = useState<ImportPlan | null>(null);
-  const [exporting, setExporting] = useState<RoundSummary | null>(null);
+  const [exporting, setExporting] = useState<
+    { round: RoundSummary; manager_label: string } | null
+  >(null);
+  const [handoff, setHandoff] = useState<
+    { filename: string; manager_label: string; next_step: string; round: number } | null
+  >(null);
   const [issued, setIssued] = useState<
     { label: string; qr_payload: string; token: string } | null
   >(null);
@@ -49,7 +55,11 @@ export function App() {
 
   const loadManagers = useCallback(async () => {
     const { data } = await api.GET("/api/managers");
-    if (data) setManagers(data);
+    if (!data) return;
+    setManagers(data);
+    // Offer the manager we have actually watched work before one we have only
+    // read about; the arbiter can still pick either.
+    setManager((current) => current || (data.find((m) => m.verified) ?? data[0])?.key || "");
   }, []);
 
   const loadTournaments = useCallback(async () => {
@@ -180,11 +190,16 @@ export function App() {
         setProblem(errorMessage(error));
         return null;
       }
-      if (data) download(data.filename, data.content);
-      return (
-        `Exported ${data?.filename}. Round ${round.number} is frozen — ` +
-        `load it into ${data?.manager ?? "the manager"} next.`
-      );
+      if (data) {
+        download(data.filename, data.content);
+        setHandoff({
+          filename: data.filename,
+          manager_label: data.manager_label,
+          next_step: data.next_step,
+          round: round.number,
+        });
+      }
+      return null;
     });
 
   return (
@@ -229,12 +244,14 @@ export function App() {
         </p>
       )}
 
+      {handoff && <Handoff handoff={handoff} onDismiss={() => setHandoff(null)} />}
+
       {detail && (
         <SectionPanel
           detail={detail}
           busy={busy}
           onRelease={(round) => void release(round)}
-          onExport={(round) => setExporting(round)}
+          onExport={(round, manager_label) => setExporting({ round, manager_label })}
         />
       )}
 
@@ -324,8 +341,9 @@ export function App() {
 
       {exporting && (
         <FreezeWarning
-          round={exporting}
-          onConfirm={() => void runExport(exporting)}
+          round={exporting.round}
+          managerLabel={exporting.manager_label}
+          onConfirm={() => void runExport(exporting.round)}
           onCancel={() => setExporting(null)}
         />
       )}
@@ -334,7 +352,7 @@ export function App() {
 }
 
 /**
- * The export is a file the arbiter hands to Vega, so it has to leave the
+ * The export is a file the arbiter hands to the manager, so it has to leave the
  * browser as one. Held in memory only: it is never written anywhere we would
  * then have to keep in step with the round state.
  */

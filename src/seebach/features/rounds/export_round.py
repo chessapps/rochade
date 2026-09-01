@@ -43,7 +43,10 @@ class ExportRoundResult(BaseModel):
     #: Which adapter produced it, and in what format. Both are worth recording:
     #: the arbiter has to know which program this file is for.
     manager: str
+    manager_label: str
     file_format: str
+    #: What the arbiter does with the file, in the manager's own menu terms.
+    next_step: str
     boards_written: int
     boards_left_blank: list[int] = Field(default_factory=list)
     forced: bool
@@ -161,7 +164,9 @@ def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
         filename=emitted.filename,
         content=emitted.content,
         manager=manager.key,
+        manager_label=manager.label,
         file_format=manager.capabilities.writes_format,
+        next_step=manager.capabilities.import_howto,
         boards_written=written,
         boards_left_blank=blank,
         forced=command.force,

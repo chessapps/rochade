@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from seebach.interchange import UnknownManager, manager_for
 from seebach.platform.bus import bus
 from seebach.platform.errors import NotFound
 from seebach.platform.http import get_context
@@ -45,6 +46,9 @@ class RoundSummary(BaseModel):
 class SectionSummary(BaseModel):
     id: uuid.UUID
     name: str
+    #: Which manager adapter owns this section -- the export button says so.
+    manager: str
+    manager_label: str
     players: int
     declared_rounds: int | None
     rounds: list[RoundSummary]
@@ -58,6 +62,13 @@ class TournamentDetail(BaseModel):
     start_date: date | None
     end_date: date | None
     sections: list[SectionSummary]
+
+
+def _label(manager_key: str) -> str:
+    try:
+        return manager_for(manager_key).label
+    except UnknownManager:  # pragma: no cover - an adapter was removed after import
+        return manager_key
 
 
 class GetTournament(Query):
@@ -87,6 +98,8 @@ def handle(query: GetTournament, ctx: Context) -> TournamentDetail:
         SectionSummary(
             id=section.id,
             name=section.name,
+            manager=section.manager,
+            manager_label=_label(section.manager),
             players=player_counts.get(section.id, 0),
             declared_rounds=section.declared_rounds,
             rounds=[

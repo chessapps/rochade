@@ -36,6 +36,8 @@ class VegaManager:
         result_codes_out=frozenset(code for code in RESULT_CODES if code.strip()),
         reads_format="trf16",
         writes_format="trf16",
+        export_howto="Export the tournament as TRF16 with the paired round included.",
+        import_howto="Import the downloaded TRF16 over the tournament, then pair the next round.",
         notes=(
             "Vega's TRF import was reworked in 10.5.0; merge behaviour is unconfirmed.",
             "Points move by the delta of results we wrote, never a full recompute.",

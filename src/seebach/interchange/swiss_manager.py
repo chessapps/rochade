@@ -40,15 +40,20 @@ class SwissManager:
         result_codes_out=WRITABLE_CODES,
         reads_format="trf16",
         writes_format="swiss-manager pairing file",
+        export_howto=(
+            "Extras → FIDE-Daten-Export TRF16, OK, and answer Ja to «Es fehlen noch "
+            "Ergebnisse» — that is the round about to be played. The file appears in "
+            "Documents\\SwissManagerUniCode\\Listen\\FIDE_Export_<tournament>.TXT."
+        ),
+        import_howto=(
+            "Extras → Daten Import/Export → Spielerauslosung → Starten, pick the downloaded "
+            "file. The results land in the open tournament; pair the next round as usual."
+        ),
         notes=(
-            "Export: Extras → FIDE-Daten-Export TRF16. Answer 'Ja' to 'Es fehlen noch "
-            "Ergebnisse' — that is the round to play. The file is written to "
-            "Documents\\SwissManagerUniCode\\Listen\\FIDE_Export_<tournament>.TXT.",
             "The export needs round dates (Eingabe → Termine für die einzelnen Runden).",
-            "Import: Extras → Daten Import/Export → Spielerauslosung → Starten, pick the "
-            "downloaded file. Results merge into the open tournament; pair the next round.",
-            "Names arrive as Swiss-Manager exports them: 'Surname,Given', and transliterated "
-            "for the tournament's own federation (Müller → Mueller).",
+            "Names arrive as Swiss-Manager exports them: «Surname,Given», transliterated for "
+            "the tournament's own federation (Müller → Mueller).",
+            "Verified against Swiss-Manager 15.0.0.3.",
         ),
     )
 

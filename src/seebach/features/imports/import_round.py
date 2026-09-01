@@ -202,8 +202,8 @@ def build_plan(
     frozen = existing.rounds.get(file_round)
     if frozen is not None and frozen.state is RoundState.EXPORTED and not force:
         plan.blocked_by.append(
-            f"round {file_round} has already been exported to Vega; "
-            "re-importing it would overwrite results Vega already has"
+            f"round {file_round} has already been exported to the manager; "
+            "re-importing it would overwrite results the manager already has"
         )
     if not first_import and file_round > expected:
         plan.blocked_by.append(
