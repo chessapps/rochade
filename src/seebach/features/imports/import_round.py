@@ -23,16 +23,37 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from seebach.features.audit import record
+from seebach.interchange import (
+    DEFAULT_MANAGER,
+    InterchangeError,
+    Manager,
+    PairingRow,
+    RoundDocument,
+    UnknownManager,
+    manager_for,
+)
 from seebach.platform.bus import bus
 from seebach.platform.errors import Conflict, NotFound, ValidationFailed
 from seebach.platform.http import get_context
 from seebach.platform.mediator import Access, Command, Context
 from seebach.shared.enums import EventAction, ResultState, RoundState
 from seebach.shared.models import Game, Round, Section, SectionPlayer, Tournament
-from seebach.trf import Pairing, TrfFile, TrfParseError, parse
 from seebach.trf.results import mirror
 
 router = APIRouter(prefix="/tournaments", tags=["import"])
+
+
+def resolve_manager(key: str) -> Manager:
+    """Turn a manager key from a request into an adapter, or a 422.
+
+    Shared with `preview_import`, which must resolve it identically -- a
+    preview against a different adapter than the import would use is worse
+    than no preview at all.
+    """
+    try:
+        return manager_for(key)
+    except UnknownManager as exc:
+        raise ValidationFailed(str(exc), manager=key) from exc
 
 
 # --- the plan ---------------------------------------------------------------
@@ -123,18 +144,19 @@ def build_plan(
     tournament: Tournament,
     section_name: str,
     content: str,
+    manager: Manager,
     force: bool = False,
-) -> tuple[ImportPlan, TrfFile]:
+) -> tuple[ImportPlan, RoundDocument]:
     """Diff a file against what we hold. Pure: reads only, writes nothing."""
     try:
-        trf = parse(content)
-    except TrfParseError as exc:
+        document = manager.read_round(content)
+    except InterchangeError as exc:
         raise ValidationFailed(f"the file could not be read: {exc}", line_no=exc.line_no) from exc
 
-    if not trf.players:
+    if not document.players:
         raise ValidationFailed("the file contains no player rows")
 
-    file_round = trf.rounds_present
+    file_round = document.rounds_present
     if file_round < 1:
         raise ValidationFailed("the file contains no rounds")
 
@@ -148,33 +170,33 @@ def build_plan(
     # Re-importing the round we already hold is a re-pair, not a mistake.
     is_expected = first_import or file_round in (expected, expected - 1)
 
-    pairings = trf.pairings(file_round)
+    pairings = document.board_rows(file_round)
     plan = ImportPlan(
         section_name=section_name,
         section_exists=existing.section is not None,
         file_round=file_round,
         expected_round=expected,
         is_expected_round=is_expected,
-        declared_rounds=trf.declared_rounds,
-        tournament_name=trf.name,
-        players_total=len(trf.players),
+        declared_rounds=document.declared_rounds,
+        tournament_name=document.tournament_name,
+        players_total=len(document.players),
         boards=sum(1 for p in pairings if not p.is_bye),
         byes=sum(1 for p in pairings if p.is_bye),
-        unknown_result_codes=list(trf.unknown_result_codes),
+        unknown_result_codes=list(document.unknown_result_codes),
     )
 
-    _diff_players(plan, trf, existing)
-    _diff_prior_results(plan, trf, existing, file_round)
-    _diff_claims(plan, trf, pairings, existing, file_round)
+    _diff_players(plan, document, existing)
+    _diff_prior_results(plan, document, existing, file_round)
+    _diff_claims(plan, pairings, existing, file_round)
 
     if not is_expected:
         plan.warnings.append(
             f"this file holds round {file_round}, but round {expected} was expected"
         )
-    if trf.unknown_result_codes:
+    if document.unknown_result_codes:
         plan.warnings.append(
             "the file uses result codes we do not recognise: "
-            + ", ".join(repr(c) for c in trf.unknown_result_codes)
+            + ", ".join(repr(c) for c in document.unknown_result_codes)
         )
 
     frozen = existing.rounds.get(file_round)
@@ -188,7 +210,7 @@ def build_plan(
             f"round {file_round - 1} has not been imported yet -- rounds must arrive in order"
         )
 
-    return plan, trf
+    return plan, document
 
 
 def _load_existing(session: Session, tournament_id: uuid.UUID, section_name: str) -> _Existing:
@@ -209,10 +231,10 @@ def _load_existing(session: Session, tournament_id: uuid.UUID, section_name: str
     return existing
 
 
-def _diff_players(plan: ImportPlan, trf: TrfFile, existing: _Existing) -> None:
+def _diff_players(plan: ImportPlan, document: RoundDocument, existing: _Existing) -> None:
     incoming = {
         rank: PlayerChange(start_rank=rank, name=p.name, rating=p.rating)
-        for rank, p in trf.players.items()
+        for rank, p in document.players.items()
     }
     held = existing.players
 
@@ -230,20 +252,19 @@ def _diff_players(plan: ImportPlan, trf: TrfFile, existing: _Existing) -> None:
 
 
 def _diff_prior_results(
-    plan: ImportPlan, trf: TrfFile, existing: _Existing, file_round: int
+    plan: ImportPlan, document: RoundDocument, existing: _Existing, file_round: int
 ) -> None:
     for round_no in range(1, file_round):
-        for pairing in trf.pairings(round_no):
-            names = _names(trf, pairing)
-            game = existing.games.get((round_no, names[0], names[1]))
+        for pairing in document.board_rows(round_no):
+            game = existing.games.get((round_no, pairing.white_name, pairing.black_name))
             if game is None:
                 continue
             if game.white_result != pairing.white_result and game.white_result != " ":
                 plan.disagreements.append(
                     ResultDisagreement(
                         round_number=round_no,
-                        white_name=names[0],
-                        black_name=names[1],
+                        white_name=pairing.white_name,
+                        black_name=pairing.black_name,
                         ours=game.white_result,
                         theirs=pairing.white_result,
                     )
@@ -252,8 +273,7 @@ def _diff_prior_results(
 
 def _diff_claims(
     plan: ImportPlan,
-    trf: TrfFile,
-    pairings: list[Pairing],
+    pairings: list[PairingRow],
     existing: _Existing,
     file_round: int,
 ) -> None:
@@ -275,7 +295,7 @@ def _diff_claims(
     if not held:
         return
 
-    incoming = {pair_key(*_names(trf, p)) for p in pairings}
+    incoming = {pair_key(p.white_name, p.black_name) for p in pairings}
 
     for game in held:
         carried = CarriedClaim(
@@ -303,12 +323,6 @@ def pair_key(white_name: str, black_name: str | None) -> tuple[str, ...]:
     return tuple(sorted((white_name, black_name)))
 
 
-def _names(trf: TrfFile, pairing: Pairing) -> tuple[str, str | None]:
-    white = trf.players[pairing.white].name
-    black = trf.players[pairing.black].name if pairing.black is not None else None
-    return white, black
-
-
 # --- the command ------------------------------------------------------------
 
 
@@ -330,6 +344,9 @@ class ImportRound(Command):
     section_name: str = Field(min_length=1, max_length=120)
     content: str = Field(min_length=1)
     filename: str = Field(default="", max_length=255)
+    #: Which manager produced this file. Per section, not per tournament: a
+    #: tournament may hold groups run in different programs.
+    manager: str = DEFAULT_MANAGER
     #: Set only after the arbiter has read a plan that reported a blocker.
     force: bool = False
 
@@ -340,19 +357,21 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
     if tournament is None:
         raise NotFound("tournament not found", tournament_id=str(command.tournament_id))
 
-    plan, trf = build_plan(
+    manager = resolve_manager(command.manager)
+    plan, document = build_plan(
         ctx.session,
         tournament=tournament,
         section_name=command.section_name,
         content=command.content,
+        manager=manager,
         force=command.force,
     )
     if not plan.can_import:
         raise Conflict("this file cannot be imported", reasons=plan.blocked_by)
 
-    section = _upsert_section(ctx, tournament, command.section_name, trf)
+    section = _upsert_section(ctx, tournament, command.section_name, document, manager.key)
     carried = _carried_results(ctx, section, plan.file_round)
-    _rebuild(ctx, section, trf, plan.file_round, carried)
+    _rebuild(ctx, section, document, plan.file_round, carried)
     ctx.session.flush()
 
     round_ = next(r for r in section.rounds if r.number == plan.file_round)
@@ -365,6 +384,7 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
         round_number=plan.file_round,
         action=EventAction.ROUND_IMPORTED,
         filename=command.filename,
+        manager=manager.key,
         boards=plan.boards,
         byes=plan.byes,
         players=plan.players_total,
@@ -384,14 +404,17 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
     )
 
 
-def _upsert_section(ctx: Context, tournament: Tournament, name: str, trf: TrfFile) -> Section:
+def _upsert_section(
+    ctx: Context, tournament: Tournament, name: str, document: RoundDocument, manager_key: str
+) -> Section:
     section = ctx.session.scalar(
         select(Section).where(Section.tournament_id == tournament.id, Section.name == name)
     )
     if section is None:
         section = Section(tournament_id=tournament.id, name=name)
         ctx.session.add(section)
-    section.declared_rounds = trf.declared_rounds
+    section.manager = manager_key
+    section.declared_rounds = document.declared_rounds
     ctx.session.flush()
     return section
 
@@ -420,7 +443,7 @@ def _carried_results(
 def _rebuild(
     ctx: Context,
     section: Section,
-    trf: TrfFile,
+    document: RoundDocument,
     file_round: int,
     carried: dict[tuple[str, ...], _Carried],
 ) -> None:
@@ -429,7 +452,7 @@ def _rebuild(
     section.rounds.clear()
     ctx.session.flush()
 
-    for rank, player in sorted(trf.players.items()):
+    for rank, player in sorted(document.players.items()):
         section.players.append(
             SectionPlayer(
                 start_rank=rank,
@@ -452,14 +475,13 @@ def _rebuild(
         )
         section.rounds.append(round_)
 
-        for pairing in trf.pairings(round_no):
-            names = _names(trf, pairing)
+        for pairing in document.board_rows(round_no):
             game = Game(
                 board=pairing.board,
-                white_rank=pairing.white,
-                white_name=names[0],
-                black_rank=pairing.black,
-                black_name=names[1],
+                white_rank=pairing.white_rank,
+                white_name=pairing.white_name,
+                black_rank=pairing.black_rank,
+                black_name=pairing.black_name,
                 white_result=pairing.white_result,
                 black_result=pairing.black_result,
                 state=(ResultState.EMPTY if pairing.white_result == " " else ResultState.CONFIRMED),
@@ -503,6 +525,7 @@ class ImportRoundBody(BaseModel):
     section_name: str
     content: str
     filename: str = ""
+    manager: str = DEFAULT_MANAGER
     force: bool = False
 
 

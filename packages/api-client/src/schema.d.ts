@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/managers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Managers */
+        get: operations["list_managers_api_managers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments": {
         parameters: {
             query?: never;
@@ -445,19 +462,8 @@ export interface components {
             /** Active */
             active: boolean;
         };
-        /**
-         * Dialect
-         * @description Which TRF flavour a serializer targets.
-         *
-         *     Never serialize to "TRF" generically. Vega writes TRF16/UTF-8 and reads
-         *     TRF06 within that format's limits, so the target is always named.
-         * @enum {string}
-         */
-        Dialect: "trf06" | "trf16";
         /** ExportBody */
         ExportBody: {
-            /** @default trf16 */
-            dialect: components["schemas"]["Dialect"];
             /**
              * Force
              * @default false
@@ -477,7 +483,10 @@ export interface components {
             filename: string;
             /** Content */
             content: string;
-            dialect: components["schemas"]["Dialect"];
+            /** Manager */
+            manager: string;
+            /** File Format */
+            file_format: string;
             /** Boards Written */
             boards_written: number;
             /** Boards Left Blank */
@@ -601,6 +610,11 @@ export interface components {
              */
             filename: string;
             /**
+             * Manager
+             * @default vega
+             */
+            manager: string;
+            /**
              * Force
              * @default false
              */
@@ -663,6 +677,25 @@ export interface components {
             /** Qr Payload */
             qr_payload: string;
         };
+        /** ManagerSummary */
+        ManagerSummary: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Reads Format */
+            reads_format: string;
+            /** Writes Format */
+            writes_format: string;
+            exports_unplayed_round: components["schemas"]["Support"];
+            merges_on_import: components["schemas"]["Support"];
+            /** Verified */
+            verified: boolean;
+            /** Result Codes Out */
+            result_codes_out?: string[];
+            /** Notes */
+            notes?: string[];
+        };
         /** MemberResult */
         MemberResult: {
             /**
@@ -689,6 +722,11 @@ export interface components {
             section_name: string;
             /** Content */
             content: string;
+            /**
+             * Manager
+             * @default vega
+             */
+            manager: string;
             /**
              * Force
              * @default false
@@ -934,6 +972,16 @@ export interface components {
             /** Black Result */
             black_result: string;
         };
+        /**
+         * Support
+         * @description Whether a behaviour has actually been observed against the real program.
+         *
+         *     UNVERIFIED is the honest default and the whole point of the enum: until the
+         *     M0 spike is run against a program, we are repeating documentation rather
+         *     than reporting a fact, and an arbiter deserves to be told which it is.
+         * @enum {string}
+         */
+        Support: "yes" | "no" | "unverified";
         /** TournamentDetail */
         TournamentDetail: {
             /**
@@ -1011,6 +1059,38 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    list_managers_api_managers_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagerSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

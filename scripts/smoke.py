@@ -41,6 +41,13 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     check("hall app is served at the root", '<div id="root">' in http.get("/").text)
     check("admin app is served at /admin", '<div id="root">' in http.get("/admin/").text)
 
+    managers = http.get("/api/managers", headers=staff)
+    check(
+        "manager adapters are listed",
+        managers.status_code == 200 and any(m["key"] == "vega" for m in managers.json()),
+        managers.text,
+    )
+
     created = http.post("/api/tournaments", json={"name": "Smoke Open"}, headers=staff)
     check("create tournament", created.status_code == 201, created.text)
     tournament = created.json()["id"]
@@ -93,6 +100,8 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     check("export", exported.status_code == 200, exported.text)
     body = exported.json()
     check("export filename", body["filename"] == "A-round1.trf", body["filename"])
+    check("export names its manager", body["manager"] == "vega", body["manager"])
+    check("export names its format", body["file_format"] == "trf16", body["file_format"])
     check("export wrote every board", body["boards_written"] == 4)
     check("results are in the file", body["content"].count(" =") >= 8)
 

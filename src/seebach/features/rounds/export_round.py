@@ -22,14 +22,13 @@ from sqlalchemy.orm import Session
 from seebach.features.audit import record
 from seebach.features.locking import lock_round
 from seebach.features.scoping import tournament_of_round
+from seebach.interchange import InterchangeError, ResultEntry, UnknownManager, manager_for
 from seebach.platform.bus import bus
 from seebach.platform.errors import Conflict, ValidationFailed
 from seebach.platform.http import get_context
 from seebach.platform.mediator import Access, Command, Context
 from seebach.shared.enums import EventAction, ResultState, RoundState
 from seebach.shared.models import Round
-from seebach.trf import Dialect, TrfParseError, parse, serialize
-from seebach.trf.edit import set_result
 
 router = APIRouter(prefix="/rounds", tags=["arbiter"])
 
@@ -39,7 +38,10 @@ class ExportRoundResult(BaseModel):
     round_number: int
     filename: str
     content: str
-    dialect: Dialect
+    #: Which adapter produced it, and in what format. Both are worth recording:
+    #: the arbiter has to know which program this file is for.
+    manager: str
+    file_format: str
     boards_written: int
     boards_left_blank: list[int] = Field(default_factory=list)
     forced: bool
@@ -50,7 +52,6 @@ class ExportRound(Command):
     result_model = ExportRoundResult
 
     round_id: uuid.UUID
-    dialect: Dialect = Dialect.TRF16
     #: Export a round that still has unconfirmed boards. Logged as forced.
     force: bool = False
 
@@ -86,21 +87,34 @@ def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
         )
 
     try:
-        trf = parse(round_.source_trf)
-    except TrfParseError as exc:  # pragma: no cover - the file parsed on import
-        raise ValidationFailed(f"the stored source file no longer parses: {exc}") from exc
+        manager = manager_for(round_.section.manager)
+    except UnknownManager as exc:  # pragma: no cover - written by import
+        raise ValidationFailed(str(exc), manager=round_.section.manager) from exc
 
-    written = 0
+    results: list[ResultEntry] = []
     blank: list[int] = []
     for game in sorted(round_.games, key=lambda g: g.board):
         if game.state is not ResultState.CONFIRMED or game.white_result == " ":
             blank.append(game.board)
             continue
-        set_result(trf, round_.number, game.white_rank, game.white_result)
-        written += 1
+        results.append(ResultEntry(white_rank=game.white_rank, white_result=game.white_result))
 
-    content = serialize(trf, command.dialect, recompute_points=True)
-    filename = _filename(round_)
+    dropped = manager.capabilities.drops([entry.white_result for entry in results])
+    if dropped and not command.force:
+        raise Conflict(
+            f"{manager.label} cannot carry these result codes, so exporting would "
+            "silently change them",
+            codes=dropped,
+        )
+
+    try:
+        emitted = manager.write_results(
+            manager.read_round(round_.source_trf), round_.number, results, stem=_stem(round_)
+        )
+    except InterchangeError as exc:  # pragma: no cover - it parsed on import
+        raise ValidationFailed(f"the stored source file no longer reads: {exc}") from exc
+
+    written = len(results)
 
     round_.state = RoundState.EXPORTED
     round_.exported_at = datetime.now(UTC)
@@ -110,8 +124,9 @@ def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
         section_id=round_.section_id,
         round_number=round_.number,
         action=EventAction.ROUND_EXPORTED,
-        filename=filename,
-        dialect=command.dialect.value,
+        filename=emitted.filename,
+        manager=manager.key,
+        file_format=manager.capabilities.writes_format,
         boards_written=written,
         boards_left_blank=blank,
         forced=command.force,
@@ -120,22 +135,23 @@ def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
     return ExportRoundResult(
         round_id=round_.id,
         round_number=round_.number,
-        filename=filename,
-        content=content,
-        dialect=command.dialect,
+        filename=emitted.filename,
+        content=emitted.content,
+        manager=manager.key,
+        file_format=manager.capabilities.writes_format,
         boards_written=written,
         boards_left_blank=blank,
         forced=command.force,
     )
 
 
-def _filename(round_: Round) -> str:
+def _stem(round_: Round) -> str:
+    """The filename without an extension -- the adapter picks that."""
     section = re.sub(r"[^A-Za-z0-9_-]+", "-", round_.section.name).strip("-") or "section"
-    return f"{section}-round{round_.number}.trf"
+    return f"{section}-round{round_.number}"
 
 
 class ExportBody(BaseModel):
-    dialect: Dialect = Dialect.TRF16
     force: bool = False
 
 

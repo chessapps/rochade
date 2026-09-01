@@ -87,10 +87,10 @@ class TournamentMember(Base):
 
 
 class Section(Base):
-    """One Vega file. A tournament may hold several (groups A/B/C).
+    """One manager file. A tournament may hold several (groups A/B/C).
 
-    The hall app searches across all sections at once, which is the thing Vega
-    itself cannot do -- it is one tournament per file.
+    The hall app searches across all sections at once, which is the thing the
+    managers cannot do -- they are one tournament per file.
     """
 
     __tablename__ = "section"
@@ -101,6 +101,9 @@ class Section(Base):
         ForeignKey("tournament.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(120))
+    # Which manager adapter owns this section. Per section rather than per
+    # tournament: a tournament may hold groups run in different programs.
+    manager: Mapped[str] = mapped_column(String(32), default="vega", server_default="vega")
     declared_rounds: Mapped[int | None] = mapped_column(Integer(), default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

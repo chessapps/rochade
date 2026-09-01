@@ -5,6 +5,7 @@ import type {
   DeviceSummary,
   GameResult,
   ImportPlan,
+  ManagerSummary,
   QueueEntry,
   RoundSummary,
   TournamentDetail,
@@ -172,6 +173,9 @@ export function ImportPanel({
   plan,
   section,
   onSection,
+  managers,
+  manager,
+  onManager,
   onFile,
   onPreview,
   onImport,
@@ -181,12 +185,16 @@ export function ImportPanel({
   plan: ImportPlan | null;
   section: string;
   onSection: (value: string) => void;
+  managers: ManagerSummary[];
+  manager: string;
+  onManager: (value: string) => void;
   onFile: (file: File) => void;
   onPreview: () => void;
   onImport: (force: boolean) => void;
   onCancel: () => void;
   busy: boolean;
 }) {
+  const selected = managers.find((m) => m.key === manager);
   const [acknowledged, setAcknowledged] = useState(false);
   const notes = plan ? planNotes(plan) : [];
   const mustRead = notes.some((note) => note.severity === "acknowledge");
@@ -197,6 +205,20 @@ export function ImportPanel({
       <h2 className="font-semibold">Import a Vega file</h2>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col text-sm">
+          <span className="text-slate-500">Manager</span>
+          <select
+            value={manager}
+            onChange={(event) => onManager(event.target.value)}
+            className="mt-1 rounded-lg border border-slate-300 px-3 py-2"
+          >
+            {managers.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="flex flex-col text-sm">
           <span className="text-slate-500">Section</span>
           <input
@@ -226,6 +248,8 @@ export function ImportPanel({
           Preview
         </button>
       </div>
+
+      {selected && <ManagerNotice manager={selected} />}
 
       {plan && (
         <div className="mt-4 border-t border-slate-100 pt-4">
@@ -278,6 +302,30 @@ export function ImportPanel({
         </div>
       )}
     </section>
+  );
+}
+
+function ManagerNotice({ manager }: { manager: ManagerSummary }) {
+  const unverified =
+    manager.exports_unplayed_round === "unverified" || manager.merges_on_import === "unverified";
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+      <p className="text-slate-600">
+        Reads <code>{manager.reads_format}</code>, writes <code>{manager.writes_format}</code>.
+      </p>
+      {unverified && (
+        <p className="mt-1 text-amber-800">
+          Not yet verified against the real program. What we believe about{" "}
+          {manager.label} comes from its documentation, not from watching it work — run
+          the round-trip spike before relying on this at an event.
+        </p>
+      )}
+      {(manager.notes ?? []).map((note) => (
+        <p key={note} className="mt-1 text-slate-500">
+          {note}
+        </p>
+      ))}
+    </div>
   );
 }
 

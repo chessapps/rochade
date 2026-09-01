@@ -10,6 +10,7 @@ import {
   type ArbiterQueue,
   type DeviceSummary,
   type ImportPlan,
+  type ManagerSummary,
   type RoundSummary,
   type TournamentDetail,
   type TournamentSummary,
@@ -31,6 +32,8 @@ export function App() {
   const [queue, setQueue] = useState<ArbiterQueue | null>(null);
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
 
+  const [managers, setManagers] = useState<ManagerSummary[]>([]);
+  const [manager, setManager] = useState("vega");
   const [section, setSection] = useState("A");
   const [content, setContent] = useState("");
   const [filename, setFilename] = useState("");
@@ -43,6 +46,11 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const loadManagers = useCallback(async () => {
+    const { data } = await api.GET("/api/managers");
+    if (data) setManagers(data);
+  }, []);
 
   const loadTournaments = useCallback(async () => {
     const { data, error } = await api.GET("/api/tournaments");
@@ -69,8 +77,11 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (token) void loadTournaments();
-  }, [token, loadTournaments]);
+    if (token) {
+      void loadTournaments();
+      void loadManagers();
+    }
+  }, [token, loadTournaments, loadManagers]);
 
   useEffect(() => {
     if (selected) void loadTournament(selected);
@@ -109,7 +120,7 @@ export function App() {
         "/api/tournaments/{tournament_id}/imports/preview",
         {
           params: { path: { tournament_id: selected } },
-          body: { section_name: section, content, force: true },
+          body: { section_name: section, content, manager, force: true },
         },
       );
       if (error) {
@@ -125,7 +136,7 @@ export function App() {
       if (!selected) return null;
       const { data, error } = await api.POST("/api/tournaments/{tournament_id}/imports", {
         params: { path: { tournament_id: selected } },
-        body: { section_name: section, content, filename, force },
+        body: { section_name: section, content, filename, manager, force },
       });
       if (error) {
         setProblem(errorMessage(error));
@@ -162,7 +173,7 @@ export function App() {
     run(async () => {
       const { data, error } = await api.POST("/api/rounds/{round_id}/export", {
         params: { path: { round_id: round.id } },
-        body: { dialect: "trf16", force: false },
+        body: { force: false },
       });
       setExporting(null);
       if (error) {
@@ -170,7 +181,10 @@ export function App() {
         return null;
       }
       if (data) download(data.filename, data.content);
-      return `Exported ${data?.filename}. Round ${round.number} is frozen — load it into Vega next.`;
+      return (
+        `Exported ${data?.filename}. Round ${round.number} is frozen — ` +
+        `load it into ${data?.manager ?? "the manager"} next.`
+      );
     });
 
   return (
@@ -228,6 +242,9 @@ export function App() {
         plan={plan}
         section={section}
         onSection={setSection}
+        managers={managers}
+        manager={manager}
+        onManager={setManager}
         onFile={(file) => {
           setFilename(file.name);
           void file.text().then(setContent);

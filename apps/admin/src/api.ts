@@ -40,6 +40,9 @@ export type DeviceSummary = Json<
   paths["/api/tournaments/{tournament_id}/devices"]["get"]["responses"]["200"]
 >[number];
 export type GameResult = "white_win" | "draw" | "black_win";
+export type ManagerSummary = Json<
+  paths["/api/managers"]["get"]["responses"]["200"]
+>[number];
 
 export type ExportResult = Json<
   paths["/api/rounds/{round_id}/export"]["post"]["responses"]["200"]

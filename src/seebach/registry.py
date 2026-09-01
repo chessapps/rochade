@@ -13,6 +13,7 @@ from seebach.features.boards import get_board_list
 from seebach.features.devices import issue_device_token, list_devices, revoke_device
 from seebach.features.games import claim_result, resolve_dispute, set_result
 from seebach.features.imports import import_round, preview_import
+from seebach.features.managers import list_managers
 from seebach.features.queue import get_arbiter_queue
 from seebach.features.rounds import export_round, get_round, release_round
 from seebach.features.tournaments import (
@@ -24,6 +25,8 @@ from seebach.features.tournaments import (
 
 #: Every module that owns routes, in REST order.
 MODULES = (
+    # /api/managers
+    list_managers,
     # /api/tournaments
     create_tournament,
     list_tournaments,

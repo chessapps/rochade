@@ -59,5 +59,7 @@ markers = ["db: requires a postgres container"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.ruff.lint.per-file-ignores]
+# Alembic writes these; reformatting machine output only creates diff noise.
+"src/seebach/platform/migrations/versions/*" = ["E501"]
 # The fixture builder is column-aligned on purpose; wrapping it hides the layout.
 "tests/fixtures/_build.py" = ["E501"]
