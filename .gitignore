@@ -12,3 +12,4 @@ apps/*/dist/
 .env
 dist/
 openapi.json
+bash.exe.stackdump
