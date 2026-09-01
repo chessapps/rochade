@@ -56,6 +56,10 @@ def parse(text: str | bytes, *, encoding: str = "utf-8") -> TrfFile:
             setattr(trf, _HEADERS[code], raw[4:].strip())
         elif code == "XXR":
             trf.declared_rounds = _optional_int(raw[4:])
+        elif code == "142" and trf.declared_rounds is None:
+            # Swiss-Manager's dialect: no XXR, the round count travels as 142.
+            # XXR wins if both are present, since that is what pairing engines read.
+            trf.declared_rounds = _optional_int(raw[4:])
 
     trf.unknown_result_codes = sorted(unknown_codes)
     return trf

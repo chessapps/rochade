@@ -1,12 +1,14 @@
-"""Write the round's results back into a TRF for Vega, and freeze the round.
+"""Write the round's results back in whatever the section's manager takes, and freeze it.
 
-The file we emit is the file we imported, with the result cells of this round
-patched. Nothing is rebuilt, so every field Vega wrote that we never modelled
-goes back to Vega unchanged.
+The adapter decides the file: Vega gets the TRF we imported with this round's
+result cells patched, Swiss-Manager gets its own pairing file. Either way
+nothing is rebuilt, so what the manager wrote and we never modelled goes back
+unchanged.
 
 Freezing is the divergence guard. During a round we own the results; between
-rounds Vega owns the pairings. Without the freeze, an arbiter can edit a result
-in Vega while a player edits it here and neither system can say which is right.
+rounds the manager owns the pairings. Without the freeze, an arbiter can edit a
+result there while a player edits it here and neither system can say which is
+right.
 """
 
 from __future__ import annotations
@@ -91,15 +93,38 @@ def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
     except UnknownManager as exc:  # pragma: no cover - written by import
         raise ValidationFailed(str(exc), manager=round_.section.manager) from exc
 
+    try:
+        document = manager.read_round(round_.source_trf)
+    except InterchangeError as exc:  # pragma: no cover - it parsed on import
+        raise ValidationFailed(f"the stored source file no longer reads: {exc}") from exc
+
+    # What the manager already knows. A bye it allocated, or a result it exported
+    # with the round, is not something we write -- it goes back as it came, so it
+    # is neither counted nor checked against what the manager can carry.
+    before = {
+        row.white_rank: (row.white_result, row.black_result)
+        for row in document.board_rows(round_.number)
+    }
+
     results: list[ResultEntry] = []
     blank: list[int] = []
     for game in sorted(round_.games, key=lambda g: g.board):
         if game.state is not ResultState.CONFIRMED or game.white_result == " ":
             blank.append(game.board)
             continue
-        results.append(ResultEntry(white_rank=game.white_rank, white_result=game.white_result))
+        if before.get(game.white_rank) == (game.white_result, game.black_result):
+            continue
+        results.append(
+            ResultEntry(
+                white_rank=game.white_rank,
+                white_result=game.white_result,
+                black_result=game.black_result,
+            )
+        )
 
-    dropped = manager.capabilities.drops([entry.white_result for entry in results])
+    dropped = manager.capabilities.drops(
+        [code for entry in results for code in (entry.white_result, entry.black_result)]
+    )
     if dropped and not command.force:
         raise Conflict(
             f"{manager.label} cannot carry these result codes, so exporting would "
@@ -108,11 +133,9 @@ def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
         )
 
     try:
-        emitted = manager.write_results(
-            manager.read_round(round_.source_trf), round_.number, results, stem=_stem(round_)
-        )
-    except InterchangeError as exc:  # pragma: no cover - it parsed on import
-        raise ValidationFailed(f"the stored source file no longer reads: {exc}") from exc
+        emitted = manager.write_results(document, round_.number, results, stem=_stem(round_))
+    except InterchangeError as exc:
+        raise ValidationFailed(f"{manager.label} cannot write this round: {exc}") from exc
 
     written = len(results)
 

@@ -63,7 +63,8 @@ def test_import_creates_section_round_and_boards(
     assert round_.source_trf == round1_text
 
     games = sorted(round_.games, key=lambda g: g.board)
-    assert [(g.white_rank, g.black_rank) for g in games] == [(1, 5), (3, 7), (6, 2), (8, 4)]
+    # FIDE board order: nobody has points in round 1, so the higher-ranked player decides.
+    assert [(g.white_rank, g.black_rank) for g in games] == [(1, 5), (6, 2), (3, 7), (8, 4)]
     assert all(g.state is ResultState.EMPTY for g in games)
     assert games[0].white_name == "Baumann, Lukas"
 

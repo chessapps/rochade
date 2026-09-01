@@ -54,19 +54,20 @@ def test_the_loop_closes(
     assert exported.filename == "A-round1.trf"
 
     out = parse(exported.content)
-    # Boards were (1,5) (3,7) (6,2) (8,4) in white-rank order.
+    # Boards are (1,5) (6,2) (3,7) (8,4) in FIDE order.
     assert out.player(1).round(1).result == "1"
     assert out.player(5).round(1).result == "0"
-    assert out.player(3).round(1).result == "="
-    assert out.player(7).round(1).result == "="
-    assert out.player(6).round(1).result == "0"
-    assert out.player(2).round(1).result == "1"
+    assert out.player(6).round(1).result == "="
+    assert out.player(2).round(1).result == "="
+    assert out.player(3).round(1).result == "0"
+    assert out.player(7).round(1).result == "1"
     assert out.player(8).round(1).result == "="
     assert out.player(4).round(1).result == "="
 
-    # Points were recomputed so the file is internally consistent.
+    # Points moved with the results, so the file is internally consistent.
     assert out.player(1).points == 1.0
-    assert out.player(3).points == 0.5
+    assert out.player(6).points == 0.5
+    assert out.player(7).points == 1.0
 
     session.refresh(round_)
     assert round_.state is RoundState.EXPORTED

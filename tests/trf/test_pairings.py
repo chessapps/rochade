@@ -1,11 +1,52 @@
+import pathlib
+
 from seebach.trf import parse
+
+SM = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "swiss_manager"
+
+
+def _sm_boards(path: str, round_no: int) -> list[tuple[int, int, int]]:
+    """(board, white, black) as Swiss-Manager's own pairing file lists them."""
+    rows = []
+    for line in (SM / path).read_text(encoding="utf-8").splitlines()[1:]:
+        rd, board, _, _, white, black, *_ = line.split(";")
+        if int(rd) == round_no and int(black) != -1:
+            rows.append((int(board), int(white), int(black)))
+    return rows
+
+
+def test_board_order_matches_swiss_manager_round3() -> None:
+    """Round 3 as exported paired-but-unplayed; scores differ, so the FIDE order bites."""
+    trf = parse((SM / "round3_paired.trf").read_bytes())
+    ours = [(p.board, p.white, p.black) for p in trf.pairings(3) if not p.is_bye]
+    assert ours == _sm_boards("pairings_round3_unplayed.txt", 3)
+
+
+def test_board_order_matches_swiss_manager_round4() -> None:
+    trf = parse((SM / "round4_paired.trf").read_bytes())
+    ours = [(p.board, p.white, p.black) for p in trf.pairings(4) if not p.is_bye]
+    assert ours == _sm_boards("pairings_rounds3-4_played.txt", 4)
+
+
+def test_board_order_of_a_completed_round_uses_the_score_before_it() -> None:
+    """Round 3 read from the round-4 export, where the points column includes round 3."""
+    trf = parse((SM / "round4_paired.trf").read_bytes())
+    ours = [(p.board, p.white, p.black) for p in trf.pairings(3) if not p.is_bye]
+    assert ours == _sm_boards("pairings_rounds3-4_played.txt", 3)
+
+
+def test_swiss_manager_round_count_comes_from_142() -> None:
+    trf = parse((SM / "round3_paired.trf").read_bytes())
+    assert trf.declared_rounds == 5
+    assert trf.rounds_present == 3
 
 
 def test_pairings_deduplicate_the_two_player_rows(round1_text: str) -> None:
     trf = parse(round1_text)
     pairings = trf.pairings(1)
     assert len(pairings) == 4
-    assert [(p.white, p.black) for p in pairings] == [(1, 5), (3, 7), (6, 2), (8, 4)]
+    # Round 1, nobody has points: boards go by the higher-ranked player.
+    assert [(p.white, p.black) for p in pairings] == [(1, 5), (6, 2), (3, 7), (8, 4)]
     assert [p.board for p in pairings] == [1, 2, 3, 4]
 
 

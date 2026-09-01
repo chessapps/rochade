@@ -126,13 +126,15 @@ def simple_manager() -> Iterator[SimpleManager]:
 
 def test_an_adapter_can_be_registered_and_listed(send: Send, simple_manager: SimpleManager) -> None:
     listed = {m.key: m for m in send(ListManagers())}
-    assert set(listed) == {"vega", "simple"}
+    assert set(listed) == {"vega", "swiss_manager", "simple"}
     assert listed["simple"].writes_format == "simple-lines"
     assert listed["simple"].verified is True
     # Vega's flags are honest about never having been checked against the real
-    # program -- that is what M0 is for.
+    # program -- that is what M0 is for. Swiss-Manager's were.
     assert listed["vega"].verified is False
     assert listed["vega"].exports_unplayed_round is Support.UNVERIFIED
+    assert listed["swiss_manager"].verified is True
+    assert listed["swiss_manager"].merges_on_import is Support.YES
 
 
 def test_the_whole_loop_runs_through_a_non_trf_adapter(
@@ -205,7 +207,7 @@ def test_export_refuses_a_code_the_adapter_would_silently_drop(
 
     with pytest.raises(Conflict) as excinfo:
         send(ExportRound(round_id=round_.id))
-    assert excinfo.value.details["codes"] == ["+"]
+    assert excinfo.value.details["codes"] == ["+", "-"]
 
     # The arbiter can still force it, having been told what it costs.
     forced = send(ExportRound(round_id=round_.id, force=True))

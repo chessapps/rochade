@@ -88,10 +88,15 @@ class RoundDocument:
 
 @dataclass(frozen=True, slots=True)
 class ResultEntry:
-    """One confirmed board, addressed the way every format can address it."""
+    """One confirmed board, addressed the way every format can address it.
+
+    Both sides, because a double forfeit is ("-", "-") and no single white-side
+    code can say so. A blank black side means "the mirror of white".
+    """
 
     white_rank: int
     white_result: str
+    black_result: str = " "
 
 
 @dataclass(frozen=True, slots=True)

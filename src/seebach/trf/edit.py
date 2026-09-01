@@ -11,8 +11,14 @@ from seebach.trf.model import Player, TrfFile
 from seebach.trf.results import UNPLAYED_CODES, is_known, mirror, points_for
 
 
-def set_result(trf: TrfFile, round_no: int, start_rank: int, code: str) -> None:
+def set_result(
+    trf: TrfFile, round_no: int, start_rank: int, code: str, *, opponent_code: str | None = None
+) -> None:
     """Set `start_rank`'s result in `round_no`, mirroring onto the opponent.
+
+    `opponent_code` overrides the mirror for the one case that has none: a
+    double forfeit is `-` on both rows, and mirroring `-` would hand the
+    opponent a `+` they did not earn.
 
     Points move by the *delta* of what we wrote, never by recomputing the whole
     column. Recomputing would assert our reading of every code in the file,
@@ -44,7 +50,9 @@ def set_result(trf: TrfFile, round_no: int, start_rank: int, code: str) -> None:
         raise ValueError(
             f"player {entry.opponent} is listed as opponent but has no round {round_no}"
         )
-    mirrored = mirror(code)
+    mirrored = mirror(code) if opponent_code is None else opponent_code
+    if not is_known(mirrored):
+        raise ValueError(f"unknown TRF result code {mirrored!r}")
     was = opponent_entry.result
     opponent_entry.result = mirrored
     _move_points(trf, opponent, points_for(mirrored) - points_for(was))

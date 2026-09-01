@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from seebach.trf import columns
-from seebach.trf.results import mirror
+from seebach.trf.results import is_known, mirror, points_for
 
 
 class Colour(StrEnum):
@@ -131,9 +131,15 @@ class TrfFile:
     def pairings(self, round_no: int) -> list[Pairing]:
         """Games in `round_no`, deduplicated across the two player rows.
 
-        Board numbers follow the conventional ordering: real games first in
-        white-player rank order, then byes. Vega renumbers boards on re-pairing,
-        which is exactly why nothing downstream may treat a board as an identity.
+        TRF carries no board numbers, so they are derived -- and derived the way
+        the managers print them, which is the FIDE order: the higher score of
+        the two players first, then the sum of their scores, then the start rank
+        of the higher-ranked player; byes after every real game. Scores are the
+        players' points *before* the round. Swiss-Manager's pairing lists matched
+        this on every board of every round M0 looked at.
+
+        Still not an identity: a re-pair renumbers boards, which is why nothing
+        downstream may treat a board as more than a label.
         """
         games: list[tuple[int, int | None, str, str]] = []
         seen: set[int] = set()
@@ -156,8 +162,15 @@ class TrfFile:
             else:
                 games.append((rank, entry.opponent, entry.result, other_result))
 
-        real = sorted((g for g in games if g[1] is not None), key=lambda g: g[0])
-        byes = sorted((g for g in games if g[1] is None), key=lambda g: g[0])
+        before = self.points_before(round_no)
+
+        def board_key(game: tuple[int, int | None, str, str]) -> tuple[float, float, int]:
+            white, black = game[0], game[1]
+            scores = [before.get(white, 0.0), before.get(black, 0.0) if black is not None else 0.0]
+            return (-max(scores), -sum(scores), min(white, black) if black is not None else white)
+
+        real = sorted((g for g in games if g[1] is not None), key=board_key)
+        byes = sorted((g for g in games if g[1] is None), key=board_key)
         return [
             Pairing(
                 round_no=round_no,
@@ -169,6 +182,35 @@ class TrfFile:
             )
             for i, (w, b, wr, br) in enumerate([*real, *byes], start=1)
         ]
+
+    def points_before(self, round_no: int) -> dict[int, float]:
+        """Each player's score going into `round_no`, from the points column.
+
+        The column is whatever the manager last computed. For a round that is
+        complete it includes that round, so everything from `round_no` onwards is
+        subtracted at face value. A round with any game still unplayed is left
+        alone: Swiss-Manager does not credit even the byes of an open round until
+        it is complete, and subtracting them would move the bye player for no
+        reason. Players without a points column score 0 -- ordering is all this
+        is used for.
+        """
+        open_rounds = {
+            r
+            for r in range(round_no, self.rounds_present + 1)
+            if any(
+                e.result == " "
+                for p in self.players.values()
+                if (e := p.rounds.get(r)) is not None and not e.is_bye
+            )
+        }
+        before: dict[int, float] = {}
+        for rank, player in self.players.items():
+            total = player.points if player.points is not None else 0.0
+            for r, entry in player.rounds.items():
+                if r >= round_no and r not in open_rounds and is_known(entry.result):
+                    total -= points_for(entry.result)
+            before[rank] = total
+        return before
 
 
 def _mirror_or_blank(code: str) -> str:
