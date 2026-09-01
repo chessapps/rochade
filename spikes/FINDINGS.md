@@ -41,6 +41,34 @@ still a *tournament regulation* rather than a property of the letter — which i
 why `set_result` moves points by delta and never recomputes the column — but
 the default we assume agrees with what Swiss-Manager does.
 
+### The TRF import ignores `XXR` and derives the round count from content
+
+Our seed declares `XXR 5`. After importing, `Eingabe → Turnier...` shows
+**`Runden` = 2** — the number of rounds actually present in the file.
+
+The consequence is not cosmetic: with 2 of 2 rounds played the tournament reads
+as finished, so `Auslosen → Auslosungsmenü` and every other pairing action is
+greyed out. **After importing a TRF, the round count has to be set by hand**
+before Swiss-Manager will pair anything further.
+
+There is no way to fix this from our side. Declaring more rounds in `XXR` does
+not help, and the only alternative — shipping round blocks for rounds 3-5 —
+would mean they arrive already paired, which is the opposite of what we want.
+So this is an operational step in the loop, not a bug to work around.
+
+Worth knowing for the export direction too: if Swiss-Manager re-derives the
+round count on every import, then the round count is not something our file
+controls, and the arbiter owns it.
+
+### The bye value is a tournament setting, and it is 1 here
+
+`Eingabe → Turnier...` has **`Pkt. für spielfreien Spieler` = 1**.
+
+That is direct confirmation of the reasoning behind the delta-only points
+change: what a pairing-allocated bye is worth is configurable per tournament,
+so recomputing a points column from our own table would have overwritten the
+arbiter's setting wherever it differed.
+
 ### `Listen → Ergebnisse` (F9) shows one round at a time
 
 The `Rd` menu is the round selector, and it only lists rounds that exist. This
@@ -53,7 +81,7 @@ rounds" looks like.
 
 | # | Check | Status |
 |---|---|---|
-| 1 | Exports a **paired-but-unplayed** round | **not yet run — this is the gate** |
+| 1 | Exports a **paired-but-unplayed** round | **not yet run — this is the gate** (blocked until `Runden` is raised) |
 | 3 | Takes results back and **merges** into the same tournament | not yet run |
 | 4 | Round trip lossless for untouched fields | not yet run |
 | 5 | A re-pair is detectable | not yet run |

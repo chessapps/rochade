@@ -75,7 +75,24 @@ tournament regulation. Just write down what it did.
 
 ---
 
-## Step 2 — let Swiss-Manager pair round 3
+## Step 2 — raise the round count *(you will be stuck without this)*
+
+`Eingabe` → `Turnier...` → **`Runden`: change `2` to `5`** → `OK`.
+
+Swiss-Manager's TRF import ignores our `XXR 5` and sets the round count from
+the rounds actually in the file. With 2 of 2 played the tournament reads as
+finished, so `Auslosen → Auslosungsmenü` is greyed out along with every other
+pairing action. Raising the count re-enables them.
+
+Nothing we can put in the file avoids this — see `FINDINGS.md`. It is a step in
+the loop, not a workaround.
+
+While you are in that dialog, note **`Pkt. für spielfreien Spieler`**. It
+should read `1`; that is the bye value, and it is a per-tournament setting.
+
+---
+
+## Step 3 — let Swiss-Manager pair round 3
 
 `Auslosen` → `Auslosungsmenü...` (F6), pair round 3.
 
@@ -84,7 +101,7 @@ Optionally first, to get a `Z` into the file:
 
 ---
 
-## Step 3 — export → **checks 1, 2, 4, 7**
+## Step 4 — export → **checks 1, 2, 4, 7**
 
 `Extras` → `FIDE-Daten-Export TRF16`
 
@@ -113,7 +130,7 @@ line up with the ruler, or has TRF26 moved a column?).
 
 ---
 
-## Step 4 — fill in results → **the file we would hand back**
+## Step 5 — fill in results → **the file we would hand back**
 
 ```sh
 uv run python spikes/fill_results.py spikes/out/sm-round3.trf --results "1:1,2:=,3:0,4:+"
@@ -127,7 +144,7 @@ Writes `spikes/out/sm-round3-filled.trf`.
 
 ---
 
-## Step 5 — import it back → **check 3, the one that decides everything**
+## Step 6 — import it back → **check 3, the one that decides everything**
 
 `Datei` → `FIDE-Datenformat importieren TRF16`, pick `sm-round3-filled.trf`.
 
@@ -144,7 +161,7 @@ If it duplicates rather than merges, try `Datei` → `Turnier Verschmelzen`
 
 ---
 
-## Step 6 — the re-pair → **check 5**
+## Step 7 — the re-pair → **check 5**
 
 Back in the tournament: add a 10th player (`Eingabe` → `Spieler Eingeben...`),
 delete round 3's pairing and re-pair it, then export again as
@@ -158,7 +175,7 @@ It should name the added player and every board that moved.
 
 ---
 
-## Step 7 — the encoding probe
+## Step 8 — the encoding probe
 
 Only once the above works. Import `m0-seed-accents.trf` as a **new** tournament
 and look at players **#3 and #4**.
