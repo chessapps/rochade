@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwind()],
   server: {
     port: 5174,
-    proxy: { "/api": "http://localhost:8000" },
+    // Dev only: the built app is served same-origin behind Caddy.
+    proxy: { "/api": process.env.SEEBACH_API_URL ?? "http://localhost:8000" },
   },
 });

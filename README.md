@@ -35,6 +35,13 @@ docker compose up --build
 - arbiter app — <http://localhost:8080/admin/>
 - API docs — <http://localhost:8080/api> (OpenAPI at `/openapi.json` on the API)
 
+If 8080 is already taken on your machine, set `SEEBACH_WEB_PORT` — it moves the
+host port only, and everything is served same-origin, so nothing else changes:
+
+```sh
+SEEBACH_WEB_PORT=8081 docker compose up --build
+```
+
 Compose runs with `SEEBACH_DEV_AUTH_ENABLED=true`, which takes the bearer token
 as the staff subject with no verification. That is a development affordance and
 it is **off by default** — a real deployment sets `SEEBACH_OIDC_ISSUER` instead.
@@ -42,7 +49,7 @@ it is **off by default** — a real deployment sets `SEEBACH_OIDC_ISSUER` instea
 Smoke-test a running stack, including one full round trip:
 
 ```sh
-python scripts/smoke.py http://localhost:8080
+uv run python scripts/smoke.py http://localhost:8080
 ```
 
 ## Developing
@@ -66,6 +73,14 @@ docker compose up -d postgres
 SEEBACH_DEV_AUTH_ENABLED=true uv run uvicorn seebach.app:app --reload
 pnpm run dev:hall     # :5173
 pnpm run dev:admin    # :5174
+```
+
+Uvicorn defaults to :8000. If that one is taken too, pass `--port` and point the
+Vite dev proxy at it with `SEEBACH_API_URL`:
+
+```sh
+SEEBACH_DEV_AUTH_ENABLED=true uv run uvicorn seebach.app:app --reload --port 8001
+SEEBACH_API_URL=http://localhost:8001 pnpm run dev:hall
 ```
 
 The TypeScript client is generated from the API and checked in, so a change to
