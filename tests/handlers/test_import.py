@@ -4,9 +4,9 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.import_round import ImportRound
+from seebach.features.imports.import_round import ImportRound
+from seebach.features.imports.preview_import import PreviewImport
 from seebach.platform.errors import Conflict, ValidationFailed
-from seebach.queries.preview_import import PreviewImport
 from seebach.shared.enums import EventAction, ResultState, RoundState
 from seebach.shared.models import Game, GameEvent, Round, Section, SectionPlayer, Tournament
 from tests.conftest import Send

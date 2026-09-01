@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from seebach.commands.scoping import tournament_of_round
+from seebach.features.scoping import tournament_of_round
 from seebach.platform.bus import bus
 from seebach.platform.errors import NotFound
 from seebach.platform.http import get_context

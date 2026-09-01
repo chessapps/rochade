@@ -13,8 +13,8 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from seebach.commands.audit import record
-from seebach.commands.scoping import tournament_of_device
+from seebach.features.audit import record
+from seebach.features.scoping import tournament_of_device
 from seebach.platform.bus import bus
 from seebach.platform.errors import NotFound
 from seebach.platform.http import get_context

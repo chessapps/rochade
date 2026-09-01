@@ -94,6 +94,9 @@ Single deployable, `docker compose`: `postgres`, `api`, `zitadel`, `caddy`.
 
 ### Backend layout
 
+**One folder per REST resource.** The API surface and the source tree have the
+same shape, so a route and the file that serves it are found the same way.
+
 ```
 src/seebach/
   shared/
@@ -102,28 +105,41 @@ src/seebach/
                             Anemic: columns and relationships, no behaviour.
     enums.py                GameResult, ResultState, ResultKind, RoundState,
                             Colour, Role
-  commands/
-    create_tournament.py
-    import_round.py         commit an import
-    export_round.py         emit TRF with results, freeze the round
-    claim_result.py         kiosk, idempotent
-    set_result.py           arbiter override
-    resolve_dispute.py
-    release_round.py        arbiter confirms the round
-    issue_device_token.py   returns QR payload
-    revoke_device.py
-  queries/
-    get_tournament.py
-    list_tournaments.py
-    get_section.py
-    preview_import.py       dry-run diff, nothing written
-    get_board_list.py       hall app, across all sections
-    get_arbiter_queue.py    unclaimed / claimed / disputed
-    list_devices.py
+  features/
+    audit.py                append a game_event row
+    locking.py              load a round FOR UPDATE, refuse a frozen one
+    scoping.py              game/round/device → tournament, for authorization
+
+    tournaments/            /api/tournaments
+      create_tournament.py
+      list_tournaments.py
+      get_tournament.py     sections, rounds, board counts by state
+      add_member.py         per-tournament role
+    imports/                /api/tournaments/{id}/imports
+      preview_import.py     dry-run diff, nothing written
+      import_round.py       commit an import; owns build_plan
+    boards/                 /api/tournaments/{id}/boards
+      get_board_list.py     hall app, across all sections
+    queue/                  /api/tournaments/{id}/queue
+      get_arbiter_queue.py  disputed / empty / claimed
+    devices/                /api/tournaments/{id}/devices, /api/devices/{id}
+      issue_device_token.py returns the QR payload
+      list_devices.py
+      revoke_device.py
+    rounds/                 /api/rounds/{id}
+      get_round.py
+      release_round.py      arbiter confirms the round
+      export_round.py       emit TRF with results, freeze the round
+    games/                  /api/games/{id}
+      claim_result.py       kiosk, idempotent
+      set_result.py         arbiter override, forfeits and byes
+      resolve_dispute.py
+
   platform/
     mediator.py             dispatch + pipeline behaviours
     pipeline/               authorize, validate, idempotency, transaction, log
     db.py, auth/, errors.py, migrations/
+  registry.py               every route module, in REST order
   trf/                      LIBRARY — parser, serializer, passthrough model
 ```
 
@@ -131,13 +147,13 @@ src/seebach/
 
 **All behaviour lives in the commands.** A command owns its own state mutation and validates its own preconditions. There is deliberately no shared transitions/rules module: most of these mutations are a single enum assignment, and a module that collects them would accrete every rule in the system until nothing could change safely. Where the same conditional genuinely appears twice, one file importing the other is fine.
 
-**Shared code is allowed, extracted when a second caller actually appears.** Small modules named for what they do — `audit.py`, `locking.py` — sitting alongside the commands. Explicitly *not* a single `_common.py`: a file named after being shared rather than after doing something is a junk drawer, and accretes exactly the way a rules module would. The constraint is the same either way — share mechanics (appending a `game_event` row, loading a round `FOR UPDATE`), keep policy in the command that owns it.
+**Shared code is allowed, extracted when a second caller actually appears.** Small modules named for what they do — `audit.py`, `locking.py`, `scoping.py` — at the root of `features/`, beside the features that use them. Explicitly *not* a single `_common.py`: a file named after being shared rather than after doing something is a junk drawer, and accretes exactly the way a rules module would. The constraint is the same either way — share mechanics (appending a `game_event` row, loading a round `FOR UPDATE`), keep policy in the command that owns it.
 
 **Invariants are enforced where they cannot be bypassed** — DB check constraints, plus a test that enumerates the legal `(from_state, action, to_state)` triples. Both beat a helper function that a command can simply forget to call.
 
 **One file per use case**, holding its command or query, its handler and its route. Files may reference each other where it genuinely helps — the only mechanical rule is no import cycles. `trf/` stays a pure library (no DB, no FastAPI import), consumed like a third-party package.
 
-The one real cost of the command/query split: import, preview and export are a single workflow for the arbiter but now sit in two folders.
+**The command/query split is carried by types, not by folders.** `Command` and `Query` are what decide whether a message opens a transaction, whether it dedupes on an idempotency key, and what it defaults to being allowed to touch. Grouping the *files* by that distinction as well was a mistake: it separated `preview_import` from `import_round`, which are one workflow for the arbiter and share a plan builder. Grouping by resource puts them next to each other and costs the split nothing, because the split never depended on the layout.
 
 **CQRS = two code paths, one database.** Commands use ORM entities and one transaction; queries go from SQL straight into a Pydantic DTO with no entity hydration. The mediator is ~100 lines, hand-rolled, and earns its place on two behaviours specifically: **idempotency** (kiosk claims arrive from an offline retry queue and must dedupe in one place) and **authorize** (every command is tournament- and role-scoped). It should not grow beyond that.
 

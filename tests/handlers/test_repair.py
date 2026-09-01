@@ -11,9 +11,9 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.claim_result import ClaimResult
-from seebach.commands.import_round import ImportRound
-from seebach.queries.preview_import import PreviewImport
+from seebach.features.games.claim_result import ClaimResult
+from seebach.features.imports.import_round import ImportRound
+from seebach.features.imports.preview_import import PreviewImport
 from seebach.shared.enums import EventAction, GameResult, ResultState
 from seebach.shared.models import GameEvent, Round, Tournament
 from tests.conftest import Send

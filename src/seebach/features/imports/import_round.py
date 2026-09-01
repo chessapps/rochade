@@ -8,8 +8,8 @@ the section rather than reconciling field by field. Only `game_event` survives,
 because it is append-only, ours alone, and anchored to a natural key.
 
 **It is planned before it is applied.** `build_plan` does the whole diff without
-touching anything, which is what the preview query calls. Nothing is written
-until an arbiter has seen what will change.
+touching anything, and is what `preview_import` next door calls. Nothing is
+written until an arbiter has seen what will change.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.audit import record
+from seebach.features.audit import record
 from seebach.platform.bus import bus
 from seebach.platform.errors import Conflict, NotFound, ValidationFailed
 from seebach.platform.http import get_context

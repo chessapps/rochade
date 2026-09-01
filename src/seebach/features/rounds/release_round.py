@@ -15,9 +15,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from seebach.commands.audit import record
-from seebach.commands.locking import lock_round
-from seebach.commands.scoping import tournament_of_round
+from seebach.features.audit import record
+from seebach.features.locking import lock_round
+from seebach.features.scoping import tournament_of_round
 from seebach.platform.bus import bus
 from seebach.platform.errors import Conflict, RoundFrozen
 from seebach.platform.http import get_context

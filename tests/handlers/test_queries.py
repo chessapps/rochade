@@ -6,17 +6,17 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.claim_result import ClaimResult
-from seebach.commands.create_tournament import CreateTournament
-from seebach.commands.import_round import ImportRound
-from seebach.commands.release_round import ReleaseRound
-from seebach.commands.set_result import SetResult
+from seebach.features.boards.get_board_list import GetBoardList
+from seebach.features.games.claim_result import ClaimResult
+from seebach.features.games.set_result import SetResult
+from seebach.features.imports.import_round import ImportRound
+from seebach.features.queue.get_arbiter_queue import GetArbiterQueue
+from seebach.features.rounds.get_round import GetRound
+from seebach.features.rounds.release_round import ReleaseRound
+from seebach.features.tournaments.create_tournament import CreateTournament
+from seebach.features.tournaments.get_tournament import GetTournament
+from seebach.features.tournaments.list_tournaments import ListTournaments
 from seebach.platform.errors import Forbidden, NotFound, ValidationFailed
-from seebach.queries.get_arbiter_queue import GetArbiterQueue
-from seebach.queries.get_board_list import GetBoardList
-from seebach.queries.get_round import GetRound
-from seebach.queries.get_tournament import GetTournament
-from seebach.queries.list_tournaments import ListTournaments
 from seebach.shared.enums import GameResult, ResultState, Role, RoundState
 from seebach.shared.models import Round, Tournament
 from tests.conftest import ARBITER, OWNER, Send

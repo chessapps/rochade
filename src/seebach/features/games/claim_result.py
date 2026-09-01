@@ -16,9 +16,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from seebach.commands.audit import record
-from seebach.commands.locking import lock_round_of_game, require_open
-from seebach.commands.scoping import tournament_of_game
+from seebach.features.audit import record
+from seebach.features.locking import lock_round_of_game, require_open
+from seebach.features.scoping import tournament_of_game
 from seebach.platform.bus import bus
 from seebach.platform.errors import Conflict
 from seebach.platform.http import get_context

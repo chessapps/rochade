@@ -7,13 +7,13 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.import_round import ImportRound
-from seebach.commands.issue_device_token import IssueDeviceToken
-from seebach.commands.revoke_device import RevokeDevice
+from seebach.features.devices.issue_device_token import IssueDeviceToken
+from seebach.features.devices.list_devices import ListDevices
+from seebach.features.devices.revoke_device import RevokeDevice
+from seebach.features.imports.import_round import ImportRound
 from seebach.platform.auth.tokens import hash_token, mint
 from seebach.platform.errors import Forbidden, NotFound
 from seebach.platform.mediator import Principal
-from seebach.queries.list_devices import ListDevices
 from seebach.shared.enums import EventAction, PrincipalKind
 from seebach.shared.models import Device, GameEvent, Tournament
 from tests.conftest import Send

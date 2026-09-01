@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.create_tournament import CreateTournament
+from seebach.features.tournaments.create_tournament import CreateTournament
 from seebach.platform.errors import Forbidden, IdempotencyConflict
 from seebach.shared.models import IdempotencyRecord, Tournament
 from tests.conftest import Send
@@ -39,7 +39,7 @@ def test_a_rejection_is_logged_too(send: Send, caplog: pytest.LogCaptureFixture)
     the caller may not see are indistinguishable from outside -- which is the
     behaviour we want, and it is still logged.
     """
-    from seebach.commands.release_round import ReleaseRound
+    from seebach.features.rounds.release_round import ReleaseRound
 
     with caplog.at_level(logging.INFO, logger="seebach.mediator"), pytest.raises(Forbidden):
         send(ReleaseRound(round_id=uuid.uuid4()))
@@ -49,7 +49,7 @@ def test_a_rejection_is_logged_too(send: Send, caplog: pytest.LogCaptureFixture)
 
 
 def test_a_failed_command_leaves_nothing_behind(send: Send, session: Session) -> None:
-    from seebach.commands.import_round import ImportRound
+    from seebach.features.imports.import_round import ImportRound
     from seebach.platform.errors import ValidationFailed
 
     created = send(CreateTournament(name="Rollback"))

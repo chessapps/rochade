@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from seebach.commands.audit import record
+from seebach.features.audit import record
 from seebach.platform.auth.tokens import mint
 from seebach.platform.bus import bus
 from seebach.platform.config import settings

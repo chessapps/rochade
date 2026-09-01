@@ -75,14 +75,29 @@ uv run python scripts/dump_openapi.py && pnpm run api:types
 
 ## Layout
 
+One folder per REST resource, so a route and the file that serves it are found
+the same way. Each file holds one use case whole: request model, handler, route.
+
 ```
 src/seebach/
-  shared/      anemic models and enums -- the whole schema in one file
-  commands/    one file per state change; each owns its own preconditions
-  queries/     one file per read shape
-  platform/    mediator + pipeline, db, auth, migrations
-  trf/         the TRF library -- pure, no database, no framework
-apps/hall      the player PWA: board list -> result -> confirm, offline-first
-apps/admin     the arbiter app: import diff, queue, release, export
-packages/api-client   generated from the OpenAPI schema
+  shared/          anemic models and enums -- the whole schema in one file
+  features/
+    tournaments/   /api/tournaments
+    imports/       /api/tournaments/{id}/imports        preview + commit
+    boards/        /api/tournaments/{id}/boards         the hall board list
+    queue/         /api/tournaments/{id}/queue          what the arbiter owes
+    devices/       /api/tournaments/{id}/devices        QR issue, list, revoke
+    rounds/        /api/rounds/{id}                     release, export
+    games/         /api/games/{id}                      claim, override, resolve
+    audit.py locking.py scoping.py    shared mechanics, named for what they do
+  platform/        mediator + pipeline, db, auth, migrations
+  registry.py      every route module, in REST order
+  trf/             the TRF library -- pure, no database, no framework
+apps/hall          the player PWA: board list -> result -> confirm, offline-first
+apps/admin         the arbiter app: import diff, queue, release, export
+packages/api-client        generated from the OpenAPI schema
 ```
+
+Commands and queries are still separate things -- `Command` opens a transaction
+and dedupes on an idempotency key, `Query` does neither -- but that is carried
+by the base class, not by which folder a file lives in.

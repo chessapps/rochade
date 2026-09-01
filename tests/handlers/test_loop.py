@@ -11,12 +11,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.commands.claim_result import ClaimResult
-from seebach.commands.export_round import ExportRound
-from seebach.commands.import_round import ImportRound
-from seebach.commands.release_round import ReleaseRound
-from seebach.commands.resolve_dispute import ResolveDispute
-from seebach.commands.set_result import SetResult
+from seebach.features.games.claim_result import ClaimResult
+from seebach.features.games.resolve_dispute import ResolveDispute
+from seebach.features.games.set_result import SetResult
+from seebach.features.imports.import_round import ImportRound
+from seebach.features.rounds.export_round import ExportRound
+from seebach.features.rounds.release_round import ReleaseRound
 from seebach.platform.errors import Conflict, RoundFrozen
 from seebach.shared.enums import GameResult, ResultState, RoundState
 from seebach.shared.models import Game, Round, Tournament
