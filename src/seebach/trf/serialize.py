@@ -11,13 +11,12 @@ from __future__ import annotations
 from seebach.trf import columns
 from seebach.trf.dialect import Dialect
 from seebach.trf.model import Player, TrfFile
-from seebach.trf.results import points_for
 
 
-def serialize(trf: TrfFile, dialect: Dialect, *, recompute_points: bool = False) -> str:
+def serialize(trf: TrfFile, dialect: Dialect) -> str:
     """Render the document. `dialect` is required -- never serialize "TRF" generically."""
     rendered = [
-        _render_player(trf.players[_rank_of(line.raw)], recompute_points=recompute_points)
+        _render_player(trf.players[_rank_of(line.raw)], trf.points_changed)
         if line.code == "001"
         else line.raw
         for line in trf.lines
@@ -30,8 +29,8 @@ def serialize(trf: TrfFile, dialect: Dialect, *, recompute_points: bool = False)
     return text
 
 
-def to_bytes(trf: TrfFile, dialect: Dialect, *, recompute_points: bool = False) -> bytes:
-    text = serialize(trf, dialect, recompute_points=recompute_points)
+def to_bytes(trf: TrfFile, dialect: Dialect) -> bytes:
+    text = serialize(trf, dialect)
     return text.encode(dialect.encoding, errors="replace")
 
 
@@ -58,7 +57,7 @@ def _rank_of(raw: str) -> int:
     return int(raw[columns.START_RANK])
 
 
-def _render_player(player: Player, *, recompute_points: bool) -> str:
+def _render_player(player: Player, points_changed: set[int]) -> str:
     cells = list(player.raw)
 
     for round_no, entry in sorted(player.rounds.items()):
@@ -67,9 +66,8 @@ def _render_player(player: Player, *, recompute_points: bool) -> str:
         _patch_char(cells, columns.colour_index(round_no), entry.colour.value)
         _patch_char(cells, columns.result_index(round_no), entry.result)
 
-    if recompute_points:
-        total = sum(points_for(e.result) for e in player.rounds.values())
-        _patch(cells, columns.POINTS, f"{total:4.1f}")
+    if player.start_rank in points_changed and player.points is not None:
+        _patch(cells, columns.POINTS, f"{player.points:4.1f}")
 
     rendered = "".join(cells)
     # Real files trim trailing blanks, so a pending result can sit past the end

@@ -1,25 +1,27 @@
 # Seebach
 
-Digital result entry for chess tournaments that Vega runs.
+Digital result entry for chess tournaments that someone else is running.
 
-Vega stays the tournament manager: it owns setup, the player list, the
-pairings, the tiebreaks and the public view. Seebach does the one thing Vega
-cannot — put a phone in every player's hand — and hands the results back as a
-TRF file each round.
+An existing manager — Vega, Swiss-Manager — stays the tournament manager: it
+owns setup, the player list, the pairings, the tiebreaks and the public view.
+Seebach does the one thing it cannot — put a phone in every player's hand — and
+hands the results back each round.
 
 ```
-  Vega                          Seebach                        Vega
-  ─────                         ───────                        ─────
+  manager                       Seebach                       manager
+  ───────                       ───────                       ───────
   pair round N
-  export TRF  ──────────────▶  import, open round N
+  export      ──────────────▶  import, open round N
                                 players enter results (hall PWA)
                                 arbiter reviews + confirms
-                               export TRF  ─────────────────▶  import results
+                               export      ─────────────────▶  import results
                                                                pair round N+1 ──▶ (loop)
 ```
 
-The file round-trip *is* the integration, so nothing here is Vega-specific:
-any TRF-speaking manager works the same way.
+Which manager is an adapter choice, not an architecture — see
+`src/seebach/interchange/`. Every adapter declares what it *cannot* do, and
+ships `UNVERIFIED` until someone has watched it work; `spikes/README.md` is the
+round-trip spike that turns those flags into facts.
 
 See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 
@@ -81,7 +83,9 @@ the same way. Each file holds one use case whole: request model, handler, route.
 ```
 src/seebach/
   shared/          anemic models and enums -- the whole schema in one file
+  interchange/     the manager port and its adapters -- vega.py today
   features/
+    managers/      /api/managers                        adapters and what they cost
     tournaments/   /api/tournaments
     imports/       /api/tournaments/{id}/imports        preview + commit
     boards/        /api/tournaments/{id}/boards         the hall board list
@@ -93,6 +97,7 @@ src/seebach/
   platform/        mediator + pipeline, db, auth, migrations
   registry.py      every route module, in REST order
   trf/             the TRF library -- pure, no database, no framework
+spikes/            M0: throwaway tooling for the manager round-trip spike
 apps/hall          the player PWA: board list -> result -> confirm, offline-first
 apps/admin         the arbiter app: import diff, queue, release, export
 packages/api-client        generated from the OpenAPI schema

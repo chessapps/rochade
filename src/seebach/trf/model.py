@@ -107,6 +107,10 @@ class TrfFile:
     newline: str = "\n"
     trailing_newline: bool = True
     unknown_result_codes: list[str] = field(default_factory=list)
+    #: Starting ranks whose points we adjusted. Serialization writes the points
+    #: column for these and no others, so a player we never touched keeps the
+    #: manager's own number byte for byte -- comma decimal separators included.
+    points_changed: set[int] = field(default_factory=set)
 
     @property
     def rounds_present(self) -> int:

@@ -42,7 +42,7 @@ class VegaManager:
         writes_format="trf16",
         notes=(
             "Vega's TRF import was reworked in 10.5.0; merge behaviour is unconfirmed.",
-            "Points are recomputed on export so the file stays internally consistent.",
+            "Points move by the delta of results we wrote, never a full recompute.",
         ),
     )
 
@@ -108,7 +108,7 @@ class VegaManager:
             set_result(trf, round_number, entry.white_rank, entry.white_result)
         return ManagerFile(
             filename=f"{stem}.trf",
-            content=serialize(trf, self.dialect, recompute_points=True),
+            content=serialize(trf, self.dialect),
         )
 
 

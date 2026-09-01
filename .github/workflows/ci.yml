@@ -30,8 +30,8 @@ jobs:
       - run: uv pip install -e ".[dev]"
       - name: Lint
         run: |
-          uv run ruff check src tests
-          uv run ruff format --check src tests
+          uv run ruff check src tests spikes scripts
+          uv run ruff format --check src tests spikes scripts
       - name: Types
         run: uv run mypy
       - name: Tests

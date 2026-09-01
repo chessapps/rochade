@@ -1,9 +1,12 @@
-"""M0, check 1 and 2: what did the manager actually give us?
+"""M0 checks 1, 2, 4 and 7: what did the manager actually give us?
 
-Throwaway. Point it at any file a tournament manager exported and it reports
-everything the M0 checklist asks for, in one pass.
+Throwaway. Point it at any file a tournament manager exported:
 
     python spikes/inspect_export.py path/to/export.trf
+    python spikes/inspect_export.py path/to/export.trf --manager vega
+
+It reads through the real adapter rather than a parallel copy, so a pass here
+is evidence about the shipped code and not just about this script.
 
 The headline it exists to answer is the cheap one that gates all the others:
 does this file contain a round that has been PAIRED BUT NOT PLAYED? A FIDE
@@ -14,46 +17,54 @@ side turns out to support.
 
 from __future__ import annotations
 
+import argparse
 import pathlib
 import sys
 from collections import Counter
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 
-from seebach.trf import Dialect, TrfParseError, parse, serialize  # noqa: E402
-from seebach.trf.results import RESULT_CODES  # noqa: E402
+from seebach.interchange import InterchangeError, RoundDocument, manager_for
+from seebach.trf.results import RESULT_CODES
 
 RECOGNISED = {"001", "012", "022", "032", "042", "052", "102", "XXR"}
 
 
-def main(path: pathlib.Path) -> int:
-    raw = path.read_bytes()
-    print(f"file            {path.name}  ({len(raw)} bytes)")
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("path", type=pathlib.Path)
+    parser.add_argument("--manager", default="vega", help="adapter to read through")
+    args = parser.parse_args()
+
+    raw = args.path.read_bytes()
+    print(f"file            {args.path.name}  ({len(raw)} bytes)")
     print(f"encoding        {_encoding(raw)}")
 
     text = _decode(raw)
     print(f"line endings    {'CRLF' if chr(13) + chr(10) in text else 'LF'}")
     print(f"lines           {len(text.splitlines())}")
+    print(f"adapter         {args.manager}")
     print()
 
+    manager = manager_for(args.manager)
     try:
-        trf = parse(text)
-    except TrfParseError as exc:
-        print(f"PARSE FAILED    {exc}")
-        print(f"  offending line: {exc.line!r}")
+        document = manager.read_round(text)
+    except InterchangeError as exc:
+        print(f"READ FAILED     {exc}")
+        print("  Check 2 fails. Nothing downstream can run.")
         return 1
 
     _records(text)
-    _tournament(trf)
-    _rounds(trf)
-    _roundtrip(text, trf)
-    _sample_line(trf)
+    _tournament(document)
+    _rounds(document)
+    _roundtrip(text, manager, document)
+    _sample_line(text)
     return 0
 
 
 def _encoding(raw: bytes) -> str:
     if raw.startswith(b"\xef\xbb\xbf"):
-        return "utf-8 with BOM  <-- note: we strip nothing, check this survives"
+        return "utf-8 with BOM  <-- we strip nothing; check this survives the round trip"
     try:
         raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -72,103 +83,93 @@ def _records(text: str) -> None:
     counts = Counter(line[:3] for line in text.splitlines() if line.strip())
     print("record types")
     for code, count in sorted(counts.items()):
-        mark = "read " if code in RECOGNISED else "kept "
-        note = "" if code in RECOGNISED else "  (retained verbatim, not modelled)"
-        print(f"  {mark} {code!r:8} x{count}{note}")
+        known = code in RECOGNISED
+        note = "" if known else "  (retained verbatim, not modelled)"
+        print(f"  {'read ' if known else 'kept '} {code!r:8} x{count}{note}")
     print()
 
 
-def _tournament(trf: TrfFile) -> None:  # type: ignore[name-defined]
+def _tournament(document: RoundDocument) -> None:
     print("tournament")
-    print(f"  name          {trf.name!r}")
-    print(f"  city / fed    {trf.city!r} / {trf.federation!r}")
-    print(f"  dates         {trf.start_date!r} .. {trf.end_date!r}")
-    print(f"  arbiter       {trf.chief_arbiter!r}")
-    print(f"  XXR rounds    {trf.declared_rounds}")
-    print(f"  players       {len(trf.players)}")
-    if trf.unknown_result_codes:
-        print(f"  UNKNOWN CODES {trf.unknown_result_codes}  <-- we do not model these")
+    print(f"  name          {document.tournament_name!r}")
+    print(f"  declared      {document.declared_rounds} rounds (XXR)")
+    print(f"  rounds in file{document.rounds_present:>3}")
+    print(f"  players       {len(document.players)}")
+    if document.unknown_result_codes:
+        print(f"  UNKNOWN CODES {document.unknown_result_codes}  <-- we do not model these")
     print()
 
 
-def _rounds(trf: TrfFile) -> None:  # type: ignore[name-defined]
+def _rounds(document: RoundDocument) -> None:
     print("rounds")
-    open_rounds = []
-    for round_no in range(1, trf.rounds_present + 1):
-        pairings = trf.pairings(round_no)
-        games = [p for p in pairings if not p.is_bye]
-        byes = [p for p in pairings if p.is_bye]
-        codes = Counter(p.white_result for p in games)
-        blank = codes.get(" ", 0)
-        bye_codes = sorted({p.white_result for p in byes})
-        if blank == len(games) and games:
-            open_rounds.append(round_no)
+    for round_no in range(1, document.rounds_present + 1):
+        rows = document.board_rows(round_no)
+        games = [r for r in rows if not r.is_bye]
+        byes = [r for r in rows if r.is_bye]
+        codes = Counter(r.white_result for r in games)
         print(
             f"  round {round_no}: {len(games)} games, {len(byes)} byes"
-            f"  results={dict(codes)}  bye codes={bye_codes}"
+            f"  results={dict(codes)}  bye codes={sorted({r.white_result for r in byes})}"
         )
     print()
 
     print("CHECK 1 -- is there a paired-but-unplayed round?")
-    if open_rounds:
-        print(f"  YES: round(s) {open_rounds} have pairings and no results.")
-        print("  This is the round players would enter. The loop can start.")
+    if document.open_rounds:
+        print(f"  YES: round(s) {document.open_rounds} have pairings and no results.")
+        print("  That is the round players would enter. The loop can start.")
     else:
         print("  NO. Every round in this file already has results.")
-        print("  We would import them all as CONFIRMED and there would be nothing")
-        print("  to enter. Try exporting with the upcoming round selected, or fall")
-        print("  back to the blank-PGN-headers path for the outbound leg.")
+        print("  We would import them all as CONFIRMED and there would be nothing to")
+        print("  enter. Try exporting with the upcoming round selected; if the manager")
+        print("  cannot do that, the outbound leg needs a different format.")
     print()
 
 
-def _roundtrip(text: str, trf: TrfFile) -> None:  # type: ignore[name-defined]
+def _roundtrip(text: str, manager: object, document: RoundDocument) -> None:
     print("CHECK 4 -- lossless round trip on the untouched file")
-    out = serialize(trf, Dialect.TRF16)
-    if out == text:
-        print("  PASS: parse -> serialize is byte-identical.")
+    emitted = manager.write_results(document, document.rounds_present, [], stem="roundtrip")  # type: ignore[attr-defined]
+    if emitted.content == text:
+        print("  PASS: read -> write with no results is byte-identical.")
+        print()
         return
-    print("  FAIL: the file changed. First differing lines:")
+
+    print("  DIFFERS. Every changed cell below is one we chose to write; anything")
+    print("  else is a fidelity bug worth stopping for.")
     shown = 0
-    for i, (a, b) in enumerate(zip(text.splitlines(), out.splitlines(), strict=False), 1):
-        if a != b and shown < 3:
-            print(f"    line {i}")
-            print(f"      in : {a!r}")
-            print(f"      out: {b!r}")
-            shown += 1
-    if len(text) != len(out):
-        print(f"    lengths differ: {len(text)} in, {len(out)} out")
+    for i, (a, b) in enumerate(
+        zip(text.splitlines(), emitted.content.splitlines(), strict=False), 1
+    ):
+        if a == b or shown >= 5:
+            continue
+        cols = [j + 1 for j, (x, y) in enumerate(zip(a, b, strict=False)) if x != y]
+        print(f"    line {i}, columns {cols}")
+        print(f"      in : {a!r}")
+        print(f"      out: {b!r}")
+        shown += 1
     print()
 
 
-def _sample_line(trf: TrfFile) -> None:  # type: ignore[name-defined]
+def _sample_line(text: str) -> None:
     """Print one player row against a column ruler.
 
-    TRF16 and TRF26 are both fixed-column formats. If a newer version has moved
-    a field, this is where it shows up -- eyeball that rating, federation and
-    the round blocks line up with the ruler.
+    TRF16 and TRF26 are both fixed-column formats. If a newer version moved a
+    field, this is where it shows: check that rating, federation and the round
+    blocks line up with the ruler.
     """
-    if not trf.players:
+    row = next((line for line in text.splitlines() if line.startswith("001")), None)
+    if row is None:
         return
-    player = trf.players[min(trf.players)]
-    print("column check -- a player row against the TRF16 ruler")
-    ruler_tens = "".join(str((i // 10) % 10) for i in range(1, len(player.raw) + 1))
-    ruler_ones = "".join(str(i % 10) for i in range(1, len(player.raw) + 1))
-    print(f"  {ruler_tens}")
-    print(f"  {ruler_ones}")
-    print(f"  {player.raw}")
+    print("CHECK 7 -- column drift, one player row against the TRF16 ruler")
+    print("  " + "".join(str((i // 10) % 10) for i in range(1, len(row) + 1)))
+    print("  " + "".join(str(i % 10) for i in range(1, len(row) + 1)))
+    print("  " + row)
     print()
     print("  expect: 5-8 rank | 10 sex | 11-13 title | 15-47 name | 49-52 rating")
-    print("          54-56 fed | 58-68 FIDE id | 70-79 born | 81-84 pts | 86-89 rank")
+    print("          54-56 fed | 58-68 FIDE id | 70-79 born | 81-84 points | 86-89 rank")
     print("          then 10-wide round blocks from 92: opponent 92-95, colour 97, result 99")
     print()
-    print(f"  we read: rank={player.start_rank} name={player.name!r} rating={player.rating}")
-    print(f"           fed={player.federation!r} id={player.fide_id!r} pts={player.points}")
-    print()
-    print(f"  known result codes: {' '.join(sorted(c for c in RESULT_CODES if c.strip()))}")
+    print(f"  result codes we know: {' '.join(sorted(c for c in RESULT_CODES if c.strip()))}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(__doc__)
-        raise SystemExit(2)
-    raise SystemExit(main(pathlib.Path(sys.argv[1])))
+    raise SystemExit(main())

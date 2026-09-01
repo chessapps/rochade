@@ -1,38 +1,37 @@
-# Seebach — Digital Result Entry for Vega-run Tournaments
+# Seebach — Digital Result Entry for Managed Tournaments
 
 ## Context
 
-Greenfield (`C:\dev\seebach` holds only the UI sketch `enter_results.png`).
-
 The original plan was a full tournament platform: own the player list, drive pairing engines as plugins, compute FIDE tiebreaks, publish public standings. That put the two longest-tail, highest-risk pieces — the pairing-engine plugin layer and FIDE C.07 tiebreak arithmetic — directly in front of the one genuinely novel thing: **players entering their own results on their phones instead of an arbiter retyping scoresheets.**
 
-**v1 inverts that.** Vega stays the tournament manager. We become the digital result-entry layer that plugs into it via files:
+**v1 inverts that.** An existing manager — Vega, Swiss-Manager — stays the tournament manager. We become the digital result-entry layer that plugs into it:
 
 ```
-  Vega                          Seebach                        Vega
-  ─────                         ───────                        ─────
+  manager                       Seebach                       manager
+  ───────                       ───────                       ───────
   set up tournament
   pair round N
-  export TRF  ──────────────▶  import, open round N
+  export      ──────────────▶  import, open round N
                                 players enter results (hall PWA)
                                 arbiter reviews + confirms
-                               export TRF  ─────────────────▶  import results
+                               export      ─────────────────▶  import results
                                                                pair round N+1
-                                                               export TRF ──▶ (loop)
+                                                               export ──▶ (loop)
 ```
 
-Vega keeps doing what it is already good at and what arbiters already trust it for: pairings (which it computes via JaVaFo), tiebreaks, FIDE and national reports, and the public results view. We do the one thing it cannot: put a phone in every player's hand.
+The manager keeps doing what it is already good at and what arbiters already trust it for: pairings, tiebreaks, FIDE and national reports, and the public results view. We do the one thing it cannot: put a phone in every player's hand.
 
-**Architectural upside:** the file round-trip *is* the plugin interface. v1 is engine-agnostic for free — Swiss-Manager or any other TRF-speaking manager works identically, with no plugin system built.
+**Which manager is an adapter choice, not an architecture.** Both Vega and Swiss-Manager must work, and eventually so must our own implementation — so the thing they plug into is a **port**, described under *The manager port* below. Note that both Vega and Swiss-Manager compute their Swiss pairings by delegating to JaVaFo, which is why a "pairing engine plugin" for either of them would be circular, and why the seam belongs at the manager rather than at the engine.
 
 ### Decisions
 
 | Decision | Choice |
 |---|---|
-| Tournament setup & player list | **Vega owns it.** We only ever import. No player-list export direction in v1. |
-| Pairings | **Vega owns it.** No pairing engine integration in v1. |
-| Standings / tiebreaks | **Vega owns it.** No scoring module in v1. |
-| Public results view | **Out of scope for v1** — Vega already publishes one. |
+| Which manager | **A port with adapters.** Vega and Swiss-Manager both, our own later. Not a hardcoded choice. |
+| Tournament setup & player list | **The manager owns it.** We only ever import. No player-list export direction in v1. |
+| Pairings | **The manager owns it.** No pairing engine integration in v1 — and note both target managers delegate to JaVaFo anyway. |
+| Standings / tiebreaks | **The manager owns it.** No scoring module in v1. |
+| Public results view | **Out of scope for v1** — the managers already publish one. |
 | Frontends | **Two**: arbiter admin app, hall PWA. |
 | Result trust | Claim + arbiter release — a player entry is provisional until the arbiter confirms the round. |
 | Hall access | QR-issued, device-bound, tournament-scoped token. Not IP restriction, not a shared password. |
@@ -44,26 +43,142 @@ Vega keeps doing what it is already good at and what arbiters already trust it f
 
 ### Value beyond "digital scoresheets"
 
-Worth naming, because it is free and it is the thing that sells the tool: a tournament can import **several Vega files as sections** (groups A/B/C) and the hall app searches across all of them at once. A player just types their name and finds their board — they do not need to know which group's list to look at. Vega cannot do this; it is one tournament per file.
+Worth naming, because it is free and it is the thing that sells the tool: a tournament can import **several manager files as sections** (groups A/B/C) and the hall app searches across all of them at once. A player just types their name and finds their board — they do not need to know which group's list to look at. Once sections carry their own adapter, those sections need not even come from the same program. Vega cannot do this; it is one tournament per file.
 
 ---
 
 ## Milestone 0 — the spike that gates everything
 
-**Nothing else starts until this passes.** TRF is a whole-tournament-state format, not a delta, so "export results to Vega" means handing Vega a complete TRF with round N filled in and expecting it to **merge into the existing tournament** rather than reject it or create a duplicate. Vega's TRF import was reworked in 10.5.0 and I am not willing to assume it round-trips cleanly.
+**Context.** M1–M4 are built and the loop closes, but every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether a real tournament manager will take our file back. It is unrun, and it still gates the pilot.
 
-Verify by hand, with real Vega and a real tournament — throwaway scripts only, no product code:
+Two things changed the shape of it:
 
-1. Vega exports TRF16 containing players and round-N pairings.
-2. We can parse it and identify players, boards, colours and prior results unambiguously.
-3. Vega **re-imports** a TRF we produced with round-N results filled in, merges it into the same tournament, and then pairs round N+1 correctly.
-4. The round-trip is **lossless** for everything we did not touch.
-5. **A mid-tournament re-pair.** Add a late entrant in Vega after round 2, re-pair, and export again — confirm we can tell the new file apart from the one we already hold and see which boards changed.
-6. Forfeits, half-point byes and pairing-allocated byes survive the round-trip with the correct TRF result codes (`+ - H U Z`) — these are the codes most likely to be mishandled in either direction.
+- **Swiss-Manager is available now**, and **both Swiss-Manager and Vega must work** — different clubs run different programs. The interchange format therefore has to become a seam rather than a hardcoded assumption.
+- Research into Swiss-Manager suggests the two programs may not use the *same* seam. Its [version history](https://swiss-manager.at/downloadhist.aspx?lan=1) (build 15.0.0.13, 27.08.2026) lists TRF only as an **export** (`Extras / FIDE Data Export TRF16`, now `TRF26`); the documented ways to get **results back in** are `File / Import PGN-File (results)` (2021-07-20), `File / Import Player-Results (XML)` (2021-04-21), and pairing/player text files. There is no TRF import menu item anywhere in that history. A claim that "the import of a TRF16 correctly rebuilds the results cross-table" appears in search results attributed inconsistently to the Swiss-Manager and Vega FIDE endorsement reports; both PDFs are scanned images and I could not verify which program it describes. **Do not rely on it.**
 
-If (3) fails, the loop is broken and the arbiter is retyping results — which destroys the entire value proposition. Fallbacks to evaluate in that case, in order: Vega's own native import format; a narrower results-only exchange file; Swiss-Manager as the primary target instead.
+So M0 splits into two legs that may need different formats:
 
-**Prerequisite:** a licensed Vega install (v12 current) and one real completed tournament file to test against.
+- **Outbound** — can the manager emit the round that has been *paired but not played*?
+- **Inbound** — will it take our results back, merge them, and pair the next round?
+
+### The checks
+
+Run against Swiss-Manager first (it is installed), then Vega. Record pass/fail per program.
+
+| # | Check | Leg |
+|---|---|---|
+| 1 | The export contains a round with pairings and **no results**. A FIDE rating export describes completed games; if that is all we get there is no open board to enter and the loop cannot start. **Cheapest check, run it first — a "no" here redirects the whole spike.** | out |
+| 2 | We parse it and identify players, boards, colours and prior results unambiguously. | out |
+| 3 | The manager takes our results back, **merges into the same tournament** rather than duplicating or rejecting it, and pairs round N+1 correctly. Try each candidate format in turn: TRF16, then PGN results, then XML player-results. | in |
+| 4 | Round-trip is **lossless** for everything we did not touch (`inspect_export.py` checks this automatically). | out |
+| 5 | **Mid-tournament re-pair.** Add a late entrant after round 2, re-pair, export again — confirm we can tell the new file from the one we hold and see which boards changed. | out |
+| 6 | Forfeits, half-point byes and pairing-allocated byes survive with the right codes (`+ - H U Z`). Note that **PGN cannot express these** — if the inbound leg lands on PGN, this is where it leaks. | both |
+| 7 | **Column drift.** TRF26 exists and we target TRF16. Check a player row against the ruler `inspect_export.py` prints. TRF06 was deactivated in Swiss-Manager on 2023-11-02, so `Dialect.TRF06` may be dead weight. | out |
+
+If check 3 fails for every format, the arbiter is retyping results and the value proposition is gone.
+
+### The spike kit — `spikes/`, throwaway, not product code
+
+| File | Purpose |
+|---|---|
+| `inspect_export.py` | Point at any manager export; reports checks 1, 2, 4 and 7 in one pass, including a column ruler for TRF16/26 drift. Reads *through the real adapter*, so a pass is evidence about the shipped code. |
+| `fill_results.py` | Take an export, fill round N with results, emit TRF16. Uses `seebach.trf` deliberately — that library is what is under test. |
+| `to_pgn_results.py` | The same results as a headers-only PGN, for `File / Import PGN-File (results)`. Must report what it drops: PGN has no forfeit or bye vocabulary. |
+| `compare_exports.py` | Diff two manager exports for check 5 — players added/removed, which boards moved. |
+| `README.md` | The recipe below, plus a checklist with a column per program to fill in. |
+
+All four are written, linted, and validated against the two golden fixtures. Running `inspect_export.py` on `round3_messy.trf` immediately caught a real export bug -- see below.
+
+### The synthetic tournament to key in
+
+Nine players, so there is always a bye. Declare five rounds, play two, pair the third.
+
+- **R1** — normal results, plus one **forfeit** (`+`/`-`) and the pairing-allocated **bye** (`U`).
+- **R2** — one player takes a **half-point bye** (`H`); another **withdraws** afterwards (should show as `Z` in R3).
+- **R3** — **paired, not played.** This is the export that matters.
+- Then add a **tenth player**, re-pair R3, export again → `compare_exports.py` for check 5.
+
+---
+
+## The manager port — the standard interface, and adapters behind it
+
+**The port is not "which file format".** It is *who owns the pairings and the standings*. File interchange is merely how two of the three adapters happen to talk; the third will not use files at all.
+
+```
+                       ┌───────────────────────────┐
+   import_round  ────▶ │      Manager (port)       │
+   export_round  ────▶ │  read_round / write_results │
+                       └─────────────┬─────────────┘
+                                     │
+              ┌──────────────────────┼──────────────────────┐
+              ▼                      ▼                      ▼
+        vega.py                swiss_manager.py         seebach.py  (v2)
+     TRF16 in / TRF16 out   TRF16 in / M0 decides out   no files at all —
+     merges (unverified)    (PGN? XML? TRF?)            pairs in process
+```
+
+Two abstractions, kept apart on purpose:
+
+- **Formats** are libraries — `trf/` today, perhaps `pgn/` tomorrow. Pure, no database, no framework. They know byte layouts and nothing about any program.
+- **Adapters** are the port's implementations. They compose formats and encode one program's actual behaviour: which round it exports, whether it merges on import, what it silently drops, which encoding it writes.
+
+That split is what lets "our own implementation" be an adapter rather than a special case. It reads a round from the database and writes results back to it; it satisfies the same interface with no file anywhere. This is the `PairingEngine` port the plan already deferred to v2 — it turns out to be the same port, not a second one.
+
+### Shape
+
+```
+src/seebach/
+  interchange/
+    document.py     RoundDocument, PairingRow, ManagerFile — format-neutral
+    port.py         the Manager protocol + Capabilities + a registry
+    vega.py         adapter
+    swiss_manager.py adapter
+    formats/
+      trf.py        thin wrapper over the existing seebach.trf
+      pgn.py        headers-only PGN results, only if M0 asks for it
+  trf/              unchanged, still pure
+```
+
+`Capabilities` is part of the interface, not a footnote: **an adapter must declare what it cannot do** — whether it exports an unplayed round, whether it merges on import, which result codes survive the trip. The admin app reads those to decide what to warn about, so a lossy path (PGN cannot express `+ - H U Z`) is visible before an arbiter commits to it rather than discovered at a real event.
+
+### Sequencing — and the one risk worth naming
+
+Building the port now means designing it against a single implementation, which is the classic way to get a port wrong. Two things make it acceptable here: extracting the Vega adapter is a **pure refactor already covered by 125 tests**, and I know enough about the second implementation's shape (different format in than out, PGN lossiness, merge behaviour unknown) to design for two genuinely different cases rather than one.
+
+So: build the port and the Vega adapter now, and let M0 fill in the Swiss-Manager adapter's inbound leg. Expect the port to need one revision once that adapter is real — that is normal and cheap, not a failure.
+
+1. **Extract the port** with `vega.py` as its only adapter. Refactor only, no behaviour change; the existing tests must pass untouched.
+2. **Run M0** (below). It decides the Swiss-Manager adapter's inbound format and fills in its `Capabilities`.
+3. **Write `swiss_manager.py`** against what M0 found.
+4. **`seebach.py`** stays v2, but the port is shaped so it fits without redesign.
+
+### Files this touches
+
+- New: `src/seebach/interchange/` as above.
+- `src/seebach/features/imports/import_round.py` — `build_plan` calls `manager.read_round()` instead of `parse()`. The `_Existing`/`ImportPlan` diffing is format-neutral already and does not move.
+- `src/seebach/features/rounds/export_round.py` — calls `manager.write_results()`; `ExportRound.dialect` widens into the adapter's choice.
+- `src/seebach/shared/models.py` + a migration — `Section.manager` records which adapter owns it, since a tournament may hold sections from different programs.
+- `apps/admin` — a manager picker on import, and surface `Capabilities` warnings in the existing import-diff panel (`src/plan.ts` already splits notes into blocking / acknowledge / informational; a lossy export is an `acknowledge`).
+- Four user-facing strings name Vega and need generalising: `features/locking.py`, `features/rounds/release_round.py`, `features/imports/import_round.py`, and the API summary in `app.py`. Everything else is docstrings.
+- `src/seebach/trf/dialect.py` — drop TRF06 if Vega does not need it, add TRF26 if M0 check 7 shows column drift.
+
+### Verification
+
+**The port extraction** is a refactor, so the bar is that nothing moves:
+
+1. `uv run pytest -q` — all 125 backend tests pass **unmodified**. If a test needs changing, the refactor changed behaviour and that is a bug, not a test to update. The one expected exception is wherever a test names the format explicitly.
+2. `uv run ruff check src tests`, `uv run mypy`, `pnpm -r run typecheck`.
+3. The API surface diff is reviewed deliberately: `uv run python scripts/dump_openapi.py && pnpm run api:types`, then `git diff packages/api-client/src/schema.d.ts`. `ExportRound.dialect` widening is a real contract change and should show up here.
+4. `python scripts/smoke.py` still closes the loop against the compose stack.
+5. A new test that a second adapter can be registered and selected — otherwise the port is a protocol with one implementation and nothing proves it is a seam at all. A trivial fake adapter in the test suite is enough.
+
+**M0** is manual and its bar is different — it is a written answer, not a green test:
+
+1. Run the spike kit against `tests/fixtures/round1_pairings.trf` and `round3_messy.trf` **first**. The fixtures have known answers, so this proves the tooling rather than the manager.
+2. Then by hand against Swiss-Manager, filling in the checklist, check 1 before anything else.
+3. Record real Swiss-Manager exports as golden fixtures in `tests/fixtures/` — messy ones especially. They are worth more than anything we generate ourselves.
+
+**Prerequisite:** Swiss-Manager (installed). Vega remains a separate, later gate.
 
 ---
 
@@ -257,7 +372,7 @@ Shared `packages/api-client` generated from the FastAPI OpenAPI schema (`openapi
 
 | Milestone | Deliverable | Status |
 |---|---|---|
-| **M0** | **Vega round-trip spike.** Go/no-go for the whole design. Throwaway code only. | **not run** — needs a licensed Vega install and a real tournament file |
+| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **kit built, awaiting a run** — see `spikes/README.md` |
 | **M1** | Repo skeleton, `docker compose`, Alembic baseline, mediator + pipeline, CI (ruff, mypy, pytest), and `trf/` parse + serialize with passthrough fidelity. | done |
 | **M2** | Import: `preview_import` diff → `import_round` populating tournament / section / round / game. Arbiter can load a Vega file and see the boards. | done |
 | **M3** | Device tokens + QR issue/revoke, hall PWA with the 3 screens and the offline queue. **Players can enter results.** | done |
@@ -270,12 +385,12 @@ Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer 
 
 M1–M4 are done in the sense that the loop closes: 125 backend tests, 14 frontend tests, and a smoke test that runs the whole cycle against the `docker compose` stack — create, preview, import, issue a QR token, claim from a device, retry, release, export, confirm the round is frozen.
 
-It is **not** done in the sense that matters most. Every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether Vega will merge-import a file we generated, and it remains the go/no-go for the whole design. Until it runs, the honest description of this codebase is: a complete implementation of a round trip with one unverified end.
+It is **not** done in the sense that matters most. Every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether a real manager will take a file we generated, and it remains the go/no-go for the whole design. Until it runs, the honest description of this codebase is: a complete implementation of a round trip with one unverified end.
 
 Three things M0 should also settle now that the code exists and raises the questions concretely:
 
-1. **Board numbers are ours, not Vega's.** TRF does not carry them, so we derive them by ordering white players by starting rank. Vega prints its own numbers on the pairing slips and they will not match. The hall app is search-by-name so this is cosmetic, but it needs checking against a real pairing slip before a pilot.
-2. **Points are recomputed on export.** A file with results filled in but stale points is internally inconsistent, so `export_round` rewrites columns 81-84. Whether Vega cares, or objects, is unknown.
+1. **Board numbers are ours, not the manager's.** TRF does not carry them, so we derive them by ordering white players by starting rank. The manager prints its own numbers on the pairing slips and they will not match. The hall app is search-by-name so this is cosmetic, but it needs checking against a real pairing slip before a pilot.
+2. ~~**Points are recomputed on export.**~~ **Fixed.** The spike kit's check 4 caught it on its first run: recomputing the whole points column asserted our reading of every code in the file, including the pairing-allocated bye -- and what a PAB is worth is a tournament regulation, not a property of the letter `U`. Some events award 1 point, some 0.5. Points now move by the *delta* of results we actually wrote, so a number we were never told cannot be corrupted. M0 should still confirm a manager accepts the adjusted column.
 3. **`XXR` and rounds present can disagree.** We treat the highest round with pairings as the round being imported, and the declared count as the tournament length. Real Vega files should confirm that is the right reading.
 
 
@@ -308,7 +423,7 @@ Three things M0 should also settle now that the code exists and raises the quest
 
 Kept out of v1 on purpose, with the seams left in place so they can be added without a rewrite:
 
-- **Pairing engines** (bbpPairings, JaVaFo, Berger round-robin) behind a `PairingEngine` port. Note that the Vega file loop is already the `AWAITING_EXTERNAL` case of that port — modelling the import/export cycle as a round state machine now means adding a real engine later is a new state, not a redesign.
+- **Our own implementation** — pairing engines (bbpPairings, JaVaFo, Berger round-robin) plus owning the player list and tournament setup. This is a third adapter behind the manager port, not a new architecture: it reads a round from the database and writes results back to it, satisfying the same interface with no file anywhere. Needs the scoring work below before it is useful, since a manager that cannot compute standings is not a manager.
 - **Scoring / FIDE C.07 tiebreaks.** The hardest piece by a wide margin: ~20 systems, Article 16's asymmetric handling of unplayed games, and regulations that are versioned law (the pre-2023 "virtual opponent" was removed in Sep 2023, with further revisions in Apr and Aug 2024). Needs per-tournament pinned regulation editions when it does land.
 - **Public results frontend** with live SSE — only worth building once we compute standings ourselves.
 - **chess-results.com export**, additional interchange adapters (Swiss-Manager), and owning the player list / tournament setup.
