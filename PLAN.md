@@ -477,12 +477,13 @@ Three questions the code raised that the Swiss-Manager run has now settled:
 
 ## Risks
 
-1. **The Vega merge-import (M0).** The single existential risk. Everything is blocked on it, which is why it is milestone zero.
+1. **The Vega leg of M0.** Swiss-Manager's loop is verified; Vega's is not, and Swiss-Manager showed that the obvious import path can be the wrong one. A Vega club cannot pilot until its spike has run.
 2. **Manual handoff under time pressure.** Two file operations per round, in a hall, between rounds. Mitigated by explicit round state in the UI ("round 3 ready to export", "round 4 pairings loaded"), the import diff, and freeze-on-export. Still the most likely place a real event goes wrong.
 3. **Divergence between the two systems.** An arbiter editing results in Vega after we exported. Freeze-on-export plus the import diff surfacing prior-round mismatches is the guard; it detects rather than prevents.
 4. **Anonymous claims.** Bounded by device revocation, the audit log, and the arbiter release gate. If abuse appears in practice, the escalation path is a per-board PIN printed on the pairing slip.
 5. **Churn during an open round.** Between-round churn is free — Vega handles it and we absorb a fresh state. What is *not* free: a no-show forfeit (nobody is at the board to enter it, so the arbiter must, which makes `set_result` with forfeit kinds an M4 requirement, not a nice-to-have), and a mid-round re-pair that invalidates boards we already hold claims on.
 6. **TRF16 vs TRF06 dialects** — Vega writes one and reads the other within limits. The serializer must target a named dialect, never "TRF" generically.
+7. **A stale results file re-pairs Swiss-Manager.** Its pairing-file import takes the pairings in the file, so results exported from a round the arbiter has since re-paired in Swiss-Manager would undo that re-pairing silently. Nothing on our side can see the manager's state; the guard is the instruction, given at the hand-off and in the guide, to re-export and re-import before sending results back after any re-pairing. Worth a stronger guard if it bites in a pilot — e.g. refusing to export a round whose import is older than a configurable age.
 
 ---
 
@@ -493,4 +494,4 @@ Kept out of v1 on purpose, with the seams left in place so they can be added wit
 - **Our own implementation** — pairing engines (bbpPairings, JaVaFo, Berger round-robin) plus owning the player list and tournament setup. This is a third adapter behind the manager port, not a new architecture: it reads a round from the database and writes results back to it, satisfying the same interface with no file anywhere. Needs the scoring work below before it is useful, since a manager that cannot compute standings is not a manager.
 - **Scoring / FIDE C.07 tiebreaks.** The hardest piece by a wide margin: ~20 systems, Article 16's asymmetric handling of unplayed games, and regulations that are versioned law (the pre-2023 "virtual opponent" was removed in Sep 2023, with further revisions in Apr and Aug 2024). Needs per-tournament pinned regulation editions when it does land.
 - **Public results frontend** with live SSE — only worth building once we compute standings ourselves.
-- **chess-results.com export**, additional interchange adapters (Swiss-Manager), and owning the player list / tournament setup.
+- **chess-results.com export**, further interchange adapters beyond Swiss-Manager and Vega, and owning the player list / tournament setup.
