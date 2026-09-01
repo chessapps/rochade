@@ -53,7 +53,13 @@ Then check `Listen` → `Rang` (F5). It should read:
 | 0.5 | 8 | Iten, Nadia |
 | 0.0 | 6 | Gruber, Sarah |
 
-⚠️ **The two that matter most.** In `Listen` → `Ergebnisse` (F9), confirm:
+⚠️ **The two that matter most.** `Listen` → `Ergebnisse` (F9) shows **one round
+at a time**, and the `Rd` menu is the round selector — pick `Rd` → `1` first,
+or you will be looking at round 2 and wondering where round 1 went. The `Rd`
+menu only lists rounds that exist, so it is also the quickest way to see
+whether an import brought the rounds in at all.
+
+With round 1 selected, confirm:
 
 - **Round 1, Mueller vs Iten** shows as a **forfeit**, not a normal 1:0.
 - **Round 2, Fischer** shows a **half-point bye**, and **round 1, Jenni** a
@@ -62,6 +68,10 @@ Then check `Listen` → `Rang` (F5). It should read:
 If the points differ from the table, Swiss-Manager scores a PAB differently
 than we assume. That is worth knowing and is not a bug on either side — it is a
 tournament regulation. Just write down what it did.
+
+> ✅ **Step 1 is done and passed** — see `spikes/FINDINGS.md`. The forfeit came
+> through as a forfeit, the bye as `spielfrei` worth 1 point, and the standings
+> matched on all nine rows. Start from step 2.
 
 ---
 
