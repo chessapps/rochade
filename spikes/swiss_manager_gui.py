@@ -66,7 +66,7 @@ def visible(app: Application) -> dict[str, object]:
         try:
             if w.class_name() != "TApplication":
                 out[w.class_name()] = w
-        except Exception:  # noqa: BLE001 - a window may vanish mid-enumeration
+        except Exception:  # a window may vanish mid-enumeration
             continue
     return out
 
@@ -89,7 +89,7 @@ def answer_messages(app: Application, *buttons: str, rounds: int = 6) -> list[st
             try:
                 form.child_window(title=label, class_name="TButton").click()
                 break
-            except Exception:  # noqa: BLE001 - try the next label
+            except Exception:  # try the next label
                 continue
         time.sleep(1.5)
     return seen
@@ -102,7 +102,7 @@ def menus(app: Application) -> None:
             for j, sub in enumerate(item.sub_menu().items()):
                 flag = "" if sub.is_enabled() else "   (disabled)"
                 print(f"    [{j}] {sub.text()!r}{flag}")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             print("    ", exc)
 
 

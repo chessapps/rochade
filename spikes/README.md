@@ -43,6 +43,14 @@ Then: set the flags in `interchange/vega.py` from what was observed, write down
 the two menu paths as `export_howto` / `import_howto`, and check the real Vega
 files in as fixtures. Messy ones are worth the most.
 
+## Driving Swiss-Manager from a script
+
+`swiss_manager_gui.py` is the pywinauto driver that produced the fixtures --
+`menus`, `trf-export`, `pairings-export`, `pairings-import`, `shot`. It needs
+its own venv (see its docstring) and Swiss-Manager already running with the
+tournament open. Use it to re-run a probe against a new build, or to check a
+question the record does not answer, without clicking through the dialogs.
+
 ## The checks, for reference
 
 | # | Check |
