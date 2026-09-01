@@ -47,6 +47,67 @@ Worth naming, because it is free and it is the thing that sells the tool: a tour
 
 ---
 
+## The arbiter's round — the contract v1 is built around
+
+v1 is **one feature: entering results.** Everything else a tournament needs —
+setup, player list, pairings, tiebreaks, reports, the public view — stays in
+the program the arbiter already runs. Those programs are *plugins* to us: each
+one is an adapter behind the manager port, and Swiss-Manager is simply the
+first one we verify against. Nothing in the loop below is allowed to depend on
+which program is on the other end.
+
+The loop, from the arbiter's chair:
+
+```
+  manager                              Seebach
+  ───────                              ───────
+  1  set up the tournament, as always
+  2  pair round N, as always
+  3  export the round            ───▶  import — the boards appear
+                                       players enter results (hall app)
+                                       arbiter reviews, releases the round
+  4  import the results          ◀───  export — the round is frozen
+  5  pair round N+1  (= step 2)
+```
+
+**Friction budget: two file operations per round, and nothing else.** Steps
+1, 2 and 5 are what the arbiter does today without us. Steps 3 and 4 are the
+whole cost of using Seebach. Anything a round needs beyond those two — a
+setting to re-enter, a dialog to acknowledge, a second tournament file to
+switch to — is either a defect to design away or, if the program leaves no
+choice, a fact the adapter declares in `Capabilities` so the admin app can
+tell the arbiter *before* they commit to it. It is never something discovered
+in a hall between rounds.
+
+That budget is the selection criterion for the inbound format. Ranked:
+
+1. **Merges into the open tournament, all result codes intact.** Step 4 is one
+   menu item. This is what TRF16 import promises and what check 3 tests.
+2. **Merges, but lossy.** PGN results import merges by construction and
+   cannot express `+ - H U Z`; the export would have to hand the arbiter a
+   short list of forfeits and byes to set by hand. Tolerable for a pilot, not
+   for v1.
+3. **Full snapshot that opens as a new tournament.** The results are in, but
+   the arbiter continues in a different file each round and anything the
+   program keeps outside the file (tiebreak configuration, rating-list
+   links) is at risk. Acceptable only if nothing better exists, and then only
+   with the adapter saying so.
+
+The file we hand back is the **whole tournament**, not a list of round-N
+results. TRF has no "results only" form, and a manager that rebuilds its
+cross-table from a snapshot needs every round present. `export_round` already
+works this way: it patches the result cells of round N into the file it
+imported and re-emits everything else byte-for-byte, so whatever the manager
+wrote and we never modelled goes back to it unchanged.
+
+**Why TRF16 is the interchange format.** It is the one format both target
+programs export *and* import, and it does not require FIDE identities: the
+FIDE-ID column is optional, and Swiss-Manager took our seed file with that
+column blank on every row. A club event with no rated players travels through
+it exactly as a FIDE-rated one does.
+
+---
+
 ## Milestone 0 — the spike that gates everything
 
 **Context.** M1–M4 are built and the loop closes, but every TRF the system has ever read or written was produced by us. M0 is the only thing that can tell us whether a real tournament manager will take our file back. It is unrun, and it still gates the pilot.
@@ -54,7 +115,14 @@ Worth naming, because it is free and it is the thing that sells the tool: a tour
 Two things changed the shape of it:
 
 - **Swiss-Manager is available now**, and **both Swiss-Manager and Vega must work** — different clubs run different programs. The interchange format therefore has to become a seam rather than a hardcoded assumption.
-- Research into Swiss-Manager suggests the two programs may not use the *same* seam. Its [version history](https://swiss-manager.at/downloadhist.aspx?lan=1) (build 15.0.0.13, 27.08.2026) lists TRF only as an **export** (`Extras / FIDE Data Export TRF16`, now `TRF26`); the documented ways to get **results back in** are `File / Import PGN-File (results)` (2021-07-20), `File / Import Player-Results (XML)` (2021-04-21), and pairing/player text files. There is no TRF import menu item anywhere in that history. A claim that "the import of a TRF16 correctly rebuilds the results cross-table" appears in search results attributed inconsistently to the Swiss-Manager and Vega FIDE endorsement reports; both PDFs are scanned images and I could not verify which program it describes. **Do not rely on it.**
+- The version history on swiss-manager.at lists TRF only as an export, so the
+  earlier draft of this plan assumed the inbound leg would need PGN or XML.
+  **The running build says otherwise**: `Datei → FIDE-Datenformat importieren
+  TRF16` exists in 15.0.0.3, and it read our seed with every result code, title,
+  rating and federation intact (see `spikes/FINDINGS.md`). What is *not* yet
+  known is whether that import **merges into the tournament that is already
+  open** or creates a second one — which is the difference between rank 1 and
+  rank 3 in the friction ranking above, and is what check 3 decides.
 
 So M0 splits into two legs that may need different formats:
 
@@ -372,7 +440,7 @@ Shared `packages/api-client` generated from the FastAPI OpenAPI schema (`openapi
 
 | Milestone | Deliverable | Status |
 |---|---|---|
-| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **kit built, awaiting a run** — see `spikes/README.md` |
+| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **running** — seed imported into Swiss-Manager, check 2 passed; check 1 (the gate) and check 3 pending |
 | **M1** | Repo skeleton, `docker compose`, Alembic baseline, mediator + pipeline, CI (ruff, mypy, pytest), and `trf/` parse + serialize with passthrough fidelity. | done |
 | **M2** | Import: `preview_import` diff → `import_round` populating tournament / section / round / game. Arbiter can load a Vega file and see the boards. | done |
 | **M3** | Device tokens + QR issue/revoke, hall PWA with the 3 screens and the offline queue. **Players can enter results.** | done |
