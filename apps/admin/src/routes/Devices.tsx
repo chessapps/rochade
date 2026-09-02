@@ -15,12 +15,14 @@ import { Banner, Button, Card, CardHeader, EmptyState, Input, Skeleton } from ".
 import { clockTime, plural, relativeTime } from "../format";
 import { useDevices, useIssueDevice, useRevokeDevice, useTournament } from "../queries";
 import { useNow } from "../useNow";
+import { useSingleFlight } from "../useSingleFlight";
 
 export function Devices() {
   const { tournamentId = "" } = useParams();
   const tournament = useTournament(tournamentId);
   const devices = useDevices(tournamentId);
   const issue = useIssueDevice();
+  const once = useSingleFlight();
   const toast = useToast();
   const now = useNow(10_000);
 
@@ -30,17 +32,14 @@ export function Devices() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (issue.isPending) return;
-    issue.mutate(
-      { tournamentId, label: label.trim() },
-      {
-        onSuccess: (data) => {
-          setIssued(data);
-          setLabel("");
-        },
-        onError: (error) => toast.error(errorMessage(error)),
-      },
-    );
+    void once(async () => {
+      try {
+        setIssued(await issue.mutateAsync({ tournamentId, label: label.trim() }));
+        setLabel("");
+      } catch (error) {
+        toast.error(errorMessage(error));
+      }
+    });
   };
 
   const list = devices.data ?? [];

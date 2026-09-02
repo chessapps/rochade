@@ -11,6 +11,7 @@ import { errorMessage, type ExportResult, type RoundSummary } from "../api";
 import { readyToRelease } from "../boards";
 import { plural } from "../format";
 import { useExportRound, useReleaseRound } from "../queries";
+import { useSingleFlight } from "../useSingleFlight";
 import { ConfirmDialog } from "./Dialog";
 import { useToast } from "./Toast";
 import { Banner } from "./ui";
@@ -37,23 +38,18 @@ export function ReleaseDialog({
 }) {
   const toast = useToast();
   const release = useReleaseRound();
+  const once = useSingleFlight();
   const ready = readyToRelease(round);
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const confirm = () => {
-    if (release.isPending) return;
-    release.mutate(
-      { roundId: round.id, tournamentId, force: !ready },
-      {
-        onSuccess: (data) => {
-          toast.success(
-            `Round ${data.round_number} released: ${plural(data.confirmed, "result")} confirmed.`,
-          );
-          onClose();
-        },
-      },
-    );
-  };
+  const confirm = () =>
+    once(async () => {
+      const data = await release.mutateAsync({ roundId: round.id, tournamentId, force: !ready });
+      toast.success(
+        `Round ${data.round_number} released: ${plural(data.confirmed, "result")} confirmed.`,
+      );
+      onClose();
+    });
 
   return (
     <ConfirmDialog
@@ -127,24 +123,21 @@ export function ExportDialog({
 }) {
   const navigate = useNavigate();
   const exportRound = useExportRound();
+  const once = useSingleFlight();
   const unfinished = round.empty + round.disputed;
 
-  const confirm = () => {
-    if (exportRound.isPending) return;
-    exportRound.mutate(
-      { roundId: round.id, tournamentId, force: unfinished > 0 },
-      {
-        onSuccess: (data) => {
-          download(data);
-          onClose();
-          // The hand-off lives on the round board, with the file a click away.
-          void navigate(`/t/${tournamentId}/rounds/${round.id}`, {
-            state: { justExported: true },
-          });
-        },
-      },
-    );
-  };
+  const confirm = () =>
+    once(async () => {
+      const data = await exportRound.mutateAsync({
+        roundId: round.id,
+        tournamentId,
+        force: unfinished > 0,
+      });
+      download(data);
+      onClose();
+      // The hand-off lives on the round board, with the file a click away.
+      void navigate(`/t/${tournamentId}/rounds/${round.id}`, { state: { justExported: true } });
+    });
 
   return (
     <ConfirmDialog

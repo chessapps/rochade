@@ -18,6 +18,7 @@ import { Banner, Button, Card, Field, Input, Select, Skeleton, cx } from "../com
 import { plural } from "../format";
 import { canImport, headline, planNotes, type PlanNote, type Severity } from "../plan";
 import { useImportRound, useManagers, usePreviewImport, useTournament } from "../queries";
+import { useSingleFlight } from "../useSingleFlight";
 
 interface Picked {
   name: string;
@@ -33,6 +34,7 @@ export function ImportWizard() {
   const managers = useManagers();
   const preview = usePreviewImport();
   const commit = useImportRound();
+  const once = useSingleFlight();
 
   const [section, setSection] = useState(params.get("section") ?? "");
   const [manager, setManager] = useState("");
@@ -87,28 +89,25 @@ export function ImportWizard() {
     );
   };
 
-  const runImport = (force: boolean) => {
-    if (!file || commit.isPending) return;
-    commit.mutate(
-      {
+  const runImport = (force: boolean) =>
+    once(async () => {
+      if (!file) return;
+      const data = await commit.mutateAsync({
         tournamentId,
         section_name: section.trim(),
         content: file.content,
         filename: file.name,
         manager,
         force,
-      },
-      {
-        onSuccess: (data) => {
-          toast.success(
-            `Round ${data.round_number} imported: ${plural(data.boards, "board")}` +
-              (data.claims_carried > 0 ? `, ${plural(data.claims_carried, "entry", "entries")} kept.` : "."),
-          );
-          void navigate(`/t/${tournamentId}/rounds/${data.round_id}`, { replace: true });
-        },
-      },
-    );
-  };
+      });
+      toast.success(
+        `Round ${data.round_number} imported: ${plural(data.boards, "board")}` +
+          (data.claims_carried > 0
+            ? `, ${plural(data.claims_carried, "entry", "entries")} kept.`
+            : "."),
+      );
+      void navigate(`/t/${tournamentId}/rounds/${data.round_id}`, { replace: true });
+    });
 
   if (tournament.isPending || managers.isPending) return <Skeleton rows={4} />;
 
@@ -185,7 +184,7 @@ export function ImportWizard() {
             setPlan(null);
             commit.reset();
           }}
-          onImport={() => (canImport(plan) ? runImport(false) : setForcing(true))}
+          onImport={() => (canImport(plan) ? void runImport(false) : setForcing(true))}
         />
       )}
 
@@ -194,7 +193,7 @@ export function ImportWizard() {
         onClose={() => setForcing(false)}
         onConfirm={() => {
           setForcing(false);
-          runImport(true);
+          void runImport(true);
         }}
         title="Import over the block?"
         confirmLabel="Import anyway"

@@ -11,3 +11,15 @@ if (typeof HTMLDialogElement !== "undefined") {
     this.dispatchEvent(new Event("close"));
   };
 }
+
+// jsdom's File has no text(); the browser's does.
+if (typeof File !== "undefined" && !File.prototype.text) {
+  File.prototype.text = function text(this: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(this);
+    });
+  };
+}
