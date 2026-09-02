@@ -4,6 +4,7 @@
  * hand are one filter away, and the release is at the bottom of the page.
  */
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 
@@ -26,6 +27,7 @@ import { useToast } from "../components/Toast";
 import { Banner, Button, Card, EmptyState, Input, Skeleton, SuccessCheck, cx } from "../components/ui";
 import { plural, relativeTime } from "../format";
 import {
+  keys,
   useExportFile,
   useResolveDispute,
   useRound,
@@ -48,6 +50,7 @@ export function RoundBoard() {
   const tournament = useTournament(tournamentId);
   const location = useLocation();
   const toast = useToast();
+  const client = useQueryClient();
   const now = useNow(1_000);
 
   const state = round.data?.state;
@@ -69,6 +72,12 @@ export function RoundBoard() {
     previous.current = boards;
     return diff;
   }, [round.data]);
+
+  // A board that moved has a new line in the log; fetch it now, not at the
+  // log's own slower cadence, so a dispute arrives with its phones named.
+  useEffect(() => {
+    if (changed.size > 0) void client.invalidateQueries({ queryKey: keys.events(roundId) });
+  }, [changed, client, roundId]);
 
   // Once the round leaves "open", the default filter changes; drop an explicit
   // one that only made sense while entering.

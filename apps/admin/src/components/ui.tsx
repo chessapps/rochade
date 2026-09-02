@@ -176,7 +176,7 @@ export function Banner({
     success: "border-emerald-300 bg-emerald-50 text-emerald-950",
   }[tone];
   return (
-    <div role={tone === "error" ? "alert" : undefined} className={cx("rounded-lg border px-4 py-3 text-sm", style, className)}>
+    <div role={tone === "error" ? "alert" : undefined} className={cx("rounded-lg border px-4 py-3 text-sm [overflow-wrap:anywhere]", style, className)}>
       {children}
     </div>
   );
