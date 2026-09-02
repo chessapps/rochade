@@ -428,7 +428,15 @@ EMPTY ──claim_result──▶ CLAIMED ──release_round──▶ CONFIRMED
 
 Shared `packages/api-client` generated from the FastAPI OpenAPI schema (`openapi-typescript` + `openapi-fetch`), so a contract change breaks the build rather than production.
 
-**`apps/admin`** — import with diff preview, round status, arbiter result queue, manual result override, dispute resolution, round release, export with freeze warning, device management (QR issue / revoke / last-seen).
+**`apps/admin`** — five screens under one shell, built so that "where am I in this round and what do I do next" is answered before the arbiter reads anything else:
+
+- **Tournaments** — list and create; with one tournament it goes straight there.
+- **Tournament home** — one card per section with a four-step stepper (imported → entry open → released → exported), a progress bar, and **one computed primary action**: *Fix 3 disputed · 1 empty*, *Release round 4*, *Export for Swiss-Manager*, *Import round 5*. Never a choice of buttons.
+- **Round board** — every board with its state; the *Attention* filter (empty + disputed) replaces the old queue and is the default while the round is open, so an empty list means done. Inline result entry, forfeits one tap further away, keyboard `1` `=` `0` on the focused row. Polls every 5 s while open, rows that changed pulse, the log is fetched the moment a board moves so a dispute arrives with the phones named. Release and freeze are native `<dialog>`s that say what they do; the hand-off card carries the manager's own menu path, the file again, and the link to the next import.
+- **Import wizard** — drop the file, preview, read the diff grouped by severity (blocking on top, must-read in the middle, the roster diff folded away), import; a blocked import asks once more.
+- **Devices** — real QR codes, a printable poster, revoke behind a confirm.
+
+TanStack Query owns reads, writes, invalidation and polling; react-router serves it under `/admin`. Every irreversible action runs behind a single-flight guard — `isPending` flips only after a re-render, and a fast double click on *Export and freeze* went out twice before the guard existed.
 
 **`apps/hall`** — a PWA, the 3-screen flow from the sketch unchanged: compact scrollable board list with sticky search → result choice (1:0 / ½:½ / 0:1) → confirm. Dense rows, large tap targets, minimal white space, readable on a five-year-old Android in a badly lit hall. Shows the **current round across all sections**.
 
@@ -451,7 +459,7 @@ Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer 
 
 ### What "done" means here, and what it does not
 
-M1–M4 are done in the sense that the loop closes: 125 backend tests, 14 frontend tests, and a smoke test that runs the whole cycle against the `docker compose` stack — create, preview, import, issue a QR token, claim from a device, retry, release, export, confirm the round is frozen.
+M1–M4 are done in the sense that the loop closes: 159 backend tests, 48 frontend tests, a smoke test that runs the whole cycle against the `docker compose` stack through the API, and `scripts/admin_flow.mjs`, which runs it again through the arbiter app in a real browser — create, import, claims arriving by polling, a dispute resolved, a result from the keyboard, release, export, the file downloaded twice, the next round imported, a QR issued and revoked, and no screen overflowing at 375 px.
 
 With Swiss-Manager it is now done in the sense that matters too: a real manager exported a round it had paired, took our results back into the same tournament, and paired the next one — twice. The Vega end is still unverified, and the admin app says so beside the manager picker.
 
@@ -470,7 +478,7 @@ Three questions the code raised that the Swiss-Manager run has now settled:
 - **Handler tests** — each command and query exercised directly through the mediator against a testcontainers Postgres, bypassing HTTP. This is the main test tier; one file per use case makes it the natural unit.
 - **Loop test** — the full cycle in one integration test: import round 1 → claim results → dispute → resolve → release → export → assert the exported TRF parses and carries exactly the confirmed results.
 - **Differential against Vega** — the manual leg, once per milestone: take our exported TRF into real Vega, confirm it merges and pairs the next round correctly.
-- **End-to-end** — Playwright (`webapp-testing` skill) against the compose stack: arbiter imports a file and issues a device QR, hall app claims a result, arbiter releases, export downloads.
+- **End-to-end** — `scripts/admin_flow.mjs`: Playwright driving the arbiter app in the browser already on the machine against the compose stack, the whole round from create to the next import. Not in CI (it needs a browser and the stack); run before a pilot and after any change to the admin app.
 - **Offline drill** — hall PWA throttled offline: submit three results, restore the network, assert exactly three claims arrive and no duplicates.
 
 ---

@@ -14,3 +14,4 @@ dist/
 openapi.json
 bash.exe.stackdump
 spikes/out/
+scripts/out/

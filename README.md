@@ -56,6 +56,33 @@ Smoke-test a running stack, including one full round trip:
 uv run python scripts/smoke.py http://localhost:8080
 ```
 
+The same round through the arbiter app in a real browser — screens, dialogs,
+polling, the download, phone widths — using the Edge or Chrome already on the
+machine (`SEEBACH_BROWSER=chrome` for Chrome):
+
+```sh
+node scripts/admin_flow.mjs http://localhost:8080
+```
+
+## The arbiter's day
+
+Sign in at `/admin/` with a staff token, create the tournament, and issue a QR
+code under **Devices** — print it as a poster or show it on screen. Then each
+round is the same five minutes, and the section card on the tournament home
+always names the next step:
+
+1. Pair the round in Swiss-Manager or Vega and export it; **Import round N**
+   shows what the file changes before anything is written.
+2. Players enter results on their phones. The round board updates every few
+   seconds and opens on **Attention**: the boards with no result, and the ones
+   two phones disagree about, with which phone said what. Forfeits are one tap
+   further away; `1` `=` `0` on the keyboard work too.
+3. **Release**, then **Export for Swiss-Manager**. The file downloads, the round
+   freezes, and the card at the top says which menu to use — with the file a
+   click away should the download have gone astray.
+
+`docs/arbiter-guide-swiss-manager.md` has the Swiss-Manager menus for each step.
+
 ## Developing
 
 ```sh
@@ -76,7 +103,7 @@ The API server and the two frontends, each against a locally running Postgres:
 docker compose up -d postgres
 SEEBACH_DEV_AUTH_ENABLED=true uv run uvicorn seebach.app:app --reload
 pnpm run dev:hall     # :5173
-pnpm run dev:admin    # :5174
+pnpm run dev:admin    # :5174/admin/
 ```
 
 Uvicorn defaults to :8000. If that one is taken too, pass `--port` and point the
@@ -118,7 +145,7 @@ src/seebach/
   trf/             the TRF library -- pure, no database, no framework
 spikes/            M0: throwaway tooling for the manager round-trip spike
 apps/hall          the player PWA: board list -> result -> confirm, offline-first
-apps/admin         the arbiter app: import diff, queue, release, export
+apps/admin         the arbiter app: tournament home, round board, import wizard, phones
 packages/api-client        generated from the OpenAPI schema
 ```
 

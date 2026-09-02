@@ -10,7 +10,10 @@ they appear there.
 - Set the round dates: `Eingabe → Termine für die einzelnen Runden…` →
   `Übernehmen` → `OK`. Swiss-Manager's TRF export refuses without them
   (`Fehler (Message:42)`), and a rated tournament needs them anyway.
-- In Seebach, create the tournament and issue the hall QR codes as usual.
+- In Seebach: **New tournament**, then **Devices → Issue a QR code**. Open it
+  as a poster and print it, or show it on the arbiter's screen. One code admits
+  any number of phones to this tournament for the day; issue a second one for
+  the other end of the hall if you like, and revoke either at any time.
 
 ## Every round
 
@@ -34,20 +37,27 @@ There is no save dialog. The file is written to
 Documents\SwissManagerUniCode\Listen\FIDE_Export_<tournament>.TXT
 ```
 
-In Seebach: **Import the paired round** → pick `Swiss-Manager`, choose that file,
-`Preview`, read the diff, `Import`. The boards appear in the hall app with the
-same board numbers Swiss-Manager printed on the pairing list.
+In Seebach the section card says **Import round N** — press it, drop that file
+on the page, **Preview the changes**, read what the file changes, **Import**.
+You land on the round board; the phones show the same board numbers
+Swiss-Manager printed on the pairing list.
 
 ### 3. Play
 
-Players enter results on their phones. Forfeits and byes are yours: set them in
-Seebach's queue (`+`/`-` for a no-show, `-`/`-` if nobody came).
+Players enter results on their phones; the round board updates every few
+seconds. It opens on **Attention** — the boards with no result and the ones two
+phones disagree about — so an empty list means the round is done. A disputed
+board shows both claims and which phone made each; pick the right one or set it
+from the scoresheet. A no-show is yours: `forfeit…` on the board, then `+:−`,
+`−:+` or `−:−`. With a board focused, `1` `=` `0` on the keyboard set it too.
 
 ### 4. Release and export
 
-When the queue is clear, `Release`, then `Export for Swiss-Manager`. A file
-`<section>-round<N>.txt` downloads and the round is frozen — from now on
-Swiss-Manager owns it.
+When Attention is empty the bar at the bottom says **Release round N**; press
+it. Then **Export for Swiss-Manager**: a file `<section>-round<N>.txt` downloads
+and the round is frozen — from now on Swiss-Manager owns it. The green card at
+the top of the round tells you what to do in Swiss-Manager and has the file
+again should the download have gone astray; **Import round N+1** is on it too.
 
 ### 5. Import the results into Swiss-Manager
 
