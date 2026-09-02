@@ -193,3 +193,17 @@ def test_an_owner_can_read_the_queue_too(send: Send, tournament: Tournament) -> 
     queue = send(GetArbiterQueue(tournament_id=tournament.id), principal=OWNER)
     assert queue.entries == []
     assert ARBITER.subject != OWNER.subject
+
+
+def test_byes_are_counted_apart_from_boards(
+    send: Send, tournament: Tournament, round3_text: str
+) -> None:
+    send(ImportRound(tournament_id=tournament.id, section_name="A", content=round3_text))
+    detail = send(GetTournament(tournament_id=tournament.id))
+    rounds = {r.number: r for r in detail.sections[0].rounds}
+
+    # Round 1 had three players sitting out. They are not boards, and nobody
+    # enters them, so no progress figure should ever count them.
+    assert rounds[1].byes == 3
+    assert rounds[1].boards + rounds[1].byes == 6
+    assert rounds[1].confirmed == rounds[1].boards

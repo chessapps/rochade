@@ -1,5 +1,49 @@
 @import "tailwindcss";
 
+/*
+ * One vocabulary for the whole app, and the same hues as the hall app so a
+ * colour means the same thing on the arbiter's laptop and on a player's phone:
+ * slate for nothing yet, amber for entered, rose for disputed, emerald for
+ * confirmed. The admin app is light because it is read at a desk.
+ */
+@theme {
+  --color-paper: #f8fafc;
+  --color-ink: #0f172a;
+  --color-accent: #1d4ed8;
+  --color-accent-soft: #dbeafe;
+
+  --animate-row-pulse: row-pulse 1.2s ease-out 1;
+  --animate-pop: pop 220ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 1;
+  --animate-draw: draw 360ms ease-out 1 forwards;
+
+  @keyframes row-pulse {
+    0% {
+      background-color: var(--color-amber-100);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes draw {
+    0% {
+      stroke-dashoffset: 48;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
 html,
 body,
 #root {
@@ -7,6 +51,35 @@ body,
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+dialog::backdrop {
+  background: rgb(15 23 42 / 0.45);
+}
+
+/* Focus is visible on everything that takes a keypress, never only on hover. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* The poster is the only thing that gets printed, and only the poster. */
+@media print {
+  body {
+    background: white;
+  }
+  .no-print {
+    display: none !important;
+  }
 }

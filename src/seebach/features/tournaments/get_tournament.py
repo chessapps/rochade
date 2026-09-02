@@ -29,7 +29,10 @@ class RoundSummary(BaseModel):
     id: uuid.UUID
     number: int
     state: RoundState
+    #: Boards with two players. Byes are counted apart: nobody enters them and
+    #: they never need the arbiter, so they belong in no progress figure.
     boards: int
+    byes: int
     empty: int
     claimed: int
     disputed: int
@@ -129,21 +132,24 @@ def handle(query: GetTournament, ctx: Context) -> TournamentDetail:
     )
 
 
-_ZERO = {"boards": 0, "empty": 0, "claimed": 0, "disputed": 0, "confirmed": 0}
+_ZERO = {"boards": 0, "byes": 0, "empty": 0, "claimed": 0, "disputed": 0, "confirmed": 0}
 
 
 def _round_counts(session: Session, tournament_id: uuid.UUID) -> dict[uuid.UUID, dict[str, int]]:
     rows = session.execute(
-        select(Game.round_id, Game.state, func.count(Game.id))
+        select(Game.round_id, Game.state, Game.black_rank.is_(None), func.count(Game.id))
         .join(Round, Round.id == Game.round_id)
         .join(Section, Section.id == Round.section_id)
         .where(Section.tournament_id == tournament_id)
-        .group_by(Game.round_id, Game.state)
+        .group_by(Game.round_id, Game.state, Game.black_rank.is_(None))
     ).all()
 
     counts: dict[uuid.UUID, dict[str, int]] = {}
-    for round_id, state, count in rows:
+    for round_id, state, is_bye, count in rows:
         bucket = counts.setdefault(round_id, dict(_ZERO))
+        if is_bye:
+            bucket["byes"] += int(count)
+            continue
         bucket[ResultState(state).value] += int(count)
         bucket["boards"] += int(count)
     return counts

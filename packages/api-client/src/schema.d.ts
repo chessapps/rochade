@@ -983,6 +983,8 @@ export interface components {
             state: components["schemas"]["RoundState"];
             /** Boards */
             boards: number;
+            /** Byes */
+            byes: number;
             /** Empty */
             empty: number;
             /** Claimed */
