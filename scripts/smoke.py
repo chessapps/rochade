@@ -6,6 +6,7 @@ trip through the real HTTP surface for each manager adapter.
 """
 
 import pathlib
+import re
 import sys
 import time
 
@@ -46,7 +47,18 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     await_stack(http)
     check("health", http.get("/health").json() == {"status": "ok"})
     check("hall app is served at the root", '<div id="root">' in http.get("/").text)
-    check("admin app is served at /admin", '<div id="root">' in http.get("/admin/").text)
+    admin_html = http.get("/admin/").text
+    check("admin app is served at /admin", '<div id="root">' in admin_html)
+    # The shell alone proves nothing: the admin app is served under a prefix,
+    # so its script has to be reachable at the URL the HTML names.
+    script = re.search(r'<script[^>]+src="([^"]+)"', admin_html)
+    asset = http.get(script.group(1)) if script else None
+    served_js = asset is not None and "javascript" in asset.headers.get("content-type", "")
+    check(
+        "admin app's script loads from under /admin",
+        served_js and asset is not None and asset.status_code == 200,
+        script.group(1) if script else "no <script src> in the shell",
+    )
 
     managers = http.get("/api/managers", headers=staff)
     keys = {m["key"] for m in managers.json()} if managers.status_code == 200 else set()
