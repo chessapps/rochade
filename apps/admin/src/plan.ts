@@ -15,6 +15,13 @@ export interface PlanNote {
   text: string;
 }
 
+/** Warnings the backend emits that the notes below already cover, by their opening words. */
+const DERIVED_WARNINGS = [
+  /^this file holds round/,
+  /^the file uses result codes/,
+  /^\d+ entered result/,
+];
+
 export function planNotes(plan: ImportPlan): PlanNote[] {
   const notes: PlanNote[] = [];
 
@@ -57,6 +64,13 @@ export function planNotes(plan: ImportPlan): PlanNote[] {
       severity: "acknowledge",
       text: `This file holds round ${plan.file_round}, but round ${plan.expected_round} was expected.`,
     });
+  }
+
+  // The backend's own warnings, minus the ones this file already words better.
+  for (const warning of plan.warnings ?? []) {
+    if (!DERIVED_WARNINGS.some((known) => known.test(warning))) {
+      notes.push({ severity: "acknowledge", text: warning });
+    }
   }
 
   for (const player of plan.players_added ?? []) {

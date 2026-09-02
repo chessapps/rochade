@@ -5,10 +5,16 @@
  */
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 
-import { errorMessage, type BoardDetail, type GameResult, type RoundSummary } from "../api";
+import {
+  errorMessage,
+  type BoardDetail,
+  type GameResult,
+  type RoundDetail,
+  type RoundSummary,
+} from "../api";
 import {
   changedBoards,
   countBoards,
@@ -17,6 +23,7 @@ import {
   filterCount,
   isFilter,
   readyToRelease,
+  type Counts,
   type Filter,
 } from "../boards";
 import { BoardRow, PLAYED } from "../components/BoardRow";
@@ -54,7 +61,7 @@ export function RoundBoard() {
   const now = useNow(1_000);
 
   const state = round.data?.state;
-  const events = useRoundEvents(roundId, state !== undefined);
+  const events = useRoundEvents(roundId, state);
   const setResult = useSetResult();
   const resolve = useResolveDispute();
 
@@ -64,20 +71,18 @@ export function RoundBoard() {
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<"release" | "export" | null>(null);
 
-  // Rows that moved since the previous poll light up for a moment.
+  // Rows that moved since the previous poll light up for a moment, and a board
+  // that moved has a new line in the log: fetch it now, not at the log's own
+  // slower cadence, so a dispute arrives with its phones named.
   const previous = useRef<BoardDetail[] | undefined>(undefined);
-  const changed = useMemo(() => {
-    const boards = round.data?.boards ?? [];
-    const diff = changedBoards(previous.current, boards);
-    previous.current = boards;
-    return diff;
-  }, [round.data]);
-
-  // A board that moved has a new line in the log; fetch it now, not at the
-  // log's own slower cadence, so a dispute arrives with its phones named.
+  const [changed, setChanged] = useState<Set<string>>(() => new Set());
   useEffect(() => {
-    if (changed.size > 0) void client.invalidateQueries({ queryKey: keys.events(roundId) });
-  }, [changed, client, roundId]);
+    if (!round.data) return;
+    const diff = changedBoards(previous.current, round.data.boards);
+    previous.current = round.data.boards;
+    setChanged(diff);
+    if (diff.size > 0) void client.invalidateQueries({ queryKey: keys.events(roundId) });
+  }, [round.data, client, roundId]);
 
   // Once the round leaves "open", the default filter changes; drop an explicit
   // one that only made sense while entering.
@@ -94,9 +99,11 @@ export function RoundBoard() {
 
   const detail = round.data;
   const section = tournament.data?.sections?.find((s) => s.id === detail.section_id);
-  const summary = section?.rounds?.find((r) => r.id === detail.id);
   const managerLabel = section?.manager_label ?? "the manager";
   const counts = countBoards(detail.boards);
+  // The release and export dialogs read the same numbers the board shows,
+  // polled together, never a second copy that could lag behind.
+  const summary = summarise(detail, counts);
   const editable = detail.state !== "exported";
   const shown = filterBoards(detail.boards, filter, query);
   const busy = setResult.isPending || resolve.isPending;
@@ -170,6 +177,13 @@ export function RoundBoard() {
           {counts.byes > 0 && `, ${plural(counts.byes, "bye")}`}
         </p>
       </header>
+
+      {tournament.isError && (
+        <Banner tone="error">
+          The tournament summary did not load: {errorMessage(tournament.error)}. The board is
+          live; the manager's name is not.
+        </Banner>
+      )}
 
       {detail.state === "exported" && (
         <Handoff
@@ -253,7 +267,7 @@ export function RoundBoard() {
         </p>
       )}
 
-      {summary && detail.state !== "exported" && (
+      {detail.state !== "exported" && (
         <Footer
           round={summary}
           managerLabel={managerLabel}
@@ -262,7 +276,7 @@ export function RoundBoard() {
         />
       )}
 
-      {summary && (
+      {detail.state !== "exported" && (
         <>
           <ReleaseDialog
             round={summary}
@@ -285,6 +299,23 @@ export function RoundBoard() {
       )}
     </div>
   );
+}
+
+function summarise(detail: RoundDetail, counts: Counts): RoundSummary {
+  return {
+    id: detail.id,
+    number: detail.number,
+    state: detail.state,
+    boards: counts.boards,
+    byes: counts.byes,
+    empty: counts.empty,
+    claimed: counts.claimed,
+    disputed: counts.disputed,
+    confirmed: counts.confirmed,
+    imported_at: detail.imported_at,
+    released_at: detail.released_at,
+    exported_at: detail.exported_at,
+  };
 }
 
 function emptyTitle(filter: Filter, query: string): string {

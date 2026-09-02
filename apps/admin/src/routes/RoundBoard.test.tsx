@@ -188,6 +188,27 @@ describe("RoundBoard", () => {
     expect(within(dialog).getByRole("button", { name: "Release anyway" })).toBeEnabled();
   });
 
+  it("a released round still takes the arbiter's corrections, and offers the export", async () => {
+    const calls = mount(`/t/${T}/rounds/${R}?filter=all`, round("confirmed"), tournament("confirmed"));
+    await screen.findByText("Section A · Round 3");
+    expect(screen.getByRole("button", { name: /Export for Swiss-Manager/ })).toBeInTheDocument();
+    const empty = screen.getAllByRole("listitem")[3]!;
+    await userEvent.click(within(empty).getByRole("button", { name: "1:0" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+  });
+
+  it("the footer follows the live board, not a second copy of the counts", async () => {
+    // The tournament summary says two boards are open; the board itself says none.
+    const detail = round();
+    detail.boards = detail.boards.map((b) =>
+      b.is_bye ? b : { ...b, state: "claimed" as const, white_result: "1", black_result: "0", disputed_white_result: null },
+    );
+    mount(`/t/${T}/rounds/${R}`, detail, tournament("open", { empty: 2, claimed: 2, disputed: 0, confirmed: 0 }));
+    await screen.findByText("Section A · Round 3");
+    expect(screen.getByRole("button", { name: "Release round 3" })).toBeInTheDocument();
+    expect(screen.getByText(/Release the round to confirm them/)).toBeInTheDocument();
+  });
+
   it("a frozen round has no buttons and shows the hand-off", async () => {
     stubApi({
       GET: {

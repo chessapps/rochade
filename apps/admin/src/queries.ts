@@ -85,13 +85,15 @@ export function useRound(id: string | undefined) {
   });
 }
 
-export function useRoundEvents(id: string | undefined, enabled = true) {
+export function useRoundEvents(id: string | undefined, state: RoundState | undefined) {
   return useQuery({
     queryKey: keys.events(id ?? ""),
     queryFn: () =>
       unwrap(api.GET("/api/rounds/{round_id}/events", { params: { path: { round_id: id! } } })),
-    enabled: Boolean(id) && enabled,
-    refetchInterval: 15_000,
+    enabled: Boolean(id) && state !== undefined,
+    // The board's own poll refetches this the moment a board moves; this is
+    // only the slow backstop, and a frozen round has no more to say.
+    refetchInterval: pollInterval(state) === false ? false : 30_000,
   });
 }
 

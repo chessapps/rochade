@@ -6,7 +6,7 @@
  * buttons; forfeits are one tap further away so they cannot be hit by accident.
  */
 
-import { useState, type ButtonHTMLAttributes } from "react";
+import { useId, useState, type ButtonHTMLAttributes } from "react";
 
 import type { BoardDetail, GameResult, RoundEvent } from "../api";
 import { clockTime, resultLabel } from "../format";
@@ -52,6 +52,7 @@ export function BoardRow({
   actions: BoardActions;
 }) {
   const [history, setHistory] = useState(false);
+  const historyId = useId();
   const own = events?.filter((e) => e.board === board.board) ?? [];
   const claims = own.filter(
     (e) => e.action === "result_claimed" || e.action === "result_disputed",
@@ -93,6 +94,7 @@ export function BoardRow({
                 type="button"
                 onClick={() => setHistory((v) => !v)}
                 aria-expanded={history}
+                aria-controls={historyId}
                 className="text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline"
               >
                 {history ? "hide" : "history"}
@@ -117,7 +119,7 @@ export function BoardRow({
         />
       )}
 
-      {history && <History events={own} className="col-span-3 lg:col-span-4" />}
+      {history && <History id={historyId} events={own} className="col-span-3 lg:col-span-4" />}
     </li>
   );
 }
@@ -272,9 +274,17 @@ const ACTION_LABEL: Record<string, string> = {
   dispute_resolved: "resolved by the arbiter",
 };
 
-function History({ events, className }: { events: RoundEvent[]; className?: string }) {
+function History({
+  id,
+  events,
+  className,
+}: {
+  id: string;
+  events: RoundEvent[];
+  className?: string;
+}) {
   return (
-    <ol className={cx("flex flex-col gap-0.5 text-xs text-slate-500", className)}>
+    <ol id={id} className={cx("flex flex-col gap-0.5 text-xs text-slate-500", className)}>
       {events.map((event) => (
         <li key={event.id} className="tabular-nums">
           {clockTime(event.at)} · {ACTION_LABEL[event.action] ?? event.action}

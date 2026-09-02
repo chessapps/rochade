@@ -28,6 +28,27 @@ function plan(overrides: Partial<ImportPlan> = {}): ImportPlan {
   } as ImportPlan;
 }
 
+describe("backend warnings", () => {
+  it("shows a warning the notes do not already word, and never the ones they do", () => {
+    const notes = planNotes(
+      plan({
+        is_expected_round: false,
+        file_round: 4,
+        expected_round: 3,
+        warnings: [
+          "this file holds round 4, but round 3 was expected",
+          "the manager changed the time control",
+        ],
+      }),
+    );
+    const texts = notes.map((n) => n.text);
+    expect(texts.filter((t) => t.includes("round 4"))).toHaveLength(1);
+    expect(notes.find((n) => n.text === "the manager changed the time control")?.severity).toBe(
+      "acknowledge",
+    );
+  });
+});
+
 describe("reading an import plan", () => {
   it("summarises a clean file in one line", () => {
     expect(headline(plan())).toBe("Round 2: 4 boards, 8 players");

@@ -59,7 +59,7 @@ class SetResult(Command):
 @bus.register(SetResult)
 def handle(command: SetResult, ctx: Context) -> SetResultResult:
     round_, game = lock_round_of_game(ctx, command.game_id)
-    require_open(round_)
+    require_open(round_, arbiter=True)
 
     if game.black_rank is None:
         if command.white_result not in UNPLAYED_CODES:

@@ -52,7 +52,7 @@ page.on("pageerror", (e) => check("no page error", false, e.message));
 // 1. Create a tournament in the UI.
 await page.goto(BASE + "/admin/", { waitUntil: "networkidle" });
 await page.getByRole("button", { name: "New tournament" }).first().click();
-await page.getByLabel("Name").fill("Flow Open");
+await page.getByRole("textbox", { name: "Name" }).fill("Flow Open");
 await page.getByRole("button", { name: "Create", exact: true }).click();
 await page.waitForURL(/\/admin\/t\/[0-9a-f-]+$/);
 const tournamentId = page.url().split("/").pop();

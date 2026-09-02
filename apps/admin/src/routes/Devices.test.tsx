@@ -62,6 +62,15 @@ describe("TournamentList", () => {
     expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
   });
 
+  it("shows the list when asked for it, even with one tournament", async () => {
+    stubApi({
+      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, role: "owner" }] },
+    });
+    renderAt("/?all", "/", <TournamentList />);
+    expect(await screen.findByText("Only Open")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New tournament" })).toBeInTheDocument();
+  });
+
   it("creates a tournament from the empty state and moves to it", async () => {
     const calls = stubApi({
       GET: { "/api/tournaments": [] },

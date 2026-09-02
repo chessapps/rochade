@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 
 import { errorMessage, type TournamentSummary } from "../api";
 import { Dialog } from "../components/Dialog";
@@ -11,6 +11,10 @@ import { useCreateTournament, useTournaments } from "../queries";
 export function TournamentList() {
   const tournaments = useTournaments();
   const [creating, setCreating] = useState(false);
+  // "Seebach" in the header links here with ?all, which is how an arbiter with
+  // one tournament reaches the list to start another.
+  const [params] = useSearchParams();
+  const asked = params.has("all");
 
   if (tournaments.isPending) return <Skeleton rows={3} />;
   if (tournaments.isError) {
@@ -19,7 +23,9 @@ export function TournamentList() {
 
   const list = tournaments.data;
   // One tournament is the usual day. Go straight to it; the list is a click away.
-  if (list.length === 1 && !creating) return <Navigate to={`/t/${list[0]!.id}`} replace />;
+  if (list.length === 1 && !creating && !asked) {
+    return <Navigate to={`/t/${list[0]!.id}`} replace />;
+  }
 
   return (
     <div className="flex flex-col gap-4">

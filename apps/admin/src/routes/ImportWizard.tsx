@@ -78,7 +78,9 @@ export function ImportWizard() {
         content: file.content,
         filename: file.name,
         manager,
-        force: true,
+        // Never forced: the preview must show the block that a forced commit
+        // would step over, or the arbiter never reads it.
+        force: false,
       },
       {
         onSuccess: (data) => {
@@ -110,6 +112,14 @@ export function ImportWizard() {
     });
 
   if (tournament.isPending || managers.isPending) return <Skeleton rows={4} />;
+  if (tournament.isError || managers.isError) {
+    return (
+      <Banner tone="error">
+        Could not load what the import needs:{" "}
+        {errorMessage(tournament.error ?? managers.error)}
+      </Banner>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">

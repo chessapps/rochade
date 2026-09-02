@@ -47,7 +47,7 @@ class ResolveDispute(Command):
 @bus.register(ResolveDispute)
 def handle(command: ResolveDispute, ctx: Context) -> ResolveDisputeResult:
     round_, game = lock_round_of_game(ctx, command.game_id)
-    require_open(round_)
+    require_open(round_, arbiter=True)
 
     if game.state is not ResultState.DISPUTED:
         raise Conflict(

@@ -19,6 +19,7 @@ from seebach.features.games.claim_result import ClaimResult
 from seebach.features.games.resolve_dispute import ResolveDispute
 from seebach.features.games.set_result import SetResult
 from seebach.features.imports.import_round import ImportRound
+from seebach.features.rounds.export_round import ExportRound
 from seebach.features.rounds.get_round_events import GetRoundEvents
 from seebach.features.rounds.release_round import ReleaseRound
 from seebach.platform.errors import Conflict, Forbidden, RoundFrozen, ValidationFailed
@@ -311,6 +312,27 @@ def test_a_released_round_stops_accepting_entries(
             ClaimResult(game_id=board.id, result=GameResult.DRAW),
             principal=device_of(tournament),
         )
+
+
+def test_the_arbiter_keeps_the_boards_until_the_export(
+    send: Send, session: Session, tournament: Tournament, round_: Round
+) -> None:
+    """A forced release leaves boards open for the arbiter, not for the phones."""
+    boards = sorted(round_.games, key=lambda g: g.board)
+    send(ClaimResult(game_id=boards[0].id, result=GameResult.DRAW), principal=device_of(tournament))
+    send(ReleaseRound(round_id=round_.id, force=True))
+
+    # Still open to the arbiter: the empty board, and a correction to a confirmed one.
+    send(SetResult(game_id=boards[1].id, white_result="+", black_result="-"))
+    send(SetResult(game_id=boards[0].id, white_result="1", black_result="0"))
+    session.refresh(boards[0])
+    assert (boards[0].white_result, boards[0].state) == ("1", ResultState.CONFIRMED)
+
+    for game in boards[2:]:
+        send(SetResult(game_id=game.id, white_result="=", black_result="="))
+    send(ExportRound(round_id=round_.id))
+    with pytest.raises(RoundFrozen, match="exported"):
+        send(SetResult(game_id=boards[0].id, white_result="0", black_result="1"))
 
 
 def test_a_round_cannot_be_released_twice(

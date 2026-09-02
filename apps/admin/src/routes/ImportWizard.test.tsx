@@ -109,6 +109,8 @@ describe("ImportWizard", () => {
     expect(calls.filter((c) => c.method === "POST").map((c) => c.path)).toEqual([
       `/api/tournaments/${T}/imports/preview`,
     ]);
+    // Never forced: a forced preview would hide the one block that matters.
+    expect(calls.find((c) => c.method === "POST")!.body).toMatchObject({ force: false });
     expect(screen.getByText(/Nothing to note/)).toBeInTheDocument();
   });
 

@@ -459,7 +459,7 @@ Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer 
 
 ### What "done" means here, and what it does not
 
-M1–M4 are done in the sense that the loop closes: 159 backend tests, 48 frontend tests, a smoke test that runs the whole cycle against the `docker compose` stack through the API, and `scripts/admin_flow.mjs`, which runs it again through the arbiter app in a real browser — create, import, claims arriving by polling, a dispute resolved, a result from the keyboard, release, export, the file downloaded twice, the next round imported, a QR issued and revoked, and no screen overflowing at 375 px.
+M1–M4 are done in the sense that the loop closes: 160 backend tests, 55 frontend tests, a smoke test that runs the whole cycle against the `docker compose` stack through the API, and `scripts/admin_flow.mjs`, which runs it again through the arbiter app in a real browser — create, import, claims arriving by polling, a dispute resolved, a result from the keyboard, release, export, the file downloaded twice, the next round imported, a QR issued and revoked, and no screen overflowing at 375 px.
 
 With Swiss-Manager it is now done in the sense that matters too: a real manager exported a round it had paired, took our results back into the same tournament, and paired the next one — twice. The Vega end is still unverified, and the admin app says so beside the manager picker.
 

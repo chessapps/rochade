@@ -190,6 +190,9 @@ export function download(file: Pick<ExportResult, "filename" | "content">): void
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = file.filename;
+  // Some mobile browsers only honour a click on an element in the document.
+  document.body.appendChild(anchor);
   anchor.click();
+  anchor.remove();
   URL.revokeObjectURL(url);
 }
