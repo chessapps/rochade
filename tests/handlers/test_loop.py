@@ -15,7 +15,7 @@ from seebach.features.games.claim_result import ClaimResult
 from seebach.features.games.resolve_dispute import ResolveDispute
 from seebach.features.games.set_result import SetResult
 from seebach.features.imports.import_round import ImportRound
-from seebach.features.rounds.export_round import ExportRound
+from seebach.features.rounds.export_round import ExportRound, GetExportFile
 from seebach.features.rounds.release_round import ReleaseRound
 from seebach.platform.errors import Conflict, RoundFrozen
 from seebach.shared.enums import GameResult, ResultState, RoundState
@@ -222,3 +222,43 @@ def test_a_game_row_keeps_both_sides_of_a_bye_null(
     byes = session.scalars(select(Game).where(Game.black_rank.is_(None))).all()
     assert byes
     assert all(g.black_name is None for g in byes)
+
+
+def test_the_exported_file_can_be_downloaded_again(
+    send: Send, session: Session, tournament: Tournament, round1_text: str
+) -> None:
+    send(ImportRound(tournament_id=tournament.id, section_name="A", content=round1_text))
+    round_ = session.scalars(select(Round)).one()
+
+    # Not before the export: there is no file yet to hand back.
+    with pytest.raises(Conflict):
+        send(GetExportFile(round_id=round_.id))
+
+    phone = device_of(tournament)
+    for game in round_.games:
+        if game.black_rank is not None:
+            send(ClaimResult(game_id=game.id, result=GameResult.DRAW), principal=phone)
+    send(ReleaseRound(round_id=round_.id))
+    exported = send(ExportRound(round_id=round_.id))
+
+    again = send(GetExportFile(round_id=round_.id))
+    assert again.content == exported.content
+    assert again.filename == exported.filename
+    assert again.next_step == exported.next_step
+    assert again.forced is False
+
+
+def test_a_forced_export_downloads_again_with_the_same_blanks(
+    send: Send, session: Session, tournament: Tournament, round1_text: str
+) -> None:
+    send(ImportRound(tournament_id=tournament.id, section_name="A", content=round1_text))
+    round_ = session.scalars(select(Round)).one()
+    boards = sorted(round_.games, key=lambda g: g.board)
+    send(SetResult(game_id=boards[0].id, white_result="1", black_result="0"))
+    send(ReleaseRound(round_id=round_.id, force=True))
+    exported = send(ExportRound(round_id=round_.id, force=True))
+
+    again = send(GetExportFile(round_id=round_.id))
+    assert again.content == exported.content
+    assert again.boards_left_blank == exported.boards_left_blank
+    assert again.forced is True

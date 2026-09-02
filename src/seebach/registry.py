@@ -15,7 +15,7 @@ from seebach.features.games import claim_result, resolve_dispute, set_result
 from seebach.features.imports import import_round, preview_import
 from seebach.features.managers import list_managers
 from seebach.features.queue import get_arbiter_queue
-from seebach.features.rounds import export_round, get_round, release_round
+from seebach.features.rounds import export_round, get_round, get_round_events, release_round
 from seebach.features.tournaments import (
     add_member,
     create_tournament,
@@ -45,6 +45,7 @@ MODULES = (
     revoke_device,
     # /api/rounds/{id}
     get_round,
+    get_round_events,
     release_round,
     export_round,
     # /api/games/{id}

@@ -210,6 +210,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rounds/{round_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Round Events */
+        get: operations["get_round_events_api_rounds__round_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rounds/{round_id}/release": {
         parameters: {
             query?: never;
@@ -234,7 +251,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get Export File */
+        get: operations["get_export_file_api_rounds__round_id__export_get"];
         put?: never;
         /** Export Round */
         post: operations["export_round_api_rounds__round_id__export_post"];
@@ -462,6 +480,12 @@ export interface components {
             /** Active */
             active: boolean;
         };
+        /**
+         * EventAction
+         * @description Every entry in the append-only audit log.
+         * @enum {string}
+         */
+        EventAction: "round_imported" | "result_claimed" | "result_disputed" | "result_set" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked";
         /** ExportBody */
         ExportBody: {
             /**
@@ -747,6 +771,11 @@ export interface components {
              */
             force: boolean;
         };
+        /**
+         * PrincipalKind
+         * @enum {string}
+         */
+        PrincipalKind: "staff" | "device" | "system";
         /** QueueEntry */
         QueueEntry: {
             /**
@@ -904,6 +933,33 @@ export interface components {
             exported_at: string | null;
             /** Boards */
             boards: components["schemas"]["BoardDetail"][];
+        };
+        /** RoundEvent */
+        RoundEvent: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Board */
+            board: number | null;
+            /** White Name */
+            white_name: string | null;
+            /** Black Name */
+            black_name: string | null;
+            action: components["schemas"]["EventAction"];
+            actor_kind: components["schemas"]["PrincipalKind"];
+            /** Device Label */
+            device_label: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /**
          * RoundState
@@ -1541,6 +1597,40 @@ export interface operations {
             };
         };
     };
+    get_round_events_api_rounds__round_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundEvent"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     release_round_api_rounds__round_id__release_post: {
         parameters: {
             query?: never;
@@ -1566,6 +1656,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReleaseRoundResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_export_file_api_rounds__round_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportRoundResult"];
                 };
             };
             /** @description Validation Error */

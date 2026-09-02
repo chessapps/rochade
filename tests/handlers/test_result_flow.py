@@ -14,10 +14,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from seebach.features.devices.issue_device_token import IssueDeviceToken
 from seebach.features.games.claim_result import ClaimResult
 from seebach.features.games.resolve_dispute import ResolveDispute
 from seebach.features.games.set_result import SetResult
 from seebach.features.imports.import_round import ImportRound
+from seebach.features.rounds.get_round_events import GetRoundEvents
 from seebach.features.rounds.release_round import ReleaseRound
 from seebach.platform.errors import Conflict, Forbidden, RoundFrozen, ValidationFailed
 from seebach.platform.mediator import Principal
@@ -392,3 +394,43 @@ def test_an_assistant_cannot_release(send: Send, round_: Round) -> None:
     with pytest.raises(Forbidden):
         send(ReleaseRound(round_id=round_.id), principal=stranger)
     assert ARBITER.subject != stranger.subject
+
+
+# --- the audit trail --------------------------------------------------------
+
+
+def test_the_round_events_say_which_phone_did_what(
+    send: Send, session: Session, tournament: Tournament, round_: Round, board: Game
+) -> None:
+    issued = send(IssueDeviceToken(tournament_id=tournament.id, label="phone by board 1"))
+    phone = Principal(
+        kind=PrincipalKind.DEVICE,
+        subject="device:1",
+        device_id=issued.device_id,
+        tournament_id=tournament.id,
+    )
+    send(ClaimResult(game_id=board.id, result=GameResult.WHITE_WIN), principal=phone)
+    send(
+        ClaimResult(game_id=board.id, result=GameResult.BLACK_WIN),
+        principal=device_of(tournament, "unknown"),
+    )
+    send(ResolveDispute(game_id=board.id, result=GameResult.DRAW, note="white showed the sheet"))
+
+    events = send(GetRoundEvents(round_id=round_.id))
+    actions = [e.action for e in events if e.board == board.board]
+    assert actions == [
+        EventAction.DISPUTE_RESOLVED,
+        EventAction.RESULT_DISPUTED,
+        EventAction.RESULT_CLAIMED,
+    ]
+    claimed = next(e for e in events if e.action is EventAction.RESULT_CLAIMED)
+    assert claimed.device_label == "phone by board 1"
+    assert claimed.actor_kind is PrincipalKind.DEVICE
+    disputed = next(e for e in events if e.action is EventAction.RESULT_DISPUTED)
+    # A phone the log knows only by id has no label to show.
+    assert disputed.device_label is None
+    resolved = events[0]
+    assert resolved.actor_kind is PrincipalKind.STAFF
+    assert resolved.payload["note"] == "white showed the sheet"
+    # The import itself is on the record too, with no board.
+    assert any(e.action is EventAction.ROUND_IMPORTED and e.board is None for e in events)
