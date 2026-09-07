@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     #: This is how M1-M3 run before Zitadel is wired up, and it is off by
     #: default: an insecure auth mode must be asked for, never inherited.
     dev_auth_enabled: bool = False
+    #: Bring the database up to date when the API starts. On by default so a
+    #: fresh checkout runs against an empty database; a deployment that
+    #: migrates as its own step turns it off.
+    migrate_on_start: bool = True
 
     oidc_issuer: str = ""
     oidc_audience: str = "seebach-api"

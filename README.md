@@ -97,10 +97,14 @@ pnpm -r run test
 pnpm -r run typecheck
 ```
 
-The API server and the two frontends, each against a locally running Postgres:
+The API server and the two frontends, each against a locally running Postgres.
+The API applies the migrations itself when it starts, so the database only has
+to exist (`SEEBACH_MIGRATE_ON_START=false` turns that off for a deployment that
+migrates as its own step). Settings are read from the environment or from a
+`.env` in the repo root, `SEEBACH_DATABASE_URL` among them:
 
 ```sh
-docker compose up -d postgres
+docker compose up -d postgres            # or any Postgres with a database named seebach
 SEEBACH_DEV_AUTH_ENABLED=true uv run uvicorn seebach.app:app --reload
 pnpm run dev:hall     # :5173
 pnpm run dev:admin    # :5174/admin/

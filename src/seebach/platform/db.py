@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from seebach.platform.config import settings
 
+CONNECT_TIMEOUT = 5
+
 _engine: Engine | None = None
 _factory: sessionmaker[Session] | None = None
 
@@ -13,7 +15,14 @@ _factory: sessionmaker[Session] | None = None
 def engine() -> Engine:
     global _engine
     if _engine is None:
-        _engine = create_engine(settings().database_url, pool_pre_ping=True, future=True)
+        _engine = create_engine(
+            settings().database_url,
+            pool_pre_ping=True,
+            future=True,
+            # A wrong host or port fails within seconds, not after the OS
+            # gives up on a socket nobody answers.
+            connect_args={"connect_timeout": CONNECT_TIMEOUT},
+        )
     return _engine
 
 

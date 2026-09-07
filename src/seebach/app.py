@@ -7,6 +7,8 @@ assembled here is the edge -- CORS, error translation, health.
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +16,18 @@ from fastapi.responses import JSONResponse
 
 from seebach.platform.config import settings
 from seebach.platform.errors import DomainError
+from seebach.platform.migrate import upgrade_to_head
 from seebach.registry import api_router
 
 logging.basicConfig(level=logging.INFO)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    config = settings()
+    if config.migrate_on_start:
+        upgrade_to_head(config.database_url)
+    yield
 
 
 def create_app() -> FastAPI:
@@ -25,6 +36,7 @@ def create_app() -> FastAPI:
         title="Seebach",
         version="0.1.0",
         summary="Digital result entry for chess tournaments run in Swiss-Manager or Vega",
+        lifespan=lifespan,
     )
 
     app.add_middleware(

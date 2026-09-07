@@ -10,18 +10,22 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 import pytest
-from alembic import command as alembic_command
-from alembic.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from seebach.platform.bus import bus
+from seebach.platform.config import Settings
 from seebach.platform.mediator import Context, Message, Principal
+from seebach.platform.migrate import upgrade_to_head
 from seebach.shared.enums import PrincipalKind, Role
 from seebach.shared.models import Base, Tournament, TournamentMember
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+# A developer's .env names their own database and switches dev auth on. The
+# tests set what they need explicitly and must never inherit either.
+Settings.model_config["env_file"] = None
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 ARBITER = Principal(kind=PrincipalKind.STAFF, subject="arbiter@example.test")
@@ -135,10 +139,7 @@ def engine(database_url: str) -> Iterator[Engine]:
     schema the code expects -- the two drifting apart is otherwise only found
     on a deploy.
     """
-    config = Config(str(ROOT / "alembic.ini"))
-    config.set_main_option("script_location", str(ROOT / "src/seebach/platform/migrations"))
-    config.set_main_option("sqlalchemy.url", database_url)
-    alembic_command.upgrade(config, "head")
+    upgrade_to_head(database_url)
 
     built = create_engine(database_url, future=True)
     yield built

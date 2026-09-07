@@ -29,6 +29,9 @@ def client(
     # Dev auth is off by default, so the edge tests turn it on explicitly --
     # which is also a test that it is genuinely off until asked for.
     monkeypatch.setenv("SEEBACH_DEV_AUTH_ENABLED", "true")
+    # Startup migrates whatever SEEBACH_DATABASE_URL names; make that the
+    # throwaway database, never the developer's own.
+    monkeypatch.setenv("SEEBACH_DATABASE_URL", engine.url.render_as_string(hide_password=False))
     settings.cache_clear()
     app = create_app()
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
@@ -184,6 +187,7 @@ def test_dev_auth_is_off_unless_asked_for(monkeypatch: pytest.MonkeyPatch) -> No
     """An insecure auth mode must be opted into, never inherited."""
     monkeypatch.delenv("SEEBACH_DEV_AUTH_ENABLED", raising=False)
     monkeypatch.delenv("SEEBACH_OIDC_ISSUER", raising=False)
+    monkeypatch.setenv("SEEBACH_MIGRATE_ON_START", "false")
     settings.cache_clear()
     try:
         with TestClient(create_app()) as client:
