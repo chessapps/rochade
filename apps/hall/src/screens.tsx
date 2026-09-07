@@ -46,6 +46,7 @@ export function BoardListScreen({
   const shown = needle
     ? boards.filter(
         (board) =>
+          String(board.board) === needle ||
           board.white_name.toLowerCase().includes(needle) ||
           (board.black_name ?? "").toLowerCase().includes(needle),
       )
@@ -65,8 +66,8 @@ export function BoardListScreen({
         <input
           value={query}
           onChange={(event) => onQuery(event.target.value)}
-          placeholder="Your name"
-          aria-label="Search your name"
+          placeholder="Your name or board"
+          aria-label="Search by name or board number"
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
@@ -76,7 +77,7 @@ export function BoardListScreen({
 
       <div className="flex-1 overflow-y-auto pb-6">
         {groups.map((group) => (
-          <table key={group.key} className="w-full border-collapse text-[15px]">
+          <table key={group.key} className="w-full table-fixed border-collapse text-[15px]">
             <thead>
               <tr className="border-b border-ink bg-neutral-100 text-left text-[11px] font-semibold tracking-wide text-mute uppercase">
                 <th className="w-9 py-1 pl-2 text-right">Bd</th>
@@ -111,13 +112,15 @@ export function BoardListScreen({
                     }
                     className={[
                       "border-b border-rule align-top",
-                      open ? "cursor-pointer active:bg-neutral-100" : "text-mute",
+                      open
+                        ? "cursor-pointer active:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
+                        : "text-mute",
                     ].join(" ")}
                   >
                     <td className="py-1.5 pl-2 text-right font-semibold tabular-nums">
                       {board.board}
                     </td>
-                    <td className="min-w-0 py-1.5 pl-2 leading-tight">
+                    <td className="py-1.5 pl-2 leading-tight">
                       <span className="block truncate">{board.white_name}</span>
                       <span className="block truncate text-mute">{board.black_name ?? "bye"}</span>
                     </td>
@@ -132,7 +135,7 @@ export function BoardListScreen({
         ))}
         {shown.length === 0 && (
           <p className="px-4 py-10 text-center text-mute">
-            {boards.length === 0 ? "No round is open for entry." : "No board matches that name."}
+            {boards.length === 0 ? "No round is open for entry." : "No board matches that."}
           </p>
         )}
       </div>
@@ -206,7 +209,7 @@ export function ResultChoiceScreen({
   onBack: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col gap-4 p-3">
+    <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
       <p className="text-lg font-semibold">Who won?</p>
       <div className="flex flex-col gap-2">
@@ -215,14 +218,14 @@ export function ResultChoiceScreen({
             key={result}
             type="button"
             onClick={() => onChoose(result)}
-            className="flex items-center gap-4 rounded-md border-2 border-ink px-4 py-3 text-left active:bg-ink active:text-paper"
+            className="group flex items-center gap-4 rounded-md border-2 border-ink px-4 py-3 text-left focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-ink active:text-paper"
           >
             <span className="w-20 shrink-0 text-2xl font-bold tabular-nums">
               {RESULT_LABELS[result].score}
             </span>
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block text-lg font-semibold">{RESULT_LABELS[result].name}</span>
-              <span className="block truncate text-sm text-mute">
+              <span className="block text-sm text-mute break-words group-active:text-neutral-300">
                 {winnerLine(board, result)}
               </span>
             </span>
@@ -256,7 +259,7 @@ export function ConfirmScreen({
   busy: boolean;
 }) {
   return (
-    <div className="flex h-full flex-col gap-4 p-3">
+    <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
       <div>
         <p className="text-xs font-semibold tracking-wide text-mute uppercase">Check before sending</p>
@@ -269,7 +272,7 @@ export function ConfirmScreen({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper active:bg-neutral-800 disabled:opacity-50"
+          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-neutral-800 disabled:opacity-50"
         >
           {busy ? "Sending…" : `Confirm ${RESULT_LABELS[result].score}`}
         </button>
@@ -301,7 +304,7 @@ function ScoreSheet({ board, result }: { board: Board; result: GameResult }) {
     },
   ];
   return (
-    <table className="w-full border-collapse overflow-hidden rounded-md border-2 border-ink text-lg">
+    <table className="w-full table-fixed border-collapse overflow-hidden rounded-md border-2 border-ink text-lg">
       <tbody>
         {rows.map((row) => (
           <tr
@@ -313,16 +316,16 @@ function ScoreSheet({ board, result }: { board: Board; result: GameResult }) {
           >
             <td
               className={[
-                "w-16 py-3 pl-3 text-xs font-semibold tracking-wide uppercase",
+                "w-[4.5rem] py-3 pr-2 pl-3 text-xs font-semibold tracking-wide uppercase",
                 row.wins ? "text-neutral-300" : "text-mute",
               ].join(" ")}
             >
               {row.colour}
             </td>
-            <td className="min-w-0 py-3 pr-2 leading-tight">
-              <span className="block truncate font-semibold">{row.name}</span>
+            <td className="py-3 pr-2 leading-tight">
+              <span className="block font-semibold break-words">{row.name}</span>
             </td>
-            <td className="w-14 py-3 pr-3 text-right text-3xl font-bold tabular-nums">{row.score}</td>
+            <td className="w-16 py-3 pr-3 text-right text-3xl font-bold tabular-nums">{row.score}</td>
           </tr>
         ))}
       </tbody>
@@ -342,7 +345,7 @@ export function DoneScreen({
   onDone: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col gap-4 p-3">
+    <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
       <div className="flex items-center gap-3">
         <span
@@ -365,7 +368,7 @@ export function DoneScreen({
         <button
           type="button"
           onClick={onDone}
-          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper active:bg-neutral-800"
+          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-neutral-800"
         >
           Done
         </button>
@@ -399,7 +402,7 @@ function SecondaryButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full rounded-md border-2 border-ink py-3 text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
+      className="w-full rounded-md border-2 border-ink py-3 text-lg font-semibold focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-neutral-100 disabled:opacity-50"
     >
       {children}
     </button>

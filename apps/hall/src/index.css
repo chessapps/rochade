@@ -20,3 +20,9 @@ body {
   overscroll-behavior-y: contain;
   font-feature-settings: "tnum";
 }
+
+/* Phones with a home bar: keep the bottom button above it. */
+#root {
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}

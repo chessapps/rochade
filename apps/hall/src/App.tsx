@@ -131,7 +131,7 @@ export function App() {
   };
 
   return (
-    <main className="h-full">
+    <main className="mx-auto h-full w-full max-w-xl">
       <RejectedBanner
         claims={rejected}
         onDismiss={(key) => void queue.dismiss(key).then(syncQueueState)}
@@ -211,7 +211,7 @@ function NeedsToken({ onJoined }: { onJoined: () => void }) {
   };
 
   return (
-    <div className="flex h-full flex-col justify-center gap-6 p-5">
+    <div className="mx-auto flex min-h-full w-full max-w-xl flex-col justify-center gap-6 overflow-y-auto p-5">
       <div>
         <p className="text-xs font-semibold tracking-wide text-mute uppercase">Seebach</p>
         <h1 className="mt-1 text-3xl font-bold leading-tight">Enter your result</h1>
