@@ -1,11 +1,12 @@
 /**
- * The three screens from the sketch, unchanged:
+ * Two taps from the sketch:
  *
- *   board list (sticky search)  ->  result choice  ->  confirm
+ *   board list (sticky search)  ->  result choice, which sends  ->  done
  *
  * Black on white, ruled like a printed pairing sheet: this is read on a
  * five-year-old Android in a badly lit hall by someone who has just played four
- * hours of chess and wants to leave. Rows are dense, the confirmation is not.
+ * hours of chess and wants to leave. There is no confirm step; the choice
+ * screen shows both names by colour so the tap itself is the check.
  */
 
 import type { Board } from "./api";
@@ -201,24 +202,28 @@ function StatusLine({
 
 export function ResultChoiceScreen({
   board,
+  busy,
   onChoose,
   onBack,
 }: {
   board: Board;
+  busy: boolean;
   onChoose: (result: GameResult) => void;
   onBack: () => void;
 }) {
   return (
     <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
-      <p className="text-lg font-semibold">Who won?</p>
+      <Players board={board} />
+      <p className="text-lg font-semibold">Tap the result to send it</p>
       <div className="flex flex-col gap-2">
         {(Object.keys(RESULT_LABELS) as GameResult[]).map((result) => (
           <button
             key={result}
             type="button"
             onClick={() => onChoose(result)}
-            className="group flex items-center gap-4 rounded-md border-2 border-ink px-4 py-3 text-left focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-ink active:text-paper"
+            disabled={busy}
+            className="group flex items-center gap-4 rounded-md border-2 border-ink px-4 py-3 text-left focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-ink active:text-paper disabled:opacity-50"
           >
             <span className="w-20 shrink-0 text-2xl font-bold tabular-nums">
               {RESULT_LABELS[result].score}
@@ -233,7 +238,9 @@ export function ResultChoiceScreen({
         ))}
       </div>
       <div className="pt-2">
-        <SecondaryButton onClick={onBack}>Back to the list</SecondaryButton>
+        <SecondaryButton onClick={onBack} disabled={busy}>
+          Back to the list
+        </SecondaryButton>
       </div>
     </div>
   );
@@ -245,51 +252,12 @@ function winnerLine(board: Board, result: GameResult): string {
   return "half a point each";
 }
 
-export function ConfirmScreen({
-  board,
-  result,
-  onConfirm,
-  onBack,
-  busy,
-}: {
-  board: Board;
-  result: GameResult;
-  onConfirm: () => void;
-  onBack: () => void;
-  busy: boolean;
-}) {
-  return (
-    <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
-      <BoardHeading board={board} />
-      <div>
-        <p className="text-xs font-semibold tracking-wide text-mute uppercase">Check before sending</p>
-        <p className="mt-1 text-3xl font-bold leading-tight">{RESULT_LABELS[result].name}</p>
-        <p className="text-base text-mute">{winnerLine(board, result)}</p>
-      </div>
-      <ScoreSheet board={board} result={result} />
-      <div className="flex flex-col gap-2 pt-2">
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={busy}
-          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:outline-none active:bg-neutral-800 disabled:opacity-50"
-        >
-          {busy ? "Sending…" : `Confirm ${RESULT_LABELS[result].score}`}
-        </button>
-        <SecondaryButton onClick={onBack} disabled={busy}>
-          Wrong, change it
-        </SecondaryButton>
-      </div>
-    </div>
-  );
-}
-
 /**
  * The result as it will appear on the pairing sheet: one line per colour,
  * the winner's line inverted so the eye lands on it even at arm's length.
  */
 function ScoreSheet({ board, result }: { board: Board; result: GameResult }) {
-  const rows: Array<{ colour: string; name: string; score: string; wins: boolean }> = [
+  const rows: { colour: string; name: string; score: string; wins: boolean }[] = [
     {
       colour: "White",
       name: board.white_name,
@@ -374,6 +342,18 @@ export function DoneScreen({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Which name has which colour, so "White wins" is never a guess. */
+function Players({ board }: { board: Board }) {
+  return (
+    <dl className="grid grid-cols-[4.5rem_1fr] gap-y-1 text-lg leading-tight">
+      <dt className="text-xs font-semibold tracking-wide text-mute uppercase self-center">White</dt>
+      <dd className="font-semibold break-words">{board.white_name}</dd>
+      <dt className="text-xs font-semibold tracking-wide text-mute uppercase self-center">Black</dt>
+      <dd className="font-semibold break-words">{board.black_name ?? "bye"}</dd>
+    </dl>
   );
 }
 

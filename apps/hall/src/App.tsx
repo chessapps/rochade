@@ -4,7 +4,6 @@ import { fetchBoards, joinWithCode, submitClaim, type Board, type BoardList } fr
 import { ClaimQueue, type GameResult, type PendingClaim } from "./queue";
 import {
   BoardListScreen,
-  ConfirmScreen,
   DoneScreen,
   RejectedBanner,
   ResultChoiceScreen,
@@ -21,7 +20,6 @@ import {
 type Screen =
   | { name: "list" }
   | { name: "choose"; board: Board }
-  | { name: "confirm"; board: Board; result: GameResult }
   | { name: "done"; board: Board; result: GameResult; queued: boolean };
 
 const REFRESH_MS = 20_000;
@@ -158,20 +156,9 @@ export function App() {
       {screen.name === "choose" && (
         <ResultChoiceScreen
           board={screen.board}
-          onChoose={(result) =>
-            setScreen({ name: "confirm", board: screen.board, result })
-          }
-          onBack={() => setScreen({ name: "list" })}
-        />
-      )}
-
-      {screen.name === "confirm" && (
-        <ConfirmScreen
-          board={screen.board}
-          result={screen.result}
           busy={busy}
-          onConfirm={() => void confirm(screen.board, screen.result)}
-          onBack={() => setScreen({ name: "choose", board: screen.board })}
+          onChoose={(result) => void confirm(screen.board, result)}
+          onBack={() => setScreen({ name: "list" })}
         />
       )}
 

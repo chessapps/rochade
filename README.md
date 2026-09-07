@@ -155,7 +155,7 @@ src/seebach/
   registry.py      every route module, in REST order
   trf/             the TRF library -- pure, no database, no framework
 spikes/            M0: throwaway tooling for the manager round-trip spike
-apps/hall          the player PWA: board list -> result -> confirm, offline-first
+apps/hall          the player PWA: board list -> result (one tap sends) -> done, offline-first
 apps/admin         the arbiter app: tournament home, round board, import wizard, phones
 packages/api-client        generated from the OpenAPI schema
 ```

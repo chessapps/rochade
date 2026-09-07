@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Board } from "./api";
-import { BoardListScreen, ConfirmScreen } from "./screens";
+import { BoardListScreen, ResultChoiceScreen } from "./screens";
 
 const board: Board = {
   game_id: "g3",
@@ -18,17 +19,24 @@ const board: Board = {
   entered: false,
 };
 
-describe("the confirmation", () => {
-  it("names the winner, both players and the score before anything is sent", () => {
-    render(
-      <ConfirmScreen board={board} result="black_win" busy={false} onConfirm={vi.fn()} onBack={vi.fn()} />,
-    );
+describe("choosing a result", () => {
+  it("shows both players by colour, names the winner on each button, and sends on one tap", async () => {
+    const onChoose = vi.fn();
+    render(<ResultChoiceScreen board={board} busy={false} onChoose={onChoose} onBack={vi.fn()} />);
 
-    expect(screen.getByText("Black wins")).toBeInTheDocument();
-    expect(screen.getByText("Wagner, Elisabeth wins")).toBeInTheDocument();
     expect(screen.getByText("Meyer, Thomas")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirm 0 : 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Wrong, change it" })).toBeInTheDocument();
+    expect(screen.getByText("Wagner, Elisabeth")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Black wins/ }));
+
+    expect(onChoose).toHaveBeenCalledWith("black_win");
+    expect(screen.getByRole("button", { name: /Black wins/ })).toHaveTextContent(
+      "Wagner, Elisabeth wins",
+    );
+  });
+
+  it("locks the buttons while a result is on its way", () => {
+    render(<ResultChoiceScreen board={board} busy={true} onChoose={vi.fn()} onBack={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /White wins/ })).toBeDisabled();
   });
 });
 
