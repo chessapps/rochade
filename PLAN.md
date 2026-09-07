@@ -203,7 +203,7 @@ src/seebach/
 
 ### What Swiss-Manager taught the port
 
-The adapter that came out of M0 is not the one the plan sketched. It reads TRF16 and writes **Swiss-Manager's own pairing file** (`Extras → Daten Import/Export → Spielerauslosung`), because that is the path that merges into the open tournament; the TRF16 import creates a new one. Three consequences landed in the shared code rather than the adapter:
+The adapter that came out of M0 is not the one the plan sketched. It writes **Swiss-Manager's own pairing file** (`Extras → Daten Import/Export → Spielerauslosung`), because that is the path that merges into the open tournament; the TRF16 import creates a new one. Since 2026-09-07 it also *reads* Swiss-Manager's own text exports — `Spielerdaten` plus `Spielerauslosung`, joined on the start number — because the TRF16 export crashes on 15.0.0.3 for a tournament whose rounds it paired itself (`docs/m0-swiss-manager.md`). TRF16 is still read for Vega and for rounds imported earlier. Three consequences landed in the shared code rather than the adapter:
 
 - `ResultEntry` carries both sides. A double forfeit is `("-", "-")`; mirroring white's code cannot say so, and neither format should be handed a `+` nobody earned.
 - `export_round` writes only what changed since import. A bye the manager allocated, or any result it exported with the round, goes back as it came — neither counted nor checked against the adapter's vocabulary. Without this, every Swiss-Manager export was refused over the `U` on the bye row.
@@ -459,7 +459,7 @@ Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer 
 
 ### What "done" means here, and what it does not
 
-M1–M4 are done in the sense that the loop closes: 162 backend tests, 55 frontend tests, a smoke test that runs the whole cycle against the `docker compose` stack through the API, and `scripts/admin_flow.mjs`, which runs it again through the arbiter app in a real browser — create, import, claims arriving by polling, a dispute resolved, a result from the keyboard, release, export, the file downloaded twice, the next round imported, a QR issued and revoked, and no screen overflowing at 375 px.
+M1–M4 are done in the sense that the loop closes: 180 backend tests, 69 frontend tests, a smoke test that runs the whole cycle against the `docker compose` stack through the API, and `scripts/admin_flow.mjs`, which runs it again through the arbiter app in a real browser — create, import, claims arriving by polling, a dispute resolved, a result from the keyboard, release, export, the file downloaded twice, the next round imported, a QR issued and revoked, and no screen overflowing at 375 px.
 
 With Swiss-Manager it is now done in the sense that matters too: a real manager exported a round it had paired, took our results back into the same tournament, and paired the next one — twice. The Vega end is still unverified, and the admin app says so beside the manager picker.
 

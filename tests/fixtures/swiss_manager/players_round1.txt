@@ -1,0 +1,15 @@
+Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;Typ;Gr;KlubNr;Klub;FideIdent;Quelle;Pkt;Wtg1;Wtg2;Wtg3;Wtg4;Wtg5;Wtg6;Rang;Nachname;Vorname;Atitel
+1;Brunner Livia;WGM;;0;2447;01.06.1992;SUI;W;;;0;;0;;1;1;;;;;;1;Brunner;Livia;
+2;Dubois Martin;IM;;0;2359;10.11.1960;SUI;;;;0;;0;;0;2;;;;;;61;Dubois;Martin;
+3;Graf Matthias;IM;;0;2332;18.12.1955;SUI;;;;0;;0;;1;3;;;;;;2;Graf;Matthias;
+4;Bachmann Matteo;IM;;0;2329;08.08.1998;POL;;;;0;;0;;0;4;;;;;;62;Bachmann;Matteo;
+5;Haller Lukas;IM;;0;2324;27.11.1980;SUI;;;;0;;0;;½;5;;;;;;41;Haller;Lukas;
+6;Krueger Piotr;FM;;0;2278;06.12.1977;ITA;;;;0;;0;;0;6;;;;;;63;Krueger;Piotr;
+7;Egger Yannick;CM;;0;2221;17.12.1997;SUI;;;;0;;0;;1;7;;;;;;3;Egger;Yannick;
+51;Novak Tomasz;;;0;1617;22.04.2010;SUI;;;;0;;0;;0;51;;;;;;80;Novak;Tomasz;
+52;Mueller Viktor;;;0;1617;19.06.1993;FRA;;;;0;;0;;1;52;;;;;;22;Mueller;Viktor;
+53;Yilmaz Chiara;;;0;1616;11.09.1962;SUI;W;;;0;;0;;0;53;;;;;;81;Yilmaz;Chiara;
+54;Rossi Manuela;;;0;1609;10.12.1979;SUI;W;;;0;;0;;1;54;;;;;;23;Rossi;Manuela;
+55;Ferrari Thierry;;;0;1608;04.06.2003;SUI;;;;0;;0;;½;55;;;;;;51;Ferrari;Thierry;
+56;Steiner Milena;;;0;1606;20.07.1971;SUI;W;;;0;;0;;1;56;;;;;;24;Steiner;Milena;
+57;Wagner Laurent;;;0;1593;28.08.2002;GER;;;;0;;0;;0;57;;;;;;82;Wagner;Laurent;

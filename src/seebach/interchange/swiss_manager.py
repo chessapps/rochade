@@ -1,11 +1,16 @@
 """Swiss-Manager: TRF16 out of it, its own pairing file back into it.
 
-Verified against Swiss-Manager 15.0.0.3 on 2026-09-02 -- see
-`docs/m0-swiss-manager.md` for what was watched. In short:
+Verified against Swiss-Manager 15.0.0.3 -- see `docs/m0-swiss-manager.md` for
+what was watched. In short:
 
-* `Extras -> FIDE-Daten-Export TRF16` writes the paired-but-unplayed round, so
-  there are open boards for players to enter. The file lands silently in
-  `Documents\\SwissManagerUniCode\\Listen\\FIDE_Export_<tournament>.TXT`.
+* `Extras -> Daten Import/Export` writes the paired-but-unplayed round as two
+  plain text files: `Spielerdaten` for the players, `Spielerauslosung` for the
+  boards. They join on the start number and are read together.
+  `Extras -> FIDE-Daten-Export TRF16` was the original inbound leg and is no
+  longer asked for: on 15.0.0.3 it dies with an access violation for a
+  tournament whose rounds Swiss-Manager paired itself (seen 2026-09-07). TRF16
+  is still *read*, because rounds imported before this change are re-read from
+  the source they were imported from.
 * `Datei -> FIDE-Datenformat importieren TRF16` is **not** the way back: it
   creates a new tournament from the file every time and re-derives settings
   from it. `Extras -> Daten Import/Export -> Spielerauslosung` is: it merges
@@ -22,6 +27,7 @@ from collections.abc import Sequence
 from typing import ClassVar
 
 from seebach.interchange.document import ManagerFile, ResultEntry, RoundDocument
+from seebach.interchange.formats import swiss_manager_text
 from seebach.interchange.formats import trf as trf_format
 from seebach.interchange.port import Capabilities, InterchangeError, Support, register
 from seebach.swiss_manager import PairingFileError, PairingLine, render_pairing_file
@@ -38,12 +44,13 @@ class SwissManager:
         # business and go back exactly as they came; unrated results (W/D/L)
         # have no spelling in the pairing file and are refused, not guessed.
         result_codes_out=WRITABLE_CODES,
-        reads_format="trf16",
+        reads_format="swiss-manager text exports (trf16 also read)",
         writes_format="swiss-manager pairing file",
         export_howto=(
-            "Extras → FIDE-Daten-Export TRF16, OK, and answer Ja to «Es fehlen noch "
-            "Ergebnisse» — that is the round about to be played. The file appears in "
-            "Documents\\SwissManagerUniCode\\Listen\\FIDE_Export_<tournament>.TXT."
+            "Extras → Daten Import/Export, on the export side: «Spielerdaten (Text-File)» "
+            "→ Starten → save, then «Spielerauslosung (Text-File)» → Starten with the "
+            "round range → save. Bring both files here. The players file only changes "
+            "when the entry list does."
         ),
         import_howto=(
             "Extras → Daten Import/Export → Spielerauslosung → Starten, pick the downloaded "
@@ -53,7 +60,8 @@ class SwissManager:
             "The results file also carries the pairings, and Swiss-Manager takes them: if a "
             "round was re-paired there after it was exported here, export it again and "
             "re-import it here before sending results back, or the re-pairing is undone.",
-            "The export needs round dates (Eingabe → Termine für die einzelnen Runden).",
+            "Its TRF16 export crashes on 15.0.0.3 for a tournament whose rounds it paired "
+            "itself, which is why the round comes over as these two text files instead.",
             "Names arrive as Swiss-Manager exports them: «Surname,Given», transliterated for "
             "the tournament's own federation (Müller → Mueller).",
             "Verified against Swiss-Manager 15.0.0.3.",
@@ -61,6 +69,14 @@ class SwissManager:
     )
 
     def read_round(self, content: str) -> RoundDocument:
+        """Its own text exports, or a TRF16 -- whichever the file turns out to be.
+
+        The text pair is the way in now (see the module docstring). TRF16 still
+        reads, because rounds imported before this exist and are re-read from
+        their stored source every time one is exported again.
+        """
+        if swiss_manager_text.looks_like(content):
+            return swiss_manager_text.read_document(content)
         return trf_format.read_document(content)
 
     def write_results(

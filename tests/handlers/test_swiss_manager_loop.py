@@ -22,7 +22,7 @@ from seebach.features.imports.preview_import import PreviewImport
 from seebach.features.rounds.export_round import ExportRound
 from seebach.features.rounds.release_round import ReleaseRound
 from seebach.interchange import InterchangeError, ResultEntry, manager_for
-from seebach.platform.errors import Conflict
+from seebach.platform.errors import Conflict, ValidationFailed
 from seebach.shared.enums import GameResult
 from seebach.shared.models import Round, Tournament
 from seebach.swiss_manager import parse_pairing_file
@@ -174,3 +174,49 @@ def test_a_dangling_opponent_is_a_readable_error_not_a_crash() -> None:
     text = read("round3_paired.trf").replace("    5 w 1     2 b =", "   77 w 1     2 b =")
     with pytest.raises(InterchangeError, match="no such player"):
         manager_for("swiss_manager").read_round(text)
+
+
+def test_the_round_comes_in_as_the_two_text_exports(send: Send, tournament: Tournament) -> None:
+    """The inbound leg that does not touch the TRF16 export.
+
+    `Spielerdaten` and `Spielerauslosung`, exactly as Swiss-Manager writes
+    them, handed over together. They join on the start number, and what comes
+    back out is its own pairing file, as before.
+    """
+    both = read("players_round1.txt") + "\n" + read("pairings_round1_played.txt")
+
+    plan = send(
+        PreviewImport(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=both,
+            manager="swiss_manager",
+        )
+    )
+    assert plan.file_round == 1
+    assert plan.boards == 7
+    assert len(plan.players_added) == 14
+
+    result = send(
+        ImportRound(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=both,
+            manager="swiss_manager",
+        )
+    )
+    assert result.round_number == 1
+
+
+def test_one_of_the_two_text_files_alone_is_refused(send: Send, tournament: Tournament) -> None:
+    with pytest.raises(ValidationFailed) as caught:
+        send(
+            PreviewImport(
+                tournament_id=tournament.id,
+                section_name="A",
+                content=read("pairings_round1_played.txt"),
+                manager="swiss_manager",
+            )
+        )
+
+    assert "Spielerdaten" in str(caught.value)

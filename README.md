@@ -24,7 +24,7 @@ ships `UNVERIFIED` until someone has watched it work.
 
 | Manager | Status | Read more |
 |---|---|---|
-| **Swiss-Manager** | **verified** against 15.0.0.3 — TRF16 out, its pairing file back in, merges into the open tournament | [arbiter guide](docs/arbiter-guide-swiss-manager.md) · [what was observed](docs/m0-swiss-manager.md) |
+| **Swiss-Manager** | **verified** against 15.0.0.3 — its two text exports out, its pairing file back in, merges into the open tournament | [arbiter guide](docs/arbiter-guide-swiss-manager.md) · [what was observed](docs/m0-swiss-manager.md) |
 | **Vega** | unverified — TRF16 both ways is what the manual says | [how to run the spike](spikes/README.md) |
 
 See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
@@ -71,8 +71,9 @@ code under **Devices** — print it as a poster or show it on screen. Then each
 round is the same five minutes, and the section card on the tournament home
 always names the next step:
 
-1. Pair the round in Swiss-Manager or Vega and export it; **Import round N**
-   shows what the file changes before anything is written.
+1. Pair the round in Swiss-Manager or Vega and export it — Swiss-Manager
+   writes the players and the pairings as two text files; **Import round N**
+   shows what they change before anything is written.
 2. Players enter results on their phones. The round board updates every few
    seconds and opens on **Attention**: the boards with no result, and the ones
    two phones disagree about, with which phone said what. Forfeits are one tap

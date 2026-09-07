@@ -21,26 +21,32 @@ they appear there.
 
 `Auslosen → Auslosungsmenü…` (F6), `Starten`, `OK`.
 
-### 2. Export it for Seebach
+### 2. Export it for Seebach — two files
 
-`Extras → FIDE-Daten-Export TRF16`
+`Extras → Daten Import/Export…`, on the **export** side (the left column):
 
-- If it says players without a FIDE ID make the tournament unratable, `ok` — it
-  is a hint, and Seebach does not need FIDE IDs.
-- `Rundenauswahl`: the defaults already include the round you just paired. `OK`.
-- `Es fehlen noch Ergebnisse. Liste trotzdem ausgeben?` → **`Ja`**. Those
-  missing results are the round about to be played; that is the point.
+1. **Spielerdaten (Text-File)** → `Starten` → save it, say as `players.txt`.
+2. **Spielerauslosung (Text-File)** → set `Runde` to the round you just paired,
+   both boxes the same number → `Starten` → save it, say as `round4.txt`.
+3. `OK` closes the dialog. Neither export asks anything else and neither says
+   anything when it works.
 
-There is no save dialog. The file is written to
+The first file is the entry list, the second is the boards; they mean nothing
+apart, so Seebach wants both. The players file only changes when the entry list
+does, so on a quiet round you can hand over the one you already have.
 
-```
-Documents\SwissManagerUniCode\Listen\FIDE_Export_<tournament>.TXT
-```
-
-In Seebach the section card says **Import round N** — press it, drop that file
-on the page, **Preview the changes**, read what the file changes, **Import**.
-You land on the round board; the phones show the same board numbers
+In Seebach the section card says **Import round N** — press it, drop **both**
+files on the page, **Preview the changes**, read what the file changes,
+**Import**. You land on the round board; the phones show the same board numbers
 Swiss-Manager printed on the pairing list.
+
+> **Not `Extras → FIDE-Daten-Export TRF16`.** That was the original route and it
+> is out of use: on 15.0.0.3 it crashes with an access violation
+> (`Zugriffsverletzung bei Adresse 010ABD84`) for a tournament whose rounds
+> Swiss-Manager paired itself, leaving a file with a header and no players.
+> Seen 2026-09-07 on a 100-player test tournament, however the tournament was
+> created and whether or not the round had results. Seebach still *reads* a TRF
+> if you have one.
 
 ### 3. Play
 

@@ -15,7 +15,8 @@ in the tournament they already have open.**
 
 | Leg | Menu | Format | Verdict |
 |---|---|---|---|
-| manager → us | `Extras → FIDE-Daten-Export TRF16` | TRF16 | exports the paired-but-unplayed round; every code intact |
+| manager → us | `Extras → Daten Import/Export` → `Spielerdaten` + `Spielerauslosung` | two text files | the way in since 2026-09-07, below; four clicks each |
+| manager → us (was) | `Extras → FIDE-Daten-Export TRF16` | TRF16 | exported the paired-but-unplayed round with every code intact, then **started crashing** — see below |
 | us → manager | `Extras → Daten Import/Export → Import Spielerauslosung` | Swiss-Manager pairing file (`;`-separated text) | **merges into the open tournament**; forfeits and double forfeits intact; the next round pairs |
 
 The obvious candidate for the inbound leg — `Datei → FIDE-Datenformat
@@ -160,6 +161,58 @@ through TRF at all -- only through the pairing file.
 - `Listen → Ergebnisse` (F9) shows one round at a time; `Rd` selects.
 
 ---
+
+## 2026-09-07 — the TRF export stopped being usable, and the way round it
+
+Run on a **100-player** test tournament (`sandbox/`, gitignored) on the same
+build. Two findings, one bad and one good.
+
+### `Extras → FIDE-Daten-Export TRF16` crashes
+
+`Zugriffsverletzung bei Adresse 010ABD84 in Modul 'SwissManager.exe'`, every
+time, leaving a 256-byte file: the header up to an empty `132`, no players.
+Afterwards Swiss-Manager holds that file open, so the next attempt fails with
+`E/A-Fehler 32` until the program is restarted.
+
+Ruled out, each by its own run: the number of players (a 9-player cut of the
+same data crashes too); how the tournament was made (crashes both for one built
+by the TRF import and one created natively with players brought in as text);
+the country, set and unset; the round dates, before and after `Übernehmen`; the
+FIDE and national rating flags, `Ja` and `Nein`; which rating column to output;
+and whether the round had results.
+
+**It is not the machine.** `m0-seed.TUNx` exported cleanly minutes before and
+after. The one number that stands out: our export header says `062 100 (0)` —
+zero rated players — where the working one says `062 9 (9)`. The untested case
+is a tournament with a *completed* round 1 and round 2 paired, exported as a
+range, which is the shape the working export had.
+
+### The two text exports are a whole inbound leg on their own
+
+`Extras → Daten Import/Export` writes, on the export side:
+
+| Option | Content |
+|---|---|
+| `Spielerdaten (Text-File)` | one row per player: `Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;…;Rang;Nachname;Vorname;Atitel` |
+| `Spielerauslosung (Text-File)` | the pairing file already described above, for any round range |
+
+They join on the start number, `Nr` = `NrW`/`NrS`, which is the same number TRF
+calls the starting rank. Together they carry everything a round needs: players
+with titles, ratings and federations, boards with Swiss-Manager's own numbers,
+colours, and prior results. Both export in four clicks and neither cares
+whether the round has been played.
+
+What they do not carry: a half-point bye, which is a player status there and
+appears in neither file. TRF16 would have said `H`.
+
+The **import** side of the same dialog also reads `Spielerdaten`, which is how
+100 invented players got into a tournament created by hand. `Spielerdaten
+(TUN-File)` beside it is a different thing: players out of another
+Swiss-Manager tournament, not a text file.
+
+Both files were read back through the adapter and are checked in as
+`tests/fixtures/swiss_manager/players_round1.txt` and
+`pairings_round1_played.txt`.
 
 ## Consequences for the code
 

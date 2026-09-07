@@ -13,5 +13,22 @@ from seebach.swiss_manager.pairing_file import (
     parse_pairing_file,
     render_pairing_file,
 )
+from seebach.swiss_manager.player_file import (
+    PlayerFileError,
+    PlayerLine,
+    by_start_number,
+    looks_like_player_file,
+    parse_player_file,
+)
 
-__all__ = ["PairingFileError", "PairingLine", "parse_pairing_file", "render_pairing_file"]
+__all__ = [
+    "PairingFileError",
+    "PairingLine",
+    "PlayerFileError",
+    "PlayerLine",
+    "by_start_number",
+    "looks_like_player_file",
+    "parse_pairing_file",
+    "parse_player_file",
+    "render_pairing_file",
+]

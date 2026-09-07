@@ -1,0 +1,94 @@
+/**
+ * What the arbiter dropped, and whether it is enough to import.
+ *
+ * Vega hands over one TRF. Swiss-Manager hands over two plain text files --
+ * the players and the pairings, from `Extras → Daten Import/Export` -- which
+ * mean nothing apart: one names nobody, the other pairs nobody. They travel to
+ * the API as one body, joined, and the backend tells them apart by their own
+ * header lines, so the only thing this file decides is what to say to the
+ * arbiter while they are still choosing.
+ */
+
+export type FileKind = "players" | "pairings" | "trf" | "unknown";
+
+export interface PickedFile {
+  name: string;
+  content: string;
+  kind: FileKind;
+}
+
+const PAIRING_HEADER = "Runde;Brett;IdentW";
+
+export function sniff(content: string): FileKind {
+  const first = firstLine(content);
+  if (first.startsWith(PAIRING_HEADER)) return "pairings";
+  if (first.startsWith("Nr;") && first.includes("Nachname")) return "players";
+  // A TRF is fixed-column and starts with a numeric record code: 012 for the
+  // tournament name, 001 for a player.
+  if (/^(0\d\d|XX[A-Z])[ ]/.test(first)) return "trf";
+  return "unknown";
+}
+
+export const KIND_LABEL: Record<FileKind, string> = {
+  players: "players",
+  pairings: "pairings",
+  trf: "TRF16",
+  unknown: "not recognised",
+};
+
+/** Add a file, replacing one of the same kind rather than piling them up. */
+export function withFile(files: PickedFile[], picked: PickedFile): PickedFile[] {
+  const kept = files.filter(
+    (file) => file.kind !== picked.kind && !(picked.kind === "trf" || file.kind === "trf"),
+  );
+  return [...kept, picked];
+}
+
+export function isReady(files: PickedFile[]): boolean {
+  return missing(files) === null;
+}
+
+/**
+ * The one sentence that says what is still needed, or null when nothing is.
+ * A TRF stands alone; the two text files only count together.
+ */
+export function missing(files: PickedFile[]): string | null {
+  if (files.length === 0) return "Nothing chosen yet.";
+  const kinds = new Set(files.map((file) => file.kind));
+  if (kinds.has("trf")) return null;
+  if (kinds.has("players") && kinds.has("pairings")) return null;
+  if (kinds.has("pairings")) {
+    return "The pairings name nobody on their own. Add the players file: Extras → Daten Import/Export → Spielerdaten (Text-File).";
+  }
+  if (kinds.has("players")) {
+    return "The players pair nobody on their own. Add the pairings file: Extras → Daten Import/Export → Spielerauslosung (Text-File).";
+  }
+  return "This does not look like a manager export. Choose the file the manager wrote.";
+}
+
+/** One body for the API: the files as they were, in a stable order. */
+export function joinContents(files: PickedFile[]): string {
+  return [...files]
+    .sort((a, b) => order(a.kind) - order(b.kind))
+    .map((file) => file.content.trimEnd())
+    .join("\n");
+}
+
+/** The name worth recording: the one that carries the round. */
+export function primaryName(files: PickedFile[]): string {
+  const carrier =
+    files.find((file) => file.kind === "trf") ?? files.find((file) => file.kind === "pairings");
+  return (carrier ?? files[0])?.name ?? "";
+}
+
+function order(kind: FileKind): number {
+  return kind === "players" ? 0 : 1;
+}
+
+function firstLine(content: string): string {
+  for (const line of content.replace(/\r\n/g, "\n").split("\n")) {
+    const trimmed = line.replace(/^﻿/, "").trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
+}

@@ -91,6 +91,24 @@ function mount(previewed: ImportPlan) {
   return calls;
 }
 
+const CRLF = String.fromCharCode(13, 10);
+const PLAYERS = [
+  "Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;Nachname;Vorname",
+  "1;Brunner Livia;WGM;;0;2447;01.06.1992;SUI;W;Brunner;Livia",
+  "",
+].join(CRLF);
+const PAIRINGS = [
+  "Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS",
+  "1;1;0;0;1;51;0;0;;0:0;0;;",
+  "",
+].join(CRLF);
+
+async function upload(name: string, content: string) {
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+  await userEvent.upload(input, new File([content], name, { type: "text/plain" }));
+  await screen.findByText(name);
+}
+
 async function chooseFile() {
   const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
   await userEvent.upload(input, new File(["012 Test Open\n001    1 ..."], "r1.trf", { type: "text/plain" }));
@@ -169,5 +187,41 @@ describe("ImportWizard", () => {
         force: true,
       }),
     );
+  });
+});
+
+describe("the two files Swiss-Manager writes", () => {
+  it("holds the import until both are there, and says which is missing", async () => {
+    mount(plan());
+    await screen.findByLabelText("Tournament manager");
+
+    await upload("pairings.txt", PAIRINGS);
+    expect(screen.getByRole("button", { name: "Preview the changes" })).toBeDisabled();
+    expect(screen.getByText(/Spielerdaten/)).toBeInTheDocument();
+
+    await upload("players.txt", PLAYERS);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Preview the changes" })).toBeEnabled(),
+    );
+  });
+
+  it("sends both as one body, players first", async () => {
+    const calls = mount(plan());
+    await screen.findByLabelText("Tournament manager");
+    await upload("players.txt", PLAYERS);
+    await upload("pairings.txt", PAIRINGS);
+    await userEvent.click(screen.getByRole("button", { name: "Preview the changes" }));
+
+    await screen.findByText("What round 1 changes");
+    const previewed = calls.find((c) => c.method === "POST")!.body as { content: string };
+    expect(previewed.content.indexOf("Nr;Name")).toBeLessThan(
+      previewed.content.indexOf("Runde;Brett"),
+    );
+
+    // The name recorded against the round is the file that carries it.
+    await userEvent.click(screen.getByRole("button", { name: "Import round 1" }));
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(2));
+    const imported = calls.filter((c) => c.method === "POST")[1]!.body as { filename: string };
+    expect(imported.filename).toBe("pairings.txt");
   });
 });

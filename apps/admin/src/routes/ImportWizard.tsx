@@ -7,7 +7,7 @@
  * is folded away underneath.
  */
 
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { errorMessage, type ImportPlan, type ManagerSummary } from "../api";
@@ -17,13 +17,19 @@ import { useToast } from "../components/Toast";
 import { Banner, Button, Card, Field, Input, Select, Skeleton, cx } from "../components/ui";
 import { plural } from "../format";
 import { canImport, headline, planNotes, type PlanNote, type Severity } from "../plan";
+import {
+  isReady,
+  joinContents,
+  KIND_LABEL,
+  missing,
+  primaryName,
+  sniff,
+  withFile,
+  type PickedFile,
+} from "../importFiles";
 import { useImportRound, useManagers, usePreviewImport, useTournament } from "../queries";
 import { useSingleFlight } from "../useSingleFlight";
 
-interface Picked {
-  name: string;
-  content: string;
-}
 
 export function ImportWizard() {
   const { tournamentId = "" } = useParams();
@@ -38,7 +44,7 @@ export function ImportWizard() {
 
   const [section, setSection] = useState(params.get("section") ?? "");
   const [manager, setManager] = useState("");
-  const [file, setFile] = useState<Picked | null>(null);
+  const [files, setFiles] = useState<PickedFile[]>([]);
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [forcing, setForcing] = useState(false);
@@ -70,13 +76,13 @@ export function ImportWizard() {
         : `round ${latest.number} is not exported yet`;
 
   const runPreview = () => {
-    if (!file) return;
+    if (!isReady(files)) return;
     preview.mutate(
       {
         tournamentId,
         section_name: section.trim(),
-        content: file.content,
-        filename: file.name,
+        content: joinContents(files),
+        filename: primaryName(files),
         manager,
         // Never forced: the preview must show the block that a forced commit
         // would step over, or the arbiter never reads it.
@@ -93,12 +99,12 @@ export function ImportWizard() {
 
   const runImport = (force: boolean) =>
     once(async () => {
-      if (!file) return;
+      if (!isReady(files)) return;
       const data = await commit.mutateAsync({
         tournamentId,
         section_name: section.trim(),
-        content: file.content,
-        filename: file.name,
+        content: joinContents(files),
+        filename: primaryName(files),
         manager,
         force,
       });
@@ -167,7 +173,11 @@ export function ImportWizard() {
 
           {selected && <ManagerNotice manager={selected} />}
 
-          <DropZone file={file} onFile={setFile} />
+          <DropZone
+            files={files}
+            onFile={(picked) => setFiles((held) => withFile(held, picked))}
+            onClear={() => setFiles([])}
+          />
 
           {preview.isError && <Banner tone="error">{errorMessage(preview.error)}</Banner>}
 
@@ -177,7 +187,7 @@ export function ImportWizard() {
               size="lg"
               onClick={runPreview}
               busy={preview.isPending}
-              disabled={!file || !section.trim() || !manager}
+              disabled={!isReady(files) || !section.trim() || !manager}
             >
               Preview the changes
             </Button>
@@ -250,54 +260,88 @@ function ManagerNotice({ manager }: { manager: ManagerSummary }) {
   );
 }
 
-function DropZone({ file, onFile }: { file: Picked | null; onFile: (file: Picked) => void }) {
+function countLines(content: string): number {
+  return content.split("\n").filter((line) => line.trim()).length;
+}
+
+function DropZone({
+  files,
+  onFile,
+  onClear,
+}: {
+  files: PickedFile[];
+  onFile: (file: PickedFile) => void;
+  onClear: () => void;
+}) {
   const [over, setOver] = useState(false);
 
-  const take = (picked: File | undefined) => {
-    if (!picked) return;
-    void picked.text().then((content) => onFile({ name: picked.name, content }));
+  const take = (picked: FileList | null) => {
+    for (const one of Array.from(picked ?? [])) {
+      void one.text().then((content) => onFile({ name: one.name, content, kind: sniff(content) }));
+    }
   };
-  const onDrop = (event: DragEvent) => {
-    event.preventDefault();
-    setOver(false);
-    take(event.dataTransfer.files[0]);
-  };
+  const note = missing(files);
 
   return (
-    <label
-      onDragOver={(event) => {
-        event.preventDefault();
-        setOver(true);
-      }}
-      onDragLeave={() => setOver(false)}
-      onDrop={onDrop}
-      className={cx(
-        "flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
-        over ? "border-accent bg-accent-soft/40" : "border-slate-300 hover:border-slate-400",
-        file && "border-emerald-400 bg-emerald-50",
+    <div className="space-y-2">
+      <label
+        onDragOver={(event) => {
+          event.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setOver(false);
+          take(event.dataTransfer.files);
+        }}
+        className={cx(
+          "flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
+          over ? "border-accent bg-accent-soft/40" : "border-slate-300 hover:border-slate-400",
+          files.length > 0 && note === null && "border-emerald-400 bg-emerald-50",
+        )}
+      >
+        <input
+          type="file"
+          multiple
+          accept=".trf,.txt,text/plain"
+          className="sr-only"
+          onChange={(event) => take(event.target.files)}
+        />
+        <p className="font-medium">Drop the exported files here</p>
+        <p className="text-sm text-slate-500">
+          or click to choose them — Swiss-Manager writes two, Vega one
+        </p>
+      </label>
+
+      {files.length > 0 && (
+        <ul className="space-y-1">
+          {files.map((file) => (
+            <li
+              key={file.kind + file.name}
+              className="flex flex-wrap items-baseline justify-between gap-x-3 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+            >
+              <span className="font-medium [overflow-wrap:anywhere]">{file.name}</span>
+              <span className="text-slate-500">
+                {KIND_LABEL[file.kind]} ·{" "}
+                {plural(countLines(file.content), "line")}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
-    >
-      <input
-        type="file"
-        accept=".trf,.txt,text/plain"
-        className="sr-only"
-        onChange={(event) => take(event.target.files?.[0])}
-      />
-      {file ? (
-        <>
-          <p className="font-medium text-emerald-900">{file.name}</p>
-          <p className="text-sm text-emerald-800">
-            {plural(file.content.split(/\r?\n/).filter(Boolean).length, "line")} · choose another
-            file to replace it
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="font-medium">Drop the exported file here</p>
-          <p className="text-sm text-slate-500">or click to choose it — a .trf or .txt export</p>
-        </>
+
+      {note && files.length > 0 && <Banner tone="warn">{note}</Banner>}
+      {files.length > 0 && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="text-xs text-slate-500 underline underline-offset-2 hover:text-ink"
+        >
+          Start the file choice again
+        </button>
       )}
-    </label>
+    </div>
   );
 }
 
