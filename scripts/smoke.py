@@ -12,7 +12,7 @@ import time
 
 import httpx
 
-BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080"
+BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8092"
 FIXTURES = pathlib.Path(__file__).parent.parent / "tests/fixtures"
 TRF = (FIXTURES / "round1_pairings.trf").read_bytes()
 #: A real Swiss-Manager export: round 3 paired and unplayed, rounds 1-2 played.

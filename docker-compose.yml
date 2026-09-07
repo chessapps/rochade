@@ -34,7 +34,7 @@ services:
       - api
     ports:
       # Host port only; Caddy still listens on 8080 inside the container.
-      - "${SEEBACH_WEB_PORT:-8080}:8080"
+      - "${SEEBACH_WEB_PORT:-8092}:8080"
 
 volumes:
   pgdata:

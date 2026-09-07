@@ -9,7 +9,7 @@
  * nothing overflows at phone and tablet widths.
  *
  *     docker compose up -d --build
- *     node scripts/admin_flow.mjs [http://localhost:8080]
+ *     node scripts/admin_flow.mjs [http://localhost:8092]
  *
  * Uses the browser already on the machine (SEEBACH_BROWSER, default msedge;
  * "chrome" works too) so nothing is downloaded. Playwright is a root
@@ -20,7 +20,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const BASE = process.argv[2] ?? "http://localhost:8080";
+const BASE = process.argv[2] ?? "http://localhost:8092";
 const TOKEN = `flow-${Date.now()}`;
 const staff = { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" };
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

@@ -35,15 +35,15 @@ See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 docker compose up --build
 ```
 
-- hall app — <http://localhost:8080>
-- arbiter app — <http://localhost:8080/admin/>
-- API docs — <http://localhost:8080/api> (OpenAPI at `/openapi.json` on the API)
+- hall app — <http://localhost:8092>
+- arbiter app — <http://localhost:8092/admin/>
+- API docs — <http://localhost:8092/api> (OpenAPI at `/openapi.json` on the API)
 
-If 8080 is already taken on your machine, set `SEEBACH_WEB_PORT` — it moves the
+If 8092 is already taken on your machine, set `SEEBACH_WEB_PORT` — it moves the
 host port only, and everything is served same-origin, so nothing else changes:
 
 ```sh
-SEEBACH_WEB_PORT=8081 docker compose up --build
+SEEBACH_WEB_PORT=8093 docker compose up --build
 ```
 
 Compose runs with `SEEBACH_DEV_AUTH_ENABLED=true`, which takes the bearer token
@@ -53,7 +53,7 @@ it is **off by default** — a real deployment sets `SEEBACH_OIDC_ISSUER` instea
 Smoke-test a running stack, including one full round trip:
 
 ```sh
-uv run python scripts/smoke.py http://localhost:8080
+uv run python scripts/smoke.py http://localhost:8092
 ```
 
 The same round through the arbiter app in a real browser — screens, dialogs,
@@ -61,7 +61,7 @@ polling, the download, phone widths — using the Edge or Chrome already on the
 machine (`SEEBACH_BROWSER=chrome` for Chrome):
 
 ```sh
-node scripts/admin_flow.mjs http://localhost:8080
+node scripts/admin_flow.mjs http://localhost:8092
 ```
 
 ## The arbiter's day
