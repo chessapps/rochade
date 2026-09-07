@@ -3,19 +3,25 @@
  *
  *   board list (sticky search)  ->  result choice  ->  confirm
  *
- * Dense rows, large tap targets, high contrast: this is read on a five-year-old
- * Android in a badly lit hall by someone who has just played four hours of
- * chess and wants to leave.
+ * Black on white, ruled like a printed pairing sheet: this is read on a
+ * five-year-old Android in a badly lit hall by someone who has just played four
+ * hours of chess and wants to leave. Rows are dense, the confirmation is not.
  */
 
 import type { Board } from "./api";
 import type { GameResult, PendingClaim } from "./queue";
 
-export const RESULT_LABELS: Record<GameResult, { score: string; name: string }> = {
-  white_win: { score: "1 : 0", name: "White wins" },
-  draw: { score: "½ : ½", name: "Draw" },
-  black_win: { score: "0 : 1", name: "Black wins" },
+export const RESULT_LABELS: Record<
+  GameResult,
+  { score: string; name: string; white: string; black: string }
+> = {
+  white_win: { score: "1 : 0", name: "White wins", white: "1", black: "0" },
+  draw: { score: "½ : ½", name: "Draw", white: "½", black: "½" },
+  black_win: { score: "0 : 1", name: "Black wins", white: "0", black: "1" },
 };
+
+/** The stored code, as the row shows it once a result stands. */
+const SHEET_SCORE: Record<string, string> = { "1": "1 – 0", "=": "½ – ½", "0": "0 – 1" };
 
 export function BoardListScreen({
   boards,
@@ -25,6 +31,7 @@ export function BoardListScreen({
   pendingKeys,
   offline,
   queued,
+  tournamentName,
 }: {
   boards: Board[];
   query: string;
@@ -33,6 +40,7 @@ export function BoardListScreen({
   pendingKeys: Set<string>;
   offline: boolean;
   queued: number;
+  tournamentName?: string;
 }) {
   const needle = query.trim().toLowerCase();
   const shown = needle
@@ -42,74 +50,129 @@ export function BoardListScreen({
           (board.black_name ?? "").toLowerCase().includes(needle),
       )
     : boards;
+  const groups = groupByRound(shown);
+  const oneGroup = groupByRound(boards).length === 1;
 
   return (
     <div className="flex h-full flex-col">
-      <header className="sticky top-0 z-10 bg-board px-3 pt-3 pb-2 shadow-lg shadow-black/40">
+      <header className="sticky top-0 z-10 border-b-2 border-ink bg-paper px-3 pt-2 pb-2">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="truncate text-xs font-semibold tracking-wide uppercase">
+            {tournamentName ?? "Results"}
+          </p>
+          <StatusLine offline={offline} queued={queued} shown={shown.length} />
+        </div>
         <input
           value={query}
           onChange={(event) => onQuery(event.target.value)}
-          placeholder="Search your name"
+          placeholder="Your name"
+          aria-label="Search your name"
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          className="w-full rounded-xl bg-slate-800 px-4 py-3 text-lg text-slate-50 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400 focus:outline-none"
+          className="mt-1.5 w-full rounded-md border-2 border-ink bg-paper px-3 py-2 text-base placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
         />
-        <StatusLine offline={offline} queued={queued} shown={shown.length} />
       </header>
 
-      <ul className="flex-1 overflow-y-auto pb-8">
-        {shown.map((board) => (
-          <li key={board.game_id}>
-            <button
-              type="button"
-              disabled={board.is_bye}
-              onClick={() => onPick(board)}
-              className="flex w-full items-center gap-3 border-b border-slate-800 px-3 py-3 text-left active:bg-slate-800 disabled:opacity-40"
-            >
-              <span className="w-10 shrink-0 text-center text-sm text-slate-400 tabular-nums">
-                {board.section_name}
-                <span className="block text-base text-slate-200">{board.board}</span>
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-base">{board.white_name}</span>
-                <span className="block truncate text-base text-slate-300">
-                  {board.black_name ?? "bye"}
-                </span>
-              </span>
-              <BoardBadge board={board} pending={pendingKeys.has(board.game_id)} />
-            </button>
-          </li>
+      <div className="flex-1 overflow-y-auto pb-6">
+        {groups.map((group) => (
+          <table key={group.key} className="w-full border-collapse text-[15px]">
+            <thead>
+              <tr className="border-b border-ink bg-neutral-100 text-left text-[11px] font-semibold tracking-wide text-mute uppercase">
+                <th className="w-9 py-1 pl-2 text-right">Bd</th>
+                <th className="py-1 pl-2">
+                  {oneGroup ? "White · Black" : `${group.section} · round ${group.round}`}
+                </th>
+                <th className="w-16 py-1 pr-2 text-right">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {group.boards.map((board) => {
+                const pending = pendingKeys.has(board.game_id);
+                const open = !board.is_bye;
+                return (
+                  <tr
+                    key={board.game_id}
+                    role={open ? "button" : undefined}
+                    tabIndex={open ? 0 : undefined}
+                    aria-label={
+                      open ? `Board ${board.board}, ${board.white_name} against ${board.black_name}` : undefined
+                    }
+                    onClick={open ? () => onPick(board) : undefined}
+                    onKeyDown={
+                      open
+                        ? (event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              onPick(board);
+                            }
+                          }
+                        : undefined
+                    }
+                    className={[
+                      "border-b border-rule align-top",
+                      open ? "cursor-pointer active:bg-neutral-100" : "text-mute",
+                    ].join(" ")}
+                  >
+                    <td className="py-1.5 pl-2 text-right font-semibold tabular-nums">
+                      {board.board}
+                    </td>
+                    <td className="min-w-0 py-1.5 pl-2 leading-tight">
+                      <span className="block truncate">{board.white_name}</span>
+                      <span className="block truncate text-mute">{board.black_name ?? "bye"}</span>
+                    </td>
+                    <td className="py-1.5 pr-2 text-right align-middle">
+                      <BoardCell board={board} pending={pending} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         ))}
         {shown.length === 0 && (
-          <li className="px-4 py-10 text-center text-slate-400">
-            No board matches that name.
-          </li>
+          <p className="px-4 py-10 text-center text-mute">
+            {boards.length === 0 ? "No round is open for entry." : "No board matches that name."}
+          </p>
         )}
-      </ul>
+      </div>
     </div>
   );
 }
 
-function BoardBadge({ board, pending }: { board: Board; pending: boolean }) {
+function groupByRound(boards: Board[]) {
+  const groups = new Map<string, { key: string; section: string; round: number; boards: Board[] }>();
+  for (const board of boards) {
+    const key = `${board.section_id}:${board.round_number}`;
+    let group = groups.get(key);
+    if (!group) {
+      group = { key, section: board.section_name, round: board.round_number, boards: [] };
+      groups.set(key, group);
+    }
+    group.boards.push(board);
+  }
+  return [...groups.values()];
+}
+
+function BoardCell({ board, pending }: { board: Board; pending: boolean }) {
   if (pending) {
-    return (
-      <span className="shrink-0 rounded-lg bg-amber-500/20 px-2 py-1 text-xs text-amber-300">
-        sending
-      </span>
-    );
+    return <span className="text-xs text-mute">sending…</span>;
   }
   if (board.is_bye) {
-    return <span className="shrink-0 text-xs text-slate-500">bye</span>;
+    return <span className="text-xs">bye</span>;
   }
   if (board.entered) {
     return (
-      <span className="shrink-0 rounded-lg bg-emerald-500/20 px-2 py-1 text-xs text-emerald-300">
-        entered
+      <span className="font-semibold tabular-nums whitespace-nowrap">
+        {SHEET_SCORE[board.white_result] ?? board.white_result}
       </span>
     );
   }
-  return <span className="shrink-0 text-2xl text-slate-600">›</span>;
+  return (
+    <span className="rounded border border-ink px-2 py-0.5 text-xs font-semibold whitespace-nowrap">
+      enter
+    </span>
+  );
 }
 
 function StatusLine({
@@ -123,15 +186,14 @@ function StatusLine({
 }) {
   if (offline || queued > 0) {
     return (
-      <p className="pt-2 text-sm text-amber-300">
-        {offline ? "Offline — " : ""}
-        {queued > 0
-          ? `${queued} result${queued === 1 ? "" : "s"} waiting to send`
-          : "your results will send when the network returns"}
+      <p className="shrink-0 text-xs font-semibold">
+        {offline ? "Offline" : ""}
+        {offline && queued > 0 ? " · " : ""}
+        {queued > 0 ? `${queued} waiting to send` : ""}
       </p>
     );
   }
-  return <p className="pt-2 text-sm text-slate-400">{shown} boards</p>;
+  return <p className="shrink-0 text-xs text-mute tabular-nums">{shown} boards</p>;
 }
 
 export function ResultChoiceScreen({
@@ -144,26 +206,40 @@ export function ResultChoiceScreen({
   onBack: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full flex-col gap-4 p-3">
       <BoardHeading board={board} />
-      <div className="flex flex-1 flex-col justify-center gap-3">
+      <p className="text-lg font-semibold">Who won?</p>
+      <div className="flex flex-col gap-2">
         {(Object.keys(RESULT_LABELS) as GameResult[]).map((result) => (
           <button
             key={result}
             type="button"
             onClick={() => onChoose(result)}
-            className="flex items-center justify-between rounded-2xl bg-slate-800 px-5 py-6 text-left active:bg-slate-700"
+            className="flex items-center gap-4 rounded-md border-2 border-ink px-4 py-3 text-left active:bg-ink active:text-paper"
           >
-            <span className="text-2xl font-semibold tabular-nums">
+            <span className="w-20 shrink-0 text-2xl font-bold tabular-nums">
               {RESULT_LABELS[result].score}
             </span>
-            <span className="text-lg text-slate-300">{RESULT_LABELS[result].name}</span>
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block text-lg font-semibold">{RESULT_LABELS[result].name}</span>
+              <span className="block truncate text-sm text-mute">
+                {winnerLine(board, result)}
+              </span>
+            </span>
           </button>
         ))}
       </div>
-      <BackButton onBack={onBack} />
+      <div className="pt-2">
+        <SecondaryButton onClick={onBack}>Back to the list</SecondaryButton>
+      </div>
     </div>
   );
+}
+
+function winnerLine(board: Board, result: GameResult): string {
+  if (result === "white_win") return `${board.white_name} wins`;
+  if (result === "black_win") return `${board.black_name ?? "black"} wins`;
+  return "half a point each";
 }
 
 export function ConfirmScreen({
@@ -180,31 +256,77 @@ export function ConfirmScreen({
   busy: boolean;
 }) {
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full flex-col gap-4 p-3">
       <BoardHeading board={board} />
-      <div className="flex flex-1 flex-col items-center justify-center gap-2">
-        <p className="text-slate-400">You are reporting</p>
-        <p className="text-5xl font-semibold tabular-nums">{RESULT_LABELS[result].score}</p>
-        <p className="text-xl text-slate-300">{RESULT_LABELS[result].name}</p>
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-mute uppercase">Check before sending</p>
+        <p className="mt-1 text-3xl font-bold leading-tight">{RESULT_LABELS[result].name}</p>
+        <p className="text-base text-mute">{winnerLine(board, result)}</p>
       </div>
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex-1 rounded-2xl bg-slate-800 py-5 text-lg active:bg-slate-700"
-        >
-          Back
-        </button>
+      <ScoreSheet board={board} result={result} />
+      <div className="flex flex-col gap-2 pt-2">
         <button
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="flex-[2] rounded-2xl bg-emerald-600 py-5 text-lg font-semibold active:bg-emerald-500 disabled:opacity-60"
+          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper active:bg-neutral-800 disabled:opacity-50"
         >
-          {busy ? "Sending…" : "Confirm"}
+          {busy ? "Sending…" : `Confirm ${RESULT_LABELS[result].score}`}
         </button>
+        <SecondaryButton onClick={onBack} disabled={busy}>
+          Wrong, change it
+        </SecondaryButton>
       </div>
     </div>
+  );
+}
+
+/**
+ * The result as it will appear on the pairing sheet: one line per colour,
+ * the winner's line inverted so the eye lands on it even at arm's length.
+ */
+function ScoreSheet({ board, result }: { board: Board; result: GameResult }) {
+  const rows: Array<{ colour: string; name: string; score: string; wins: boolean }> = [
+    {
+      colour: "White",
+      name: board.white_name,
+      score: RESULT_LABELS[result].white,
+      wins: result === "white_win",
+    },
+    {
+      colour: "Black",
+      name: board.black_name ?? "bye",
+      score: RESULT_LABELS[result].black,
+      wins: result === "black_win",
+    },
+  ];
+  return (
+    <table className="w-full border-collapse overflow-hidden rounded-md border-2 border-ink text-lg">
+      <tbody>
+        {rows.map((row) => (
+          <tr
+            key={row.colour}
+            className={[
+              "border-b-2 border-ink last:border-b-0",
+              row.wins ? "bg-ink text-paper" : "",
+            ].join(" ")}
+          >
+            <td
+              className={[
+                "w-16 py-3 pl-3 text-xs font-semibold tracking-wide uppercase",
+                row.wins ? "text-neutral-300" : "text-mute",
+              ].join(" ")}
+            >
+              {row.colour}
+            </td>
+            <td className="min-w-0 py-3 pr-2 leading-tight">
+              <span className="block truncate font-semibold">{row.name}</span>
+            </td>
+            <td className="w-14 py-3 pr-3 text-right text-3xl font-bold tabular-nums">{row.score}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -220,48 +342,66 @@ export function DoneScreen({
   onDone: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full flex-col gap-4 p-3">
       <BoardHeading board={board} />
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-        <p className="text-5xl">{queued ? "⏳" : "✓"}</p>
-        <p className="text-2xl font-semibold tabular-nums">{RESULT_LABELS[result].score}</p>
-        <p className="max-w-xs text-slate-300">
-          {queued
-            ? "Saved on this phone. It will send itself as soon as there is a network."
-            : "Recorded. The arbiter confirms it at the end of the round."}
-        </p>
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ink text-2xl font-bold text-paper"
+        >
+          {queued ? "…" : "✓"}
+        </span>
+        <div className="leading-tight">
+          <p className="text-2xl font-bold">{queued ? "Saved on this phone" : "Result sent"}</p>
+          <p className="text-sm text-mute">
+            {queued
+              ? "It will send itself as soon as there is a network."
+              : "The arbiter confirms it at the end of the round."}
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
-        onClick={onDone}
-        className="rounded-2xl bg-slate-800 py-5 text-lg active:bg-slate-700"
-      >
-        Back to the board list
-      </button>
+      <ScoreSheet board={board} result={result} />
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={onDone}
+          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper active:bg-neutral-800"
+        >
+          Done
+        </button>
+      </div>
     </div>
   );
 }
 
 function BoardHeading({ board }: { board: Board }) {
   return (
-    <header className="border-b border-slate-800 pb-3">
-      <p className="text-sm text-slate-400">
-        {board.section_name} · round {board.round_number} · board {board.board}
+    <header className="flex items-baseline justify-between gap-3 border-b-2 border-ink pb-2">
+      <p className="text-2xl font-bold tabular-nums">Board {board.board}</p>
+      <p className="truncate text-xs font-semibold tracking-wide text-mute uppercase">
+        {board.section_name} · round {board.round_number}
       </p>
-      <p className="truncate text-lg">{board.white_name}</p>
-      <p className="truncate text-lg text-slate-300">{board.black_name ?? "bye"}</p>
     </header>
   );
 }
 
-function BackButton({ onBack }: { onBack: () => void }) {
+function SecondaryButton({
+  onClick,
+  disabled,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  children: string;
+}) {
   return (
     <button
       type="button"
-      onClick={onBack}
-      className="rounded-2xl bg-slate-800 py-5 text-lg active:bg-slate-700"
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full rounded-md border-2 border-ink py-3 text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
     >
-      Back
+      {children}
     </button>
   );
 }
@@ -275,14 +415,17 @@ export function RejectedBanner({
 }) {
   if (claims.length === 0) return null;
   return (
-    <div className="bg-rose-900/80 px-4 py-3 text-sm">
+    <div role="alert" className="border-b-2 border-ink bg-ink px-3 py-2 text-sm text-paper">
       {claims.map((claim) => (
         <p key={claim.key} className="flex items-center justify-between gap-3 py-1">
-          <span>{claim.rejected}</span>
+          <span>
+            <span className="font-bold">Not accepted: </span>
+            {claim.rejected}
+          </span>
           <button
             type="button"
             onClick={() => onDismiss(claim.key)}
-            className="shrink-0 rounded-lg bg-rose-800 px-3 py-1"
+            className="shrink-0 rounded border border-paper px-3 py-1 font-semibold"
           >
             OK
           </button>

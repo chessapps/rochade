@@ -136,11 +136,16 @@ export function App() {
         claims={rejected}
         onDismiss={(key) => void queue.dismiss(key).then(syncQueueState)}
       />
-      {error && <p className="bg-rose-900/80 px-4 py-2 text-sm">{error}</p>}
+      {error && (
+        <p role="alert" className="border-b-2 border-ink px-3 py-2 text-sm font-semibold">
+          {error}
+        </p>
+      )}
 
       {screen.name === "list" && (
         <BoardListScreen
           boards={boards?.boards ?? []}
+          tournamentName={boards?.tournament_name}
           query={query}
           onQuery={setQuery}
           onPick={(board) => setScreen({ name: "choose", board })}
@@ -206,16 +211,18 @@ function NeedsToken({ onJoined }: { onJoined: () => void }) {
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-      <p className="text-4xl">📷</p>
-      <h1 className="text-xl font-semibold">Scan the QR code</h1>
-      <p className="max-w-xs text-slate-400">
-        The arbiter has a QR code that admits this phone to the tournament for today.
-      </p>
+    <div className="flex h-full flex-col justify-center gap-6 p-5">
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-mute uppercase">Seebach</p>
+        <h1 className="mt-1 text-3xl font-bold leading-tight">Enter your result</h1>
+        <p className="mt-2 text-base text-mute">
+          Scan the QR code the arbiter put up.
+        </p>
+      </div>
 
-      <form onSubmit={join} className="mt-6 w-full max-w-xs space-y-3">
-        <label htmlFor="join-code" className="block text-sm text-slate-400">
-          Or type the code the arbiter gives you
+      <form onSubmit={join} className="flex flex-col gap-2">
+        <label htmlFor="join-code" className="text-sm font-semibold">
+          Or type the code the arbiter reads out
         </label>
         <input
           id="join-code"
@@ -226,17 +233,17 @@ function NeedsToken({ onJoined }: { onJoined: () => void }) {
           spellCheck={false}
           inputMode="text"
           placeholder="ABC123"
-          className="w-full rounded-xl bg-slate-800 px-4 py-4 text-center text-2xl tracking-[0.3em] uppercase outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          className="w-full rounded-md border-2 border-ink bg-paper px-4 py-3 text-center font-mono text-3xl tracking-[0.3em] uppercase placeholder:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
         />
         <button
           type="submit"
           disabled={busy || code.trim().length < 4}
-          className="w-full rounded-xl bg-emerald-500 px-4 py-4 text-lg font-semibold text-slate-950 disabled:opacity-40"
+          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper active:bg-neutral-800 disabled:opacity-40"
         >
           {busy ? "Joining…" : "Join"}
         </button>
         {error && (
-          <p role="alert" className="text-sm text-rose-300">
+          <p role="alert" className="text-sm font-semibold">
             {error}
           </p>
         )}

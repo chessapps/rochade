@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-board: #0f172a;
-  --color-board-soft: #1e293b;
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-rule: #d4d4d4;
+  --color-mute: #6b6b6b;
 }
 
 html,
@@ -12,8 +14,9 @@ body,
 }
 
 body {
-  background: var(--color-board);
-  color: #f8fafc;
+  background: var(--color-paper);
+  color: var(--color-ink);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
+  font-feature-settings: "tnum";
 }
