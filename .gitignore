@@ -15,3 +15,6 @@ openapi.json
 bash.exe.stackdump
 spikes/out/
 scripts/out/
+
+# Scratch space for test tournaments and manager experiments. Never committed.
+sandbox/
