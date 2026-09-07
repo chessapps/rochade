@@ -50,6 +50,12 @@ export function adoptCredentialFromUrl(location: Location, history: History): vo
   }
 }
 
+/** What the QR does to the URL, done by hand after a code was redeemed. */
+export function adoptCredential(token: string, tournament: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(TOURNAMENT_KEY, tournament);
+}
+
 export function deviceToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }

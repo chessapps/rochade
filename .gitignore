@@ -18,3 +18,6 @@ scripts/out/
 
 # Scratch space for test tournaments and manager experiments. Never committed.
 sandbox/
+
+# TypeScript incremental build state, per machine.
+*.tsbuildinfo

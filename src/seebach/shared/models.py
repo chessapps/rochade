@@ -55,6 +55,9 @@ class Tournament(Base):
     federation: Mapped[str] = mapped_column(String(8), default="")
     start_date: Mapped[date | None] = mapped_column(Date(), default=None)
     end_date: Mapped[date | None] = mapped_column(Date(), default=None)
+    #: Six characters a phone can type instead of scanning the QR. None means
+    #: joining that way is closed; see `features/devices/join_code.py`.
+    join_code: Mapped[str | None] = mapped_column(String(12), unique=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     sections: Mapped[list[Section]] = relationship(

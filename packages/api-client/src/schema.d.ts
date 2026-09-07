@@ -193,6 +193,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{tournament_id}/join-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Join Code */
+        post: operations["set_join_code_api_tournaments__tournament_id__join_code_post"];
+        /** Clear Join Code */
+        delete: operations["clear_join_code_api_tournaments__tournament_id__join_code_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join Device */
+        post: operations["join_device_api_devices_join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rounds/{round_id}": {
         parameters: {
             query?: never;
@@ -705,6 +740,45 @@ export interface components {
             /** Qr Payload */
             qr_payload: string;
         };
+        /** JoinBody */
+        JoinBody: {
+            /** Code */
+            code: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+        };
+        /** JoinCodeResult */
+        JoinCodeResult: {
+            /** Join Code */
+            join_code: string | null;
+        };
+        /** JoinedDevice */
+        JoinedDevice: {
+            /**
+             * Tournament Id
+             * Format: uuid
+             */
+            tournament_id: string;
+            /** Tournament Name */
+            tournament_name: string;
+            /**
+             * Device Id
+             * Format: uuid
+             */
+            device_id: string;
+            /** Label */
+            label: string;
+            /** Token */
+            token: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
         /** ManagerSummary */
         ManagerSummary: {
             /** Key */
@@ -775,7 +849,7 @@ export interface components {
          * PrincipalKind
          * @enum {string}
          */
-        PrincipalKind: "staff" | "device" | "system";
+        PrincipalKind: "staff" | "device" | "system" | "anonymous";
         /** QueueEntry */
         QueueEntry: {
             /**
@@ -1075,6 +1149,8 @@ export interface components {
             start_date: string | null;
             /** End Date */
             end_date: string | null;
+            /** Join Code */
+            join_code?: string | null;
             /** Sections */
             sections: components["schemas"]["SectionSummary"][];
         };
@@ -1552,6 +1628,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokeDeviceResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_join_code_api_tournaments__tournament_id__join_code_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinCodeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_join_code_api_tournaments__tournament_id__join_code_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinCodeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_device_api_devices_join_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinedDevice"];
                 };
             };
             /** @description Validation Error */

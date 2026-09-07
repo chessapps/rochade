@@ -10,7 +10,13 @@ as a table of contents for the API.
 from fastapi import APIRouter
 
 from seebach.features.boards import get_board_list
-from seebach.features.devices import issue_device_token, list_devices, revoke_device
+from seebach.features.devices import (
+    issue_device_token,
+    join_code,
+    join_device,
+    list_devices,
+    revoke_device,
+)
 from seebach.features.games import claim_result, resolve_dispute, set_result
 from seebach.features.imports import import_round, preview_import
 from seebach.features.managers import list_managers
@@ -43,6 +49,8 @@ MODULES = (
     issue_device_token,
     list_devices,
     revoke_device,
+    join_code,
+    join_device,
     # /api/rounds/{id}
     get_round,
     get_round_events,

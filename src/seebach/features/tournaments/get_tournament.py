@@ -64,6 +64,9 @@ class TournamentDetail(BaseModel):
     federation: str
     start_date: date | None
     end_date: date | None
+    #: The code a phone may type instead of scanning; None when that is closed.
+    #: Staff-only, like everything else on this query.
+    join_code: str | None = None
     sections: list[SectionSummary]
 
 
@@ -126,6 +129,7 @@ def handle(query: GetTournament, ctx: Context) -> TournamentDetail:
         name=tournament.name,
         city=tournament.city,
         federation=tournament.federation,
+        join_code=tournament.join_code,
         start_date=tournament.start_date,
         end_date=tournament.end_date,
         sections=sections,

@@ -267,6 +267,25 @@ export function useIssueDevice() {
   });
 }
 
+export function useSetJoinCode() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tournamentId, enabled }: { tournamentId: string; enabled: boolean }) =>
+      unwrap(
+        enabled
+          ? api.POST("/api/tournaments/{tournament_id}/join-code", {
+              params: { path: { tournament_id: tournamentId } },
+            })
+          : api.DELETE("/api/tournaments/{tournament_id}/join-code", {
+              params: { path: { tournament_id: tournamentId } },
+            }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      void client.invalidateQueries({ queryKey: keys.tournament(vars.tournamentId) });
+    },
+  });
+}
+
 export function useRevokeDevice() {
   const client = useQueryClient();
   return useMutation({

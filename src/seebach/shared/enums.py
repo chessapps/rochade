@@ -67,6 +67,9 @@ class PrincipalKind(StrEnum):
     STAFF = "staff"
     DEVICE = "device"
     SYSTEM = "system"
+    #: Nobody yet: a phone redeeming a join code, before it has a device of its
+    #: own. Only `Access.PUBLIC` messages accept it.
+    ANONYMOUS = "anonymous"
 
 
 class EventAction(StrEnum):

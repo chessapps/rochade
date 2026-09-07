@@ -46,3 +46,19 @@ function messageOf(error: unknown): string {
   }
   return "the server refused this result";
 }
+
+export type JoinedDevice =
+  paths["/api/devices/join"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
+ * Redeem a join code. The one call this app makes with no credentials at all:
+ * it is how a phone that cannot scan the QR gets a device of its own.
+ */
+export async function joinWithCode(code: string): Promise<JoinedDevice> {
+  const { data, error, response } = await api.POST("/api/devices/join", {
+    body: { code, label: "" },
+  });
+  if (data) return data;
+  if (response.status === 404) throw new Error("That code does not open anything.");
+  throw new Error(messageOf(error) || "The code could not be used.");
+}

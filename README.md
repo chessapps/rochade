@@ -50,6 +50,11 @@ Compose runs with `SEEBACH_DEV_AUTH_ENABLED=true`, which takes the bearer token
 as the staff subject with no verification. That is a development affordance and
 it is **off by default** — a real deployment sets `SEEBACH_OIDC_ISSUER` instead.
 
+It also runs with `SEEBACH_DEVICE_JOIN_ENABLED=true`, which lets a phone admit
+itself by typing a tournament's six-character join code instead of scanning the
+QR. The arbiter opens and closes it under **Devices**, and it grants exactly
+what the QR grants — so it is off by default too.
+
 Smoke-test a running stack, including one full round trip:
 
 ```sh
@@ -74,7 +79,8 @@ always names the next step:
 1. Pair the round in Swiss-Manager or Vega and export it — Swiss-Manager
    writes the players and the pairings as two text files; **Import round N**
    shows what they change before anything is written.
-2. Players enter results on their phones. The round board updates every few
+2. Players enter results on their phones — scanning the QR, or typing the join
+   code when a camera will not do. The round board updates every few
    seconds and opens on **Attention**: the boards with no result, and the ones
    two phones disagree about, with which phone said what. Forfeits are one tap
    further away; `1` `=` `0` on the keyboard work too.

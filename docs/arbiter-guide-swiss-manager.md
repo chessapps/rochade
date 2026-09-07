@@ -15,6 +15,17 @@ they appear there.
   any number of phones to this tournament for the day; issue a second one for
   the other end of the hall if you like, and revoke either at any time.
 
+### If a phone cannot scan
+
+Under **Devices**, **Open joining with a code** shows six characters you can read
+out. A player types them on the hall app's opening screen and is admitted the
+same way the QR admits them. Each phone that uses the code gets its own entry in
+the device list, so one can be revoked without disturbing the rest, and **Turn
+off** closes it once everybody is in.
+
+It grants what the QR grants, so treat it the same way: read it out in the hall,
+not in a group chat.
+
 ## Every round
 
 ### 1. Pair the round in Swiss-Manager — as always

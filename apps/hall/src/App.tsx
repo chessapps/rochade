@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
-import { fetchBoards, submitClaim, type Board, type BoardList } from "./api";
+import { fetchBoards, joinWithCode, submitClaim, type Board, type BoardList } from "./api";
 import { ClaimQueue, type GameResult, type PendingClaim } from "./queue";
 import {
   BoardListScreen,
@@ -9,7 +9,14 @@ import {
   RejectedBanner,
   ResultChoiceScreen,
 } from "./screens";
-import { cacheBoards, cachedBoards, deviceToken, queueStorage, tournamentId } from "./storage";
+import {
+  adoptCredential,
+  cacheBoards,
+  cachedBoards,
+  deviceToken,
+  queueStorage,
+  tournamentId,
+} from "./storage";
 
 type Screen =
   | { name: "list" }
@@ -29,6 +36,9 @@ export function App() {
   const [rejected, setRejected] = useState<PendingClaim[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Read once and then held: joining with a code flips this without a reload,
+  // which on a phone would throw away the queue's in-flight work.
+  const [admitted, setAdmitted] = useState(() => Boolean(deviceToken() && tournamentId()));
   const mounted = useRef(true);
 
   const syncQueueState = useCallback(() => {
@@ -60,6 +70,7 @@ export function App() {
   }, [queue, refresh, syncQueueState]);
 
   useEffect(() => {
+    if (!admitted) return;
     mounted.current = true;
     const unsubscribe = queue.subscribe(syncQueueState);
 
@@ -91,15 +102,15 @@ export function App() {
       window.removeEventListener("offline", gone);
       window.clearInterval(timer);
     };
-  }, [queue, refresh, flush, syncQueueState]);
+  }, [admitted, queue, refresh, flush, syncQueueState]);
 
   const pendingKeys = useMemo(
     () => new Set(pending.map((claim) => claim.gameId)),
     [pending],
   );
 
-  if (!deviceToken() || !tournamentId()) {
-    return <NeedsToken />;
+  if (!admitted) {
+    return <NeedsToken onJoined={() => setAdmitted(true)} />;
   }
 
   const confirm = async (board: Board, result: GameResult) => {
@@ -175,15 +186,61 @@ export function App() {
   );
 }
 
-function NeedsToken() {
+function NeedsToken({ onJoined }: { onJoined: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const join = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const joined = await joinWithCode(code.trim());
+      adoptCredential(joined.token, joined.tournament_id);
+      onJoined();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The code could not be used.");
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
       <p className="text-4xl">📷</p>
       <h1 className="text-xl font-semibold">Scan the QR code</h1>
       <p className="max-w-xs text-slate-400">
-        The arbiter has a QR code that admits this phone to the tournament for
-        today. Nothing here works without it.
+        The arbiter has a QR code that admits this phone to the tournament for today.
       </p>
+
+      <form onSubmit={join} className="mt-6 w-full max-w-xs space-y-3">
+        <label htmlFor="join-code" className="block text-sm text-slate-400">
+          Or type the code the arbiter gives you
+        </label>
+        <input
+          id="join-code"
+          value={code}
+          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="text"
+          placeholder="ABC123"
+          className="w-full rounded-xl bg-slate-800 px-4 py-4 text-center text-2xl tracking-[0.3em] uppercase outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        />
+        <button
+          type="submit"
+          disabled={busy || code.trim().length < 4}
+          className="w-full rounded-xl bg-emerald-500 px-4 py-4 text-lg font-semibold text-slate-950 disabled:opacity-40"
+        >
+          {busy ? "Joining…" : "Join"}
+        </button>
+        {error && (
+          <p role="alert" className="text-sm text-rose-300">
+            {error}
+          </p>
+        )}
+      </form>
     </div>
   );
 }

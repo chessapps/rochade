@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { errorMessage, type DeviceSummary, type IssuedDevice } from "../api";
+import { JoinCode } from "../components/JoinCode";
 import { ConfirmDialog, Dialog } from "../components/Dialog";
 import { QrCode } from "../components/QrCode";
 import { DeviceChip } from "../components/StateChip";
@@ -74,6 +75,8 @@ export function Devices() {
           </Button>
         </form>
       </Card>
+
+      <JoinCode tournamentId={tournamentId} code={tournament.data?.join_code} />
 
       <Card>
         <CardHeader

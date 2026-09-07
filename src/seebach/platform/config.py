@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = ""
 
     device_token_ttl_hours: int = 14
+    #: Let a phone mint its own device by typing a tournament's join code.
+    #: Off by default: a six-character code is short enough to guess at, and
+    #: the QR is the intended way in. See `features/devices/join_device.py`.
+    device_join_enabled: bool = False
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:5174"]
 
 
