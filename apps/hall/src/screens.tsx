@@ -203,11 +203,13 @@ function StatusLine({
 export function ResultChoiceScreen({
   board,
   busy,
+  correcting = false,
   onChoose,
   onBack,
 }: {
   board: Board;
   busy: boolean;
+  correcting?: boolean;
   onChoose: (result: GameResult) => void;
   onBack: () => void;
 }) {
@@ -215,7 +217,9 @@ export function ResultChoiceScreen({
     <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
       <Players board={board} />
-      <p className="text-lg font-semibold">Tap the result to send it</p>
+      <p className="text-lg font-semibold">
+        {correcting ? "Tap the right result to replace it" : "Tap the result to send it"}
+      </p>
       <div className="flex flex-col gap-2">
         {(Object.keys(RESULT_LABELS) as GameResult[]).map((result) => (
           <button
@@ -305,13 +309,18 @@ export function DoneScreen({
   board,
   result,
   queued,
+  corrected,
+  onCorrect,
   onDone,
 }: {
   board: Board;
   result: GameResult;
   queued: boolean;
+  corrected: boolean;
+  onCorrect: () => void;
   onDone: () => void;
 }) {
+  const title = queued ? "Saved on this phone" : corrected ? "Correction sent" : "Result sent";
   return (
     <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
@@ -323,7 +332,7 @@ export function DoneScreen({
           {queued ? "…" : "✓"}
         </span>
         <div className="leading-tight">
-          <p className="text-2xl font-bold">{queued ? "Saved on this phone" : "Result sent"}</p>
+          <p className="text-2xl font-bold">{title}</p>
           <p className="text-sm text-mute">
             {queued
               ? "It will send itself as soon as there is a network."
@@ -332,7 +341,7 @@ export function DoneScreen({
         </div>
       </div>
       <ScoreSheet board={board} result={result} />
-      <div className="pt-2">
+      <div className="flex flex-col gap-2 pt-2">
         <button
           type="button"
           onClick={onDone}
@@ -340,6 +349,7 @@ export function DoneScreen({
         >
           Done
         </button>
+        <SecondaryButton onClick={onCorrect}>Wrong result? Correct it</SecondaryButton>
       </div>
     </div>
   );

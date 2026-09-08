@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Board } from "./api";
-import { BoardListScreen, ResultChoiceScreen } from "./screens";
+import { BoardListScreen, DoneScreen, ResultChoiceScreen } from "./screens";
 
 const board: Board = {
   game_id: "g3",
@@ -71,5 +71,36 @@ describe("the board list", () => {
     expect(screen.getByRole("button", { name: /Board 3,/ })).toHaveTextContent("enter");
     // A bye is not something anyone enters.
     expect(screen.queryByRole("button", { name: /Board 12,/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("after sending", () => {
+  it("offers to correct the result, and says so once corrected", async () => {
+    const onCorrect = vi.fn();
+    const { rerender } = render(
+      <DoneScreen
+        board={board}
+        result="white_win"
+        queued={false}
+        corrected={false}
+        onCorrect={onCorrect}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Result sent")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Correct it/ }));
+    expect(onCorrect).toHaveBeenCalled();
+
+    rerender(
+      <DoneScreen
+        board={board}
+        result="draw"
+        queued={false}
+        corrected={true}
+        onCorrect={onCorrect}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Correction sent")).toBeInTheDocument();
   });
 });

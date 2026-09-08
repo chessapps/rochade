@@ -55,7 +55,10 @@ export function BoardRow({
   const historyId = useId();
   const own = events?.filter((e) => e.board === board.board) ?? [];
   const claims = own.filter(
-    (e) => e.action === "result_claimed" || e.action === "result_disputed",
+    (e) =>
+      e.action === "result_claimed" ||
+      e.action === "result_corrected" ||
+      e.action === "result_disputed",
   );
 
   return (
@@ -243,7 +246,9 @@ function Claims({
     const who = claim.device_label ? `“${claim.device_label}”` : "a phone";
     return `${label} — ${who}, ${clockTime(claim.at)}`;
   };
-  const first = claims.find((c) => c.action === "result_claimed");
+  const first = claims.find(
+    (c) => c.action === "result_claimed" || c.action === "result_corrected",
+  );
   const second = claims.find((c) => c.action === "result_disputed");
   return (
     <p className={cx("text-sm text-rose-800", className)}>
@@ -269,6 +274,7 @@ function mirror(code: string): string {
 
 const ACTION_LABEL: Record<string, string> = {
   result_claimed: "entered",
+  result_corrected: "corrected by the same phone",
   result_disputed: "disputed",
   result_set: "set by the arbiter",
   dispute_resolved: "resolved by the arbiter",

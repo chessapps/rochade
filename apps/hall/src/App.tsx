@@ -19,8 +19,8 @@ import {
 
 type Screen =
   | { name: "list" }
-  | { name: "choose"; board: Board }
-  | { name: "done"; board: Board; result: GameResult; queued: boolean };
+  | { name: "choose"; board: Board; correcting?: boolean }
+  | { name: "done"; board: Board; result: GameResult; queued: boolean; corrected: boolean };
 
 const REFRESH_MS = 20_000;
 
@@ -111,7 +111,7 @@ export function App() {
     return <NeedsToken onJoined={() => setAdmitted(true)} />;
   }
 
-  const confirm = async (board: Board, result: GameResult) => {
+  const confirm = async (board: Board, result: GameResult, correcting = false) => {
     setBusy(true);
     // Queued first, sent second: an entry that reached the phone must survive
     // whatever the network does next.
@@ -124,6 +124,7 @@ export function App() {
       board,
       result,
       queued: report.accepted === 0,
+      corrected: correcting,
     });
     if (report.accepted > 0) void refresh();
   };
@@ -157,7 +158,8 @@ export function App() {
         <ResultChoiceScreen
           board={screen.board}
           busy={busy}
-          onChoose={(result) => void confirm(screen.board, result)}
+          correcting={screen.correcting ?? false}
+          onChoose={(result) => void confirm(screen.board, result, screen.correcting)}
           onBack={() => setScreen({ name: "list" })}
         />
       )}
@@ -167,6 +169,8 @@ export function App() {
           board={screen.board}
           result={screen.result}
           queued={screen.queued}
+          corrected={screen.corrected}
+          onCorrect={() => setScreen({ name: "choose", board: screen.board, correcting: true })}
           onDone={() => {
             setQuery("");
             setScreen({ name: "list" });

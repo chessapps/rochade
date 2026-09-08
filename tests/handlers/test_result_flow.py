@@ -81,6 +81,42 @@ def test_the_same_claim_twice_is_a_no_op(
     assert board.white_result == "="
 
 
+def test_the_same_phone_corrects_its_own_claim(
+    send: Send, session: Session, tournament: Tournament, board: Game
+) -> None:
+    """A slip of the thumb is not a dispute; the phone that made the claim replaces it."""
+    phone = device_of(tournament)
+    send(ClaimResult(game_id=board.id, result=GameResult.WHITE_WIN), principal=phone)
+    corrected = send(ClaimResult(game_id=board.id, result=GameResult.DRAW), principal=phone)
+
+    assert corrected.state is ResultState.CLAIMED
+    assert not corrected.disputed
+    session.refresh(board)
+    assert (board.white_result, board.black_result) == ("=", "=")
+    assert board.disputed_white_result is None
+
+    actions = [e.action for e in session.scalars(select(GameEvent)).all()]
+    assert EventAction.RESULT_CORRECTED in actions
+    assert EventAction.RESULT_DISPUTED not in actions
+
+
+def test_a_correction_can_itself_be_disputed(
+    send: Send, session: Session, tournament: Tournament, board: Game
+) -> None:
+    phone = device_of(tournament)
+    send(ClaimResult(game_id=board.id, result=GameResult.WHITE_WIN), principal=phone)
+    send(ClaimResult(game_id=board.id, result=GameResult.DRAW), principal=phone)
+    other = send(
+        ClaimResult(game_id=board.id, result=GameResult.BLACK_WIN),
+        principal=device_of(tournament, "phone-2"),
+    )
+
+    assert other.disputed
+    session.refresh(board)
+    assert board.white_result == "="
+    assert board.disputed_white_result == "0"
+
+
 def test_a_conflicting_claim_disputes_the_board(
     send: Send, session: Session, tournament: Tournament, board: Game
 ) -> None:

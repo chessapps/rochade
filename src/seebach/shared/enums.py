@@ -77,6 +77,8 @@ class EventAction(StrEnum):
 
     ROUND_IMPORTED = "round_imported"
     RESULT_CLAIMED = "result_claimed"
+    #: The same phone changed its own claim before anyone else entered one.
+    RESULT_CORRECTED = "result_corrected"
     RESULT_DISPUTED = "result_disputed"
     RESULT_SET = "result_set"
     DISPUTE_RESOLVED = "dispute_resolved"

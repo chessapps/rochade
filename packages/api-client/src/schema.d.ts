@@ -520,7 +520,7 @@ export interface components {
          * @description Every entry in the append-only audit log.
          * @enum {string}
          */
-        EventAction: "round_imported" | "result_claimed" | "result_disputed" | "result_set" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked";
+        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked";
         /** ExportBody */
         ExportBody: {
             /**
