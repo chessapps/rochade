@@ -27,14 +27,16 @@ import {
   type Filter,
 } from "../boards";
 import { BoardRow, PLAYED } from "../components/BoardRow";
+import { ConfirmDialog } from "../components/Dialog";
 import { ProgressBar } from "../components/ProgressBar";
 import { download, ExportDialog, ReleaseDialog } from "../components/RoundDialogs";
 import { RoundChip } from "../components/StateChip";
 import { useToast } from "../components/Toast";
 import { Banner, Button, Card, EmptyState, Input, Skeleton, SuccessCheck, cx } from "../components/ui";
-import { plural, relativeTime } from "../format";
+import { plural, relativeTime, resultLabel } from "../format";
 import {
   keys,
+  useConfirmBoards,
   useExportFile,
   useResolveDispute,
   useRound,
@@ -64,12 +66,13 @@ export function RoundBoard() {
   const events = useRoundEvents(roundId, state);
   const setResult = useSetResult();
   const resolve = useResolveDispute();
+  const confirmBoards = useConfirmBoards();
 
   const [params, setParams] = useSearchParams();
   const requested = params.get("filter");
   const filter: Filter = isFilter(requested) ? requested : defaultFilter(state ?? "open");
   const [query, setQuery] = useState("");
-  const [dialog, setDialog] = useState<"release" | "export" | null>(null);
+  const [dialog, setDialog] = useState<"release" | "export" | "confirm" | null>(null);
 
   // Rows that moved since the previous poll light up for a moment, and a board
   // that moved has a new line in the log: fetch it now, not at the log's own
@@ -106,7 +109,9 @@ export function RoundBoard() {
   const summary = summarise(detail, counts);
   const editable = detail.state !== "exported";
   const shown = filterBoards(detail.boards, filter, query);
-  const busy = setResult.isPending || resolve.isPending;
+  const busy = setResult.isPending || resolve.isPending || confirmBoards.isPending;
+  // Confirm what is on screen: the whole Entered list, or the part a search left.
+  const entered = shown.filter((b) => b.state === "claimed");
 
   const fail = (error: unknown) => toast.error(errorMessage(error));
   const actions = {
@@ -224,13 +229,24 @@ export function RoundBoard() {
               );
             })}
           </div>
+          {editable && filter === "entered" && entered.length > 0 && (
+            <Button
+              tone="success"
+              size="sm"
+              onClick={() => setDialog("confirm")}
+              disabled={busy}
+              className="sm:ml-auto"
+            >
+              Confirm {query ? `these ${entered.length}` : `all ${entered.length}`}
+            </Button>
+          )}
           <Input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="name or board number"
             aria-label="search boards"
-            className="min-h-10 sm:ml-auto sm:w-64"
+            className={cx("min-h-10 sm:w-64", !(editable && filter === "entered" && entered.length > 0) && "sm:ml-auto")}
             onKeyDown={(event) => {
               if (event.key === "Escape") setQuery("");
             }}
@@ -275,6 +291,34 @@ export function RoundBoard() {
           onExport={() => setDialog("export")}
         />
       )}
+
+      <ConfirmDialog
+        open={dialog === "confirm"}
+        onClose={() => setDialog(null)}
+        title={`Confirm ${plural(entered.length, "entered board")}?`}
+        confirmLabel="Confirm"
+        tone="success"
+        busy={confirmBoards.isPending}
+        onConfirm={() =>
+          confirmBoards.mutate(
+            { roundId, tournamentId, gameIds: entered.map((b) => b.game_id) },
+            {
+              onSuccess: (outcome) => {
+                toast.success(`${plural(outcome.confirmed, "board")} confirmed.`);
+                setDialog(null);
+              },
+              onError: fail,
+            },
+          )
+        }
+      >
+        <p>
+          The results stand as the phones entered them:{" "}
+          {entered.map((b) => `${b.board} ${resultLabel(b.white_result, b.black_result)}`).join(", ")}.
+          A confirmed board is closed to the phones; anything a player still wants changed
+          comes to you.
+        </p>
+      </ConfirmDialog>
 
       {detail.state !== "exported" && (
         <>

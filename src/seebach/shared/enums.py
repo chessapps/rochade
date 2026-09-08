@@ -81,6 +81,8 @@ class EventAction(StrEnum):
     RESULT_CORRECTED = "result_corrected"
     RESULT_DISPUTED = "result_disputed"
     RESULT_SET = "result_set"
+    #: The arbiter accepted an entered result as it stands, before release.
+    RESULT_CONFIRMED = "result_confirmed"
     DISPUTE_RESOLVED = "dispute_resolved"
     ROUND_RELEASED = "round_released"
     ROUND_EXPORTED = "round_exported"

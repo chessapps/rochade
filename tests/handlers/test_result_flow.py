@@ -19,6 +19,7 @@ from seebach.features.games.claim_result import ClaimResult
 from seebach.features.games.resolve_dispute import ResolveDispute
 from seebach.features.games.set_result import SetResult
 from seebach.features.imports.import_round import ImportRound
+from seebach.features.rounds.confirm_boards import ConfirmBoards
 from seebach.features.rounds.export_round import ExportRound
 from seebach.features.rounds.get_round_events import GetRoundEvents
 from seebach.features.rounds.release_round import ReleaseRound
@@ -305,6 +306,62 @@ def test_release_confirms_every_claim(
     assert round_.state is RoundState.CONFIRMED
     assert round_.released_at is not None
     assert all(g.state is ResultState.CONFIRMED for g in round_.games)
+
+
+def test_the_arbiter_confirms_entered_boards_before_release(
+    send: Send, session: Session, tournament: Tournament, round_: Round
+) -> None:
+    """Checked against the scoresheet, closed to the phones, round still open."""
+    games = sorted(round_.games, key=lambda g: g.board)
+    phone = device_of(tournament)
+    send(ClaimResult(game_id=games[0].id, result=GameResult.WHITE_WIN), principal=phone)
+    send(ClaimResult(game_id=games[1].id, result=GameResult.DRAW), principal=phone)
+    send(ClaimResult(game_id=games[2].id, result=GameResult.WHITE_WIN), principal=phone)
+    send(
+        ClaimResult(game_id=games[2].id, result=GameResult.BLACK_WIN),
+        principal=device_of(tournament, "other"),
+    )
+
+    outcome = send(ConfirmBoards(round_id=round_.id))
+
+    assert outcome.confirmed == 2
+    assert outcome.skipped == []
+    for game in games:
+        session.refresh(game)
+    assert [g.state for g in games] == [
+        ResultState.CONFIRMED,
+        ResultState.CONFIRMED,
+        ResultState.DISPUTED,
+        ResultState.EMPTY,
+    ]
+    assert (games[1].white_result, games[1].black_result) == ("=", "=")
+    session.refresh(round_)
+    assert round_.state is RoundState.OPEN
+
+    with pytest.raises(Conflict, match="already confirmed"):
+        send(ClaimResult(game_id=games[0].id, result=GameResult.DRAW), principal=phone)
+
+    actions = [
+        e.action
+        for e in session.scalars(select(GameEvent)).all()
+        if e.action is EventAction.RESULT_CONFIRMED
+    ]
+    assert len(actions) == 2
+
+
+def test_confirming_named_boards_reports_the_ones_it_could_not(
+    send: Send, session: Session, tournament: Tournament, round_: Round
+) -> None:
+    games = sorted(round_.games, key=lambda g: g.board)
+    send(
+        ClaimResult(game_id=games[0].id, result=GameResult.WHITE_WIN),
+        principal=device_of(tournament),
+    )
+
+    outcome = send(ConfirmBoards(round_id=round_.id, game_ids=[games[0].id, games[1].id]))
+
+    assert outcome.confirmed == 1
+    assert outcome.skipped == [games[1].board]
 
 
 def test_release_is_blocked_by_empty_boards(send: Send, round_: Round) -> None:

@@ -89,7 +89,10 @@ function mount(path = `/t/${T}/rounds/${R}`, detail = round(), tour = tournament
       [`/api/tournaments/${T}`]: tour,
     },
     PUT: { "/api/games/": { game_id: "g", state: "confirmed", white_result: "1", black_result: "0" } },
-    POST: { "/api/games/": { game_id: "g", state: "confirmed", white_result: "=", black_result: "=" } },
+    POST: {
+      "/api/games/": { game_id: "g", state: "confirmed", white_result: "=", black_result: "=" },
+      [`/api/rounds/${R}/confirm`]: { round_id: R, confirmed: 1, skipped: [] },
+    },
   });
   renderAt(path, "/t/:tournamentId/rounds/:roundId", <RoundBoard />);
   return calls;
@@ -111,8 +114,20 @@ describe("RoundBoard", () => {
     const rows = screen.getAllByRole("listitem");
     expect(rows).toHaveLength(5);
     expect(within(rows[4]!).getByText("1 · bye")).toBeInTheDocument();
-    // The bye has no buttons: it is the manager's, not ours.
+    // A bye offers the bye codes, not the played ones, and only when asked.
     expect(within(rows[4]!).queryByRole("group", { name: "set result" })).toBeNull();
+    await userEvent.click(within(rows[4]!).getByRole("button", { name: "change" }));
+    expect(within(rows[4]!).getByRole("button", { name: "½ · half" })).toBeInTheDocument();
+  });
+
+  it("a bye code writes one side only", async () => {
+    const calls = mount(`/t/${T}/rounds/${R}?filter=all`);
+    await screen.findByText("Section A · Round 3");
+    const bye = screen.getAllByRole("listitem")[4]!;
+    await userEvent.click(within(bye).getByRole("button", { name: "change" }));
+    await userEvent.click(within(bye).getByRole("button", { name: "0 · absent" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    expect(calls.find((c) => c.method === "PUT")!.body).toEqual({ white_result: "Z", black_result: " ", note: "" });
   });
 
   it("a result button writes both codes and confirms the board", async () => {
@@ -126,15 +141,40 @@ describe("RoundBoard", () => {
     expect(put.body).toEqual({ white_result: "0", black_result: "1", note: "" });
   });
 
-  it("forfeits are one tap further away", async () => {
+  it("forfeits and unrated results are one tap further away", async () => {
     const calls = mount(`/t/${T}/rounds/${R}?filter=all`);
     await screen.findByText("Section A · Round 3");
     const empty = screen.getAllByRole("listitem")[3]!;
     expect(within(empty).queryByRole("button", { name: "+:−" })).toBeNull();
-    await userEvent.click(within(empty).getByRole("button", { name: "forfeit…" }));
+    await userEvent.click(within(empty).getByRole("button", { name: "more…" }));
+    expect(within(empty).getByRole("button", { name: "D:D" })).toBeInTheDocument();
     await userEvent.click(within(empty).getByRole("button", { name: "+:−" }));
     await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
     expect(calls.find((c) => c.method === "PUT")!.body).toEqual({ white_result: "+", black_result: "-", note: "" });
+  });
+
+  it("any pair of codes can be set by hand", async () => {
+    const calls = mount(`/t/${T}/rounds/${R}?filter=all`);
+    await screen.findByText("Section A · Round 3");
+    const empty = screen.getAllByRole("listitem")[3]!;
+    await userEvent.click(within(empty).getByRole("button", { name: "more…" }));
+    await userEvent.selectOptions(within(empty).getByLabelText("white code"), "H");
+    await userEvent.selectOptions(within(empty).getByLabelText("black code"), "-");
+    await userEvent.click(within(empty).getByRole("button", { name: "Set" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    expect(calls.find((c) => c.method === "PUT")!.body).toEqual({ white_result: "H", black_result: "-", note: "" });
+  });
+
+  it("the Entered filter confirms every entered board in one go, after asking", async () => {
+    const calls = mount(`/t/${T}/rounds/${R}?filter=entered`);
+    await screen.findByText("Section A · Round 3");
+    await userEvent.click(screen.getByRole("button", { name: "Confirm all 1" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(/2 ½:½/)).toBeInTheDocument();
+    expect(calls.some((c) => c.path.endsWith("/confirm"))).toBe(false);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(calls.some((c) => c.path === `/api/rounds/${R}/confirm`)).toBe(true));
+    expect(calls.find((c) => c.path.endsWith("/confirm"))!.body).toEqual({ game_ids: ["g2"], note: "" });
   });
 
   it("a disputed board is resolved, not overwritten, and no side is pre-lit", async () => {

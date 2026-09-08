@@ -22,7 +22,13 @@ from seebach.features.games import claim_result, resolve_dispute, set_result
 from seebach.features.imports import import_round, preview_import
 from seebach.features.managers import list_managers
 from seebach.features.queue import get_arbiter_queue
-from seebach.features.rounds import export_round, get_round, get_round_events, release_round
+from seebach.features.rounds import (
+    confirm_boards,
+    export_round,
+    get_round,
+    get_round_events,
+    release_round,
+)
 from seebach.features.tournaments import (
     add_member,
     create_tournament,
@@ -56,6 +62,7 @@ MODULES = (
     # /api/rounds/{id}
     get_round,
     get_round_events,
+    confirm_boards,
     release_round,
     export_round,
     # /api/games/{id}

@@ -219,6 +219,21 @@ export function useResolveDispute() {
   });
 }
 
+/** Confirm entered boards before release: all of them, or the ones named. */
+export function useConfirmBoards() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roundId, gameIds }: RoundVars & { gameIds: string[] }) =>
+      unwrap(
+        api.POST("/api/rounds/{round_id}/confirm", {
+          params: { path: { round_id: roundId } },
+          body: { game_ids: gameIds, note: "" },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => invalidateRound(client, vars),
+  });
+}
+
 export function useReleaseRound() {
   const client = useQueryClient();
   return useMutation({

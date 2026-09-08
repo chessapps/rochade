@@ -3,7 +3,9 @@
  *
  * The same row serves the laptop (a wide grid, everything on one line) and a
  * phone in the hall (stacked, thumb-sized buttons). The common case is three
- * buttons; forfeits are one tap further away so they cannot be hit by accident.
+ * buttons; the rest of the TRF palette -- forfeits, unrated games, any pair of
+ * codes -- is one tap further away so it cannot be hit by accident. A bye
+ * carries one code and offers the bye codes instead.
  */
 
 import { useId, useState, type ButtonHTMLAttributes } from "react";
@@ -23,6 +25,37 @@ export const FORFEITS: { label: string; title: string; white: string; black: str
   { label: "+:−", title: "Black did not appear", white: "+", black: "-" },
   { label: "−:+", title: "White did not appear", white: "-", black: "+" },
   { label: "−:−", title: "Neither appeared", white: "-", black: "-" },
+];
+
+/** Played, but not for rating: the TRF's W, D and L. */
+export const UNRATED: { label: string; title: string; white: string; black: string }[] = [
+  { label: "W:L", title: "White won, not rated", white: "W", black: "L" },
+  { label: "D:D", title: "Draw, not rated", white: "D", black: "D" },
+  { label: "L:W", title: "Black won, not rated", white: "L", black: "W" },
+];
+
+/** What a bye can carry. */
+export const BYE_CODES: { code: string; label: string; title: string }[] = [
+  { code: "U", label: "1 · bye", title: "Pairing-allocated bye, one point" },
+  { code: "F", label: "1 · full", title: "Full-point bye" },
+  { code: "H", label: "½ · half", title: "Half-point bye" },
+  { code: "Z", label: "0 · absent", title: "Zero-point bye" },
+];
+
+/** Every code one side of a game may carry, for the free combination. */
+export const SIDE_CODES: { code: string; label: string }[] = [
+  { code: "1", label: "1 win" },
+  { code: "=", label: "½ draw" },
+  { code: "0", label: "0 loss" },
+  { code: "+", label: "+ forfeit win" },
+  { code: "-", label: "− forfeit loss" },
+  { code: "W", label: "W win (unrated)" },
+  { code: "D", label: "D draw (unrated)" },
+  { code: "L", label: "L loss (unrated)" },
+  { code: "H", label: "H half-point bye" },
+  { code: "F", label: "F full-point bye" },
+  { code: "U", label: "U allocated bye" },
+  { code: "Z", label: "Z zero-point bye" },
 ];
 
 const CLAIM_LABEL: Record<string, string> = {
@@ -107,9 +140,13 @@ export function BoardRow({
         )}
       </span>
 
-      {editable && !board.is_bye && (
+      {editable && (
         <div className="col-span-3 lg:col-span-1 lg:justify-self-end">
-          <Controls board={board} busy={busy} actions={actions} />
+          {board.is_bye ? (
+            <ByeControls board={board} busy={busy} actions={actions} />
+          ) : (
+            <Controls board={board} busy={busy} actions={actions} />
+          )}
         </div>
       )}
 
@@ -157,50 +194,161 @@ function Controls({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="set result">
-      {PLAYED.map((option) => (
-        <Choice
-          key={option.label}
-          active={current === option.white + option.black}
-          disabled={busy}
-          onClick={() => pick(option.white, option.black, option.result)}
-        >
-          {option.label}
-        </Choice>
-      ))}
-      {board.state !== "disputed" &&
-        (more ? (
-          FORFEITS.map((option) => (
+    <div className="flex flex-col items-end gap-2" role="group" aria-label="set result">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {PLAYED.map((option) => (
+          <Choice
+            key={option.label}
+            active={current === option.white + option.black}
+            disabled={busy}
+            onClick={() => pick(option.white, option.black, option.result)}
+          >
+            {option.label}
+          </Choice>
+        ))}
+        {board.state !== "disputed" && (
+          <button
+            type="button"
+            onClick={() => setMore((v) => !v)}
+            disabled={busy}
+            aria-expanded={more}
+            className="min-h-11 rounded-lg px-2 text-sm text-slate-500 hover:bg-slate-100 lg:min-h-9"
+            title="forfeits, unrated games and every other code"
+          >
+            {more ? "less" : "more…"}
+          </button>
+        )}
+        {changing && (
+          <button
+            type="button"
+            onClick={() => setChanging(false)}
+            className="min-h-11 px-2 text-sm text-slate-500 lg:min-h-9"
+          >
+            keep
+          </button>
+        )}
+      </div>
+      {more && board.state !== "disputed" && (
+        <Palette current={current} busy={busy} onPick={(w, b) => pick(w, b, null)} />
+      )}
+    </div>
+  );
+}
+
+/** The rest of the TRF vocabulary, grouped, plus any pair of codes by hand. */
+function Palette({
+  current,
+  busy,
+  onPick,
+}: {
+  current: string;
+  busy: boolean;
+  onPick: (white: string, black: string) => void;
+}) {
+  const [white, setWhite] = useState(current[0] && current[0] !== " " ? current[0] : "1");
+  const [black, setBlack] = useState(current[1] && current[1] !== " " ? current[1] : "0");
+  const groups: { name: string; options: { label: string; title: string; white: string; black: string }[] }[] = [
+    { name: "Forfeit", options: FORFEITS },
+    { name: "Unrated", options: UNRATED },
+  ];
+  return (
+    <div className="flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm">
+      {groups.map((group) => (
+        <div key={group.name} className="flex flex-wrap items-center gap-1.5">
+          <span className="w-16 text-xs text-slate-500">{group.name}</span>
+          {group.options.map((option) => (
             <Choice
               key={option.label}
               active={current === option.white + option.black}
               disabled={busy}
               title={option.title}
-              onClick={() => pick(option.white, option.black, null)}
+              onClick={() => onPick(option.white, option.black)}
             >
               {option.label}
             </Choice>
-          ))
-        ) : (
-          <button
-            type="button"
-            onClick={() => setMore(true)}
-            disabled={busy}
-            className="min-h-11 rounded-lg px-2 text-sm text-slate-500 hover:bg-slate-100 lg:min-h-9"
-            title="forfeits"
-          >
-            forfeit…
-          </button>
-        ))}
-      {changing && (
-        <button
-          type="button"
-          onClick={() => setChanging(false)}
-          className="min-h-11 px-2 text-sm text-slate-500 lg:min-h-9"
+          ))}
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="w-16 text-xs text-slate-500">Any pair</span>
+        <SideSelect label="white code" value={white} onChange={setWhite} />
+        <span className="text-slate-400">:</span>
+        <SideSelect label="black code" value={black} onChange={setBlack} />
+        <Button size="sm" disabled={busy} onClick={() => onPick(white, black)}>
+          Set
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SideSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="min-h-9 rounded-lg border border-slate-300 bg-white px-2 font-mono text-sm"
+    >
+      {SIDE_CODES.map((side) => (
+        <option key={side.code} value={side.code}>
+          {side.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** A bye has one side; the codes say what it was worth. */
+function ByeControls({
+  board,
+  busy,
+  actions,
+}: {
+  board: BoardDetail;
+  busy: boolean;
+  actions: BoardActions;
+}) {
+  const [changing, setChanging] = useState(false);
+  if (!changing) {
+    return (
+      <Button size="sm" tone="ghost" onClick={() => setChanging(true)} disabled={busy}>
+        change
+      </Button>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="set bye">
+      {BYE_CODES.map((option) => (
+        <Choice
+          key={option.code}
+          active={board.white_result === option.code}
+          disabled={busy}
+          title={option.title}
+          className="min-w-0"
+          onClick={() => {
+            actions.onSet(board, option.code, " ");
+            setChanging(false);
+          }}
         >
-          keep
-        </button>
-      )}
+          {option.label}
+        </Choice>
+      ))}
+      <button
+        type="button"
+        onClick={() => setChanging(false)}
+        className="min-h-11 px-2 text-sm text-slate-500 lg:min-h-9"
+      >
+        keep
+      </button>
     </div>
   );
 }
@@ -277,6 +425,7 @@ const ACTION_LABEL: Record<string, string> = {
   result_corrected: "corrected by the same phone",
   result_disputed: "disputed",
   result_set: "set by the arbiter",
+  result_confirmed: "confirmed by the arbiter",
   dispute_resolved: "resolved by the arbiter",
 };
 

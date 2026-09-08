@@ -279,6 +279,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rounds/{round_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Boards */
+        post: operations["confirm_boards_api_rounds__round_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rounds/{round_id}/release": {
         parameters: {
             query?: never;
@@ -477,6 +494,28 @@ export interface components {
             /** Disputed */
             disputed: boolean;
         };
+        /** ConfirmBoardsResult */
+        ConfirmBoardsResult: {
+            /**
+             * Round Id
+             * Format: uuid
+             */
+            round_id: string;
+            /** Confirmed */
+            confirmed: number;
+            /** Skipped */
+            skipped?: number[];
+        };
+        /** ConfirmBody */
+        ConfirmBody: {
+            /** Game Ids */
+            game_ids?: string[];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** CreateTournament */
         CreateTournament: {
             /** Name */
@@ -532,7 +571,7 @@ export interface components {
          * @description Every entry in the append-only audit log.
          * @enum {string}
          */
-        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed";
+        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "result_confirmed" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed";
         /** ExportBody */
         ExportBody: {
             /**
@@ -1841,6 +1880,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoundEvent"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_boards_api_rounds__round_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmBoardsResult"];
                 };
             };
             /** @description Validation Error */

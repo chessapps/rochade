@@ -66,8 +66,16 @@ Players enter results on their phones; the round board updates every few
 seconds. It opens on **Attention** — the boards with no result and the ones two
 phones disagree about — so an empty list means the round is done. A disputed
 board shows both claims and which phone made each; pick the right one or set it
-from the scoresheet. A no-show is yours: `forfeit…` on the board, then `+:−`,
-`−:+` or `−:−`. With a board focused, `1` `=` `0` on the keyboard set it too.
+from the scoresheet. A no-show is yours: `more…` on the board, then `+:−`,
+`−:+` or `−:−`. The same menu has the unrated results `W:L` `D:D` `L:W` and,
+under **Any pair**, every TRF code for either side. A bye takes `change` and
+then its own codes: 1 (allocated or full-point), ½ or 0. With a board
+focused, `1` `=` `0` on the keyboard set it too.
+
+As you check entered results against the scoresheets, **Entered → Confirm all
+N** confirms them in one go without releasing the round. A confirmed board is
+closed to the phones, so a late correction from a player comes to you instead
+of overwriting what you checked; `change` on the board still works for you.
 
 ### 4. Release and export
 

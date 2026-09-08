@@ -20,6 +20,14 @@ export const ROUND_STATE_LABEL: Record<RoundState, string> = {
 };
 
 const CODE: Record<string, string> = { "1": "1", "=": "½", "0": "0", "+": "+", "-": "−" };
+const BYE: Record<string, string> = {
+  U: "1 · bye",
+  F: "1 · bye",
+  "1": "1 · bye",
+  H: "½ · bye",
+  "=": "½ · bye",
+  Z: "0 · absent",
+};
 
 /**
  * A game's result as printed on a pairing list. A bye has one side only, and
@@ -27,21 +35,7 @@ const CODE: Record<string, string> = { "1": "1", "=": "½", "0": "0", "+": "+", 
  */
 export function resultLabel(white: string, black: string, isBye = false): string {
   if (white === " ") return "";
-  if (isBye) {
-    switch (white) {
-      case "U":
-      case "F":
-      case "1":
-        return "1 · bye";
-      case "H":
-      case "=":
-        return "½ · bye";
-      case "Z":
-        return "0 · absent";
-      default:
-        return `${CODE[white] ?? white} · bye`;
-    }
-  }
+  if (isBye) return BYE[white] ?? `${CODE[white] ?? white} · bye`;
   const w = CODE[white] ?? white;
   const b = CODE[black] ?? black;
   return `${w}:${b}`;
