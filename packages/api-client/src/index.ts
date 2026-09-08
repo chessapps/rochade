@@ -17,13 +17,24 @@ export function authorization(credential: Credential): string {
     : `Bearer ${credential.token}`;
 }
 
-export function createApi(baseUrl: string, credential: () => Credential | null) {
+export interface ApiOptions {
+  /** Called when a request that carried a credential came back 401. */
+  onUnauthorized?: () => void;
+}
+
+export function createApi(
+  baseUrl: string,
+  credential: () => Credential | null,
+  options: ApiOptions = {},
+) {
   return createClient<paths>({
     baseUrl,
-    fetch: (request) => {
+    fetch: async (request) => {
       const held = credential();
       if (held) request.headers.set("Authorization", authorization(held));
-      return fetch(request);
+      const response = await fetch(request);
+      if (held && response.status === 401) options.onUnauthorized?.();
+      return response;
     },
   });
 }

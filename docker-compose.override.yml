@@ -3,8 +3,8 @@
 services:
   api:
     environment:
-      # Bootstrap auth: the bearer token is taken as the staff subject.
-      # A deployment sets SEEBACH_OIDC_ISSUER instead.
+      # Beside Zitadel: a bearer that is not a JWT is taken as the staff
+      # subject, which is how scripts/smoke.py and admin_flow.mjs sign in.
       SEEBACH_DEV_AUTH_ENABLED: "true"
       # Let a phone join by typing the tournament's code instead of scanning.
       # Also off by default; the QR needs a camera and a reachable URL, which
@@ -13,5 +13,7 @@ services:
 
   web:
     ports:
-      # Host port only; Caddy still listens on 8080 inside the container.
+      # Host ports only; Caddy still listens on 8080 and 8081 inside.
       - "${SEEBACH_WEB_PORT:-8092}:8080"
+      # Zitadel, on the port AUTH_URL names (http://localhost:8093).
+      - "${AUTH_PORT:-8093}:8081"

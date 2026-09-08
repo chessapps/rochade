@@ -13,6 +13,7 @@ from fastapi import Depends, Header
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from seebach.platform.auth.oidc import looks_like_jwt
 from seebach.platform.auth.tokens import hash_token
 from seebach.platform.config import settings
 from seebach.platform.db import get_session
@@ -65,16 +66,16 @@ def _device_principal(token: str, session: Session) -> Principal:
 
 def _staff_principal(credential: str) -> Principal:
     config = settings()
-    if config.oidc_issuer:
+    if config.oidc_enabled and (looks_like_jwt(credential) or not config.dev_auth_enabled):
         return _oidc_principal(credential)
     if not config.dev_auth_enabled:
         raise Unauthenticated(
             "staff authentication is not configured; set SEEBACH_OIDC_ISSUER, or "
             "SEEBACH_DEV_AUTH_ENABLED=true for local development"
         )
-    # Bootstrap mode for M1-M3: the bearer value is the subject. Zitadel lands
-    # in M4 and the API only ever sees a standard OIDC JWT, so nothing else
-    # changes when it does.
+    # Bootstrap mode: the bearer value is the subject. Only reachable when it
+    # was asked for, and never for a value shaped like a JWT, so a rejected
+    # Zitadel token cannot fall through to "trust it anyway".
     return Principal(kind=PrincipalKind.STAFF, subject=credential)
 
 

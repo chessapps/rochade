@@ -4,20 +4,44 @@
 #   docker --context box compose -f docker-compose.yml -f docker-compose.prod.yml \
 #     -p seebach --env-file seebach.prod.env up -d --build
 #
-# Only `web` joins the proxy network; api and postgres stay on this project's
-# own network and are unreachable from other stacks. See deploy/README.md.
+# Only `web` joins the proxy network; api, postgres and zitadel stay on this
+# project's own network and are unreachable from other stacks. The shared
+# Caddy routes the app's hostname to seebach-web:8080 and AUTH_URL's hostname
+# to seebach-web:8081. See deploy/README.md.
 services:
   postgres:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the env file}
 
+  zitadel:
+    environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?set ZITADEL_MASTERKEY (32 characters) in the env file}
+      ZITADEL_EXTERNALDOMAIN: ${AUTH_DOMAIN:?set AUTH_DOMAIN in the env file}
+      ZITADEL_EXTERNALPORT: ${AUTH_PORT:-443}
+      ZITADEL_EXTERNALSECURE: ${AUTH_SECURE:-true}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_EMAIL:?set ZITADEL_ADMIN_EMAIL in the env file}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: ${ZITADEL_ADMIN_EMAIL:?set ZITADEL_ADMIN_EMAIL in the env file}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD:?set ZITADEL_ADMIN_PASSWORD in the env file}
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: ${AUTH_URL:?set AUTH_URL in the env file}/ui/v2/login/
+      ZITADEL_OIDC_DEFAULTLOGINURLV2: ${AUTH_URL:?set AUTH_URL in the env file}/ui/v2/login/login?authRequest=
+      ZITADEL_OIDC_DEFAULTLOGOUTURLV2: ${AUTH_URL:?set AUTH_URL in the env file}/ui/v2/login/logout?post_logout_redirect=
+      ZITADEL_SAML_DEFAULTLOGINURLV2: ${AUTH_URL:?set AUTH_URL in the env file}/ui/v2/login/login?samlRequest=
+
+  zitadel-login:
+    environment:
+      CUSTOM_REQUEST_HEADERS: Host:${AUTH_DOMAIN:?set AUTH_DOMAIN in the env file},X-Forwarded-Proto:${AUTH_SCHEME:-https}
+
+  zitadel-setup:
+    environment:
+      ZITADEL_ISSUER: ${AUTH_URL:?set AUTH_URL in the env file}
+      SEEBACH_PUBLIC_URL: ${SEEBACH_PUBLIC_URL:?set SEEBACH_PUBLIC_URL in the env file}
+
   api:
     environment:
-      # Both default to off. The env file turns dev auth on until Zitadel is
-      # in front of this; anyone who finds the URL is an arbiter meanwhile.
+      # Both default to off. Dev auth beside Zitadel would let any bare
+      # bearer act as staff; there is no reason to have it on a public URL.
       SEEBACH_DEV_AUTH_ENABLED: ${SEEBACH_DEV_AUTH_ENABLED:-false}
       SEEBACH_DEVICE_JOIN_ENABLED: ${SEEBACH_DEVICE_JOIN_ENABLED:-false}
-      SEEBACH_OIDC_ISSUER: ${SEEBACH_OIDC_ISSUER:-}
 
   web:
     # Fixed name so the shared Caddyfile can say `reverse_proxy seebach-web:8080`

@@ -455,7 +455,7 @@ TanStack Query owns reads, writes, invalidation and polling; react-router serves
 | **M4** | Arbiter queue, dispute resolution, `release_round`, `export_round` with freeze. **Loop closes — full round-trip working.** | done, against our own files |
 | **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | **unblocked for Swiss-Manager clubs**; Vega clubs wait on the Vega leg of M0 |
 
-Zitadel is still deferred. Staff auth runs in a bootstrap mode where the bearer token *is* the subject, gated behind `SEEBACH_DEV_AUTH_ENABLED`, which is off by default — an insecure auth mode has to be asked for. The OIDC path is written and wired; it activates on `SEEBACH_OIDC_ISSUER`. The API only ever sees a standard OIDC JWT either way, so nothing but configuration changes when Zitadel lands.
+Zitadel is in the stack (2026-09-08): two containers sharing the stack's Postgres, a setup step that registers the arbiter app and hands its client id to the API, and the admin app signing in with an authorization-code flow against it. Any account in the Zitadel organisation is an arbiter; per-tournament roles are unchanged. The bootstrap mode where the bearer token *is* the subject still exists behind `SEEBACH_DEV_AUTH_ENABLED`, off by default, and beside Zitadel it only takes bearers that are not JWTs — it is how the smoke and browser scripts sign in locally. `deploy/README.md` has the deployment side.
 
 ### What "done" means here, and what it does not
 

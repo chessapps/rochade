@@ -3,6 +3,7 @@
 	auto_https off
 }
 
+# The app: both frontends and the API on one origin.
 :8080 {
 	# In a deployment a shared Caddy in front of this one terminates TLS and
 	# sets X-Forwarded-Proto/Host. Trust those from the docker network, or
@@ -31,5 +32,18 @@
 		root * /srv/hall
 		try_files {path} /index.html
 		file_server
+	}
+}
+
+# Zitadel, on its own hostname (AUTH_URL): the login UI is a second
+# container under one path, everything else is the core over h2c.
+:8081 {
+	reverse_proxy /ui/v2/login/* zitadel-login:3000 {
+		trusted_proxies private_ranges
+	}
+	reverse_proxy h2c://zitadel:8080 {
+		trusted_proxies private_ranges
+		# A known hang with gRPC-web through Caddy; Zitadel's docs say drop it.
+		header_up -TE
 	}
 }

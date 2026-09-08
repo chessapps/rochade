@@ -38,19 +38,25 @@ docker compose up --build
 - hall app — <http://localhost:8092>
 - arbiter app — <http://localhost:8092/admin/>
 - API docs — <http://localhost:8092/api> (OpenAPI at `/openapi.json` on the API)
+- Zitadel, the arbiters' sign-in — <http://localhost:8093> (console at `/ui/console`)
 
-If 8092 is already taken on your machine, set `SEEBACH_WEB_PORT` — it moves the
-host port only, and everything is served same-origin, so nothing else changes:
+The first start takes a minute longer: Zitadel initialises itself in the
+stack's Postgres and creates the first arbiter account, `admin@seebach.localhost`
+with password `Password1!` (both from `.env.example`). Then a small setup
+container registers the arbiter app with Zitadel and hands its client id to
+the API, so the arbiter app's **Sign in** button just works. More arbiters are
+added in Zitadel's console; passkeys are offered there and at sign-in.
 
-```sh
-SEEBACH_WEB_PORT=8093 docker compose up --build
-```
+If 8092 or 8093 is taken on your machine, set `SEEBACH_WEB_PORT` or the
+`AUTH_*` variables in a `.env` (see `.env.example`); the ports move, and
+everything is served same-origin, so nothing else changes.
 
-Compose runs with `SEEBACH_DEV_AUTH_ENABLED=true`, which takes the bearer token
-as the staff subject with no verification. That is a development affordance and
-it is **off by default** — a real deployment sets `SEEBACH_OIDC_ISSUER` instead.
-The host port and both dev flags live in `docker-compose.override.yml`, which
-compose merges in on its own; `docker-compose.yml` alone is production-safe.
+Compose also runs with `SEEBACH_DEV_AUTH_ENABLED=true`: beside Zitadel, a
+bearer that is not a JWT is taken as the staff subject with no verification,
+which is how the smoke and browser scripts sign in. That is a development
+affordance and it is **off by default**. The host ports and both dev flags live
+in `docker-compose.override.yml`, which compose merges in on its own;
+`docker-compose.yml` alone is production-safe.
 
 It also runs with `SEEBACH_DEVICE_JOIN_ENABLED=true`, which lets a phone admit
 itself by typing a tournament's six-character join code instead of scanning the
@@ -73,6 +79,13 @@ machine (`SEEBACH_BROWSER=chrome` for Chrome):
 
 ```sh
 node scripts/admin_flow.mjs http://localhost:8092
+```
+
+And the sign-in itself, from no credential through Zitadel's login page and
+back, then out again:
+
+```sh
+node scripts/login_flow.mjs http://localhost:8092
 ```
 
 ## The arbiter's day

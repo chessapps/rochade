@@ -1,23 +1,15 @@
 import { createApi, type paths } from "@seebach/api-client";
 
-const TOKEN_KEY = "seebach.staff-token";
+import { currentCredential } from "./auth";
 
-export function staffToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+/** Set by App once it knows the session, so a 401 can end it. */
+let unauthorized: () => void = () => {};
+
+export function onUnauthorized(handler: () => void): void {
+  unauthorized = handler;
 }
 
-export function signIn(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function signOut(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-export const api = createApi("", () => {
-  const token = staffToken();
-  return token ? { kind: "staff", token } : null;
-});
+export const api = createApi("", currentCredential, { onUnauthorized: () => unauthorized() });
 
 type Json<T> = T extends { content: { "application/json": infer B } } ? B : never;
 
@@ -63,6 +55,7 @@ export type ExportResult = Json<
 export type CreateTournamentBody = NonNullable<
   paths["/api/tournaments"]["post"]["requestBody"]
 >["content"]["application/json"];
+export type AuthConfig = Json<paths["/api/auth/config"]["get"]["responses"]["200"]>;
 
 /** The API returns a structured domain error; surface its message, not "500". */
 export function errorMessage(error: unknown): string {

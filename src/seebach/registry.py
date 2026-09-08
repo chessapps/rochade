@@ -9,6 +9,7 @@ as a table of contents for the API.
 
 from fastapi import APIRouter
 
+from seebach.features.auth import get_auth_config
 from seebach.features.boards import get_board_list
 from seebach.features.devices import (
     issue_device_token,
@@ -39,6 +40,8 @@ from seebach.features.tournaments import (
 
 #: Every module that owns routes, in REST order.
 MODULES = (
+    # /api/auth
+    get_auth_config,
     # /api/managers
     list_managers,
     # /api/tournaments

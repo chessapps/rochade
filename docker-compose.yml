@@ -1,7 +1,12 @@
-# Production-safe base. Local conveniences (the host port, dev auth, join by
+# Production-safe base. Local conveniences (the host ports, dev auth, join by
 # code) live in docker-compose.override.yml, which `docker compose up` picks
 # up on its own; a deployment passes docker-compose.prod.yml instead and never
 # sees them. See deploy/README.md.
+#
+# Staff sign in through Zitadel, which runs here as two containers (the core
+# and its login UI) sharing the stack's Postgres. It is reached on its own
+# hostname, AUTH_URL, which the stack's Caddy serves on :8081. The four AUTH_*
+# variables describe that one URL and must agree with each other.
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,6 +23,107 @@ services:
       timeout: 3s
       retries: 10
 
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v4.16.0
+    restart: unless-stopped
+    user: "0"
+    command: start-from-init --masterkeyFromEnv --tlsMode disabled
+    environment:
+      # Exactly 32 characters; encrypts Zitadel's own secrets at rest.
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:-MasterkeyNeedsToHave32Characters}
+      ZITADEL_EXTERNALDOMAIN: ${AUTH_DOMAIN:-localhost}
+      ZITADEL_EXTERNALPORT: ${AUTH_PORT:-8093}
+      ZITADEL_EXTERNALSECURE: ${AUTH_SECURE:-false}
+      ZITADEL_TLS_ENABLED: "false"
+
+      ZITADEL_DATABASE_POSTGRES_HOST: postgres
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD:-seebach}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: seebach
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:-seebach}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+
+      # First start only: the organisation, the first arbiter account, and
+      # two machine users -- one for the login UI, one for zitadel_setup.
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: Seebach
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_EMAIL:-admin@seebach.localhost}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: ${ZITADEL_ADMIN_EMAIL:-admin@seebach.localhost}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: Chief
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: Arbiter
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD:-Password1!}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
+      ZITADEL_FIRSTINSTANCE_PATPATH: /zitadel/bootstrap/setup.pat
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: seebach-setup
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Seebach setup
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: "2035-01-01T00:00:00Z"
+      ZITADEL_FIRSTINSTANCE_LOGINCLIENTPATPATH: /zitadel/bootstrap/login-client.pat
+      ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME: login-client
+      ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_NAME: Login client
+      ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_PAT_EXPIRATIONDATE: "2035-01-01T00:00:00Z"
+
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "true"
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: ${AUTH_URL:-http://localhost:8093}/ui/v2/login/
+      ZITADEL_OIDC_DEFAULTLOGINURLV2: ${AUTH_URL:-http://localhost:8093}/ui/v2/login/login?authRequest=
+      ZITADEL_OIDC_DEFAULTLOGOUTURLV2: ${AUTH_URL:-http://localhost:8093}/ui/v2/login/logout?post_logout_redirect=
+      ZITADEL_SAML_DEFAULTLOGINURLV2: ${AUTH_URL:-http://localhost:8093}/ui/v2/login/login?samlRequest=
+    volumes:
+      - zitadel_bootstrap:/zitadel/bootstrap
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/zitadel", "ready"]
+      interval: 10s
+      timeout: 30s
+      retries: 12
+      start_period: 20s
+
+  zitadel-login:
+    image: ghcr.io/zitadel/zitadel-login:v4.16.0
+    restart: unless-stopped
+    user: "0"
+    environment:
+      ZITADEL_API_URL: http://zitadel:8080
+      NEXT_PUBLIC_BASE_PATH: /ui/v2/login
+      ZITADEL_SERVICE_USER_TOKEN_FILE: /zitadel/bootstrap/login-client.pat
+      # Zitadel finds its instance by the Host header; say the public name.
+      CUSTOM_REQUEST_HEADERS: Host:${AUTH_DOMAIN:-localhost},X-Forwarded-Proto:${AUTH_SCHEME:-http}
+    volumes:
+      - zitadel_bootstrap:/zitadel/bootstrap:ro
+    depends_on:
+      zitadel:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "node /app/healthcheck.mjs http://localhost:3000/ui/v2/login/healthy"]
+      interval: 10s
+      timeout: 30s
+      retries: 12
+      start_period: 20s
+
+  # Registers the arbiter app with Zitadel once and writes the client id it
+  # got to a file the API reads. Idempotent; runs on every `up`.
+  zitadel-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "seebach.platform.auth.zitadel_setup"]
+    environment:
+      ZITADEL_URL: http://zitadel:8080
+      ZITADEL_ISSUER: ${AUTH_URL:-http://localhost:8093}
+      ZITADEL_PAT_FILE: /zitadel/bootstrap/setup.pat
+      SEEBACH_PUBLIC_URL: ${SEEBACH_PUBLIC_URL:-http://localhost:8092}
+      SEEBACH_OIDC_CONFIG_FILE: /run/seebach/oidc.json
+    volumes:
+      - zitadel_bootstrap:/zitadel/bootstrap:ro
+      - auth_config:/run/seebach
+    depends_on:
+      zitadel:
+        condition: service_healthy
+
   api:
     build:
       context: .
@@ -25,9 +131,16 @@ services:
     restart: unless-stopped
     environment:
       SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:${POSTGRES_PASSWORD:-seebach}@postgres:5432/seebach
+      # Issuer and client id come from the file zitadel-setup wrote.
+      SEEBACH_OIDC_CONFIG_FILE: /run/seebach/oidc.json
+      SEEBACH_OIDC_INTERNAL_URL: http://zitadel:8080
+    volumes:
+      - auth_config:/run/seebach:ro
     depends_on:
       postgres:
         condition: service_healthy
+      zitadel-setup:
+        condition: service_completed_successfully
     healthcheck:
       # python-slim has no curl; the standard library does the same job.
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
@@ -44,6 +157,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      zitadel-login:
+        condition: service_healthy
     healthcheck:
       # /health is proxied to the API, so this checks the whole path.
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
@@ -53,3 +168,5 @@ services:
 
 volumes:
   pgdata:
+  zitadel_bootstrap:
+  auth_config:

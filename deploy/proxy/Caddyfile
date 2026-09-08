@@ -8,7 +8,14 @@
 	email {$ACME_EMAIL}
 }
 
+# The app: hall, arbiter app and API on one origin.
 seebach.example.com {
 	encode gzip
 	reverse_proxy seebach-web:8080
+}
+
+# Zitadel, the arbiters' sign-in. The stack's own Caddy fans this out to the
+# core and the login UI, so one plain upstream is enough here.
+auth.example.com {
+	reverse_proxy seebach-web:8081
 }

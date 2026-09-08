@@ -1,19 +1,22 @@
 # Deploying on a Linux box
 
-The stack is three containers: `postgres`, `api`, and `web`, where `web` is a
-Caddy that serves both frontends and proxies `/api` to the API on one origin.
-A deployment leaves that untouched and puts one more Caddy in front of it: a
-shared proxy on the box that owns ports 80 and 443, gets certificates from
-Let's Encrypt, and routes each hostname to one stack. Other stacks on the same
-box join the same proxy the same way.
+The stack is `postgres`, `api`, `web`, and Zitadel (`zitadel`, its login UI
+`zitadel-login`, and a one-shot `zitadel-setup`). `web` is a Caddy that serves
+both frontends and proxies `/api` to the API on one origin, and on a second
+port fans Zitadel's two containers out under one hostname. A deployment leaves
+that untouched and puts one more Caddy in front of it: a shared proxy on the
+box that owns ports 80 and 443, gets certificates from Let's Encrypt, and
+routes each hostname to one stack. Other stacks on the same box join the same
+proxy the same way.
 
 ```
 internet ──443──> proxy (caddy, ~/stacks/proxy) ──proxy network──> seebach-web:8080 ──> api:8000 ──> postgres
-                                                                   └── other stacks' web containers
+                  seebach.example.com                              seebach-web:8081 ──> zitadel:8080, zitadel-login:3000
+                  auth.example.com                                 └── other stacks' web containers
 ```
 
-Only `web` joins the `proxy` docker network. `api` and `postgres` stay on the
-seebach project's own network, unreachable from other stacks.
+Only `web` joins the `proxy` docker network. `api`, `postgres` and Zitadel
+stay on the seebach project's own network, unreachable from other stacks.
 
 Everything is driven from the workstation with a docker context over SSH:
 the build runs on the box, no registry is involved, and the whole deploy is
@@ -93,24 +96,41 @@ docker --context box ps                             # same list, through the con
 
 ## DNS
 
-An `A` record for `seebach.<your-domain>` pointing at the box, plus an `AAAA`
-record if the box has IPv6. Caddy issues the certificate on the first request
-after the record resolves; nothing else to configure.
+Two `A` records pointing at the box, `seebach.<your-domain>` for the app and
+`auth.<your-domain>` for Zitadel, plus `AAAA` records if the box has IPv6.
+Caddy issues the certificates on the first request after the records resolve;
+nothing else to configure.
 
 ## Deploy
 
 ```powershell
-Copy-Item .env.example seebach.prod.env             # gitignored; set POSTGRES_PASSWORD
+Copy-Item .env.example seebach.prod.env             # gitignored
 scripts/deploy.ps1                                  # or scripts/deploy.sh on a POSIX shell
 ```
 
-Pick the password before the first deploy: Postgres writes it into the data
-volume when it initialises, and changing the env file afterwards does not
-change the database. To rotate it later, run `ALTER USER seebach PASSWORD
-'...'` in `psql` first, then update the env file and redeploy.
+In the env file set:
+
+- `POSTGRES_PASSWORD`, `ZITADEL_MASTERKEY` (exactly 32 characters): secrets,
+  generate them.
+- `SEEBACH_PUBLIC_URL=https://seebach.<your-domain>`.
+- `AUTH_URL=https://auth.<your-domain>`, `AUTH_DOMAIN=auth.<your-domain>`,
+  `AUTH_PORT=443`, `AUTH_SCHEME=https`, `AUTH_SECURE=true`. Four views of one
+  URL; Zitadel needs each separately and refuses requests when they disagree
+  ("Instance not found").
+- `ZITADEL_ADMIN_EMAIL`, `ZITADEL_ADMIN_PASSWORD`: the first arbiter account.
+- Leave `SEEBACH_DEV_AUTH_ENABLED` unset or `false`.
+
+Pick the passwords and the master key before the first deploy. Postgres writes
+its password into the data volume when it initialises, Zitadel encrypts its
+secrets with the master key and creates the first account only on its first
+start, and changing the env file afterwards changes none of that. To rotate
+the Postgres password later, run `ALTER USER seebach PASSWORD '...'` (and the
+same for `zitadel`) in `psql` first, then update the env file and redeploy.
 
 The script runs `docker compose up -d --build` on the box through the context
-with the production overlay. The env file is read on the workstation; it never
+with the production overlay. The first deploy takes a minute or two longer
+than later ones: Zitadel initialises itself, the setup container waits for
+it and registers the app, and only then does the API start. The env file is read on the workstation; it never
 has to be on the box. Use `scripts/deploy.ps1 -Plain` on the first run to see
 how large the build context is (`.dockerignore` keeps it to the sources; it
 should be a few megabytes).
@@ -119,11 +139,19 @@ Then check:
 
 ```sh
 curl -I https://seebach.<your-domain>/health        # 200, valid certificate
+curl https://seebach.<your-domain>/api/auth/config  # names https://auth.<your-domain> and a client id
+curl https://auth.<your-domain>/.well-known/openid-configuration
 ```
 
-Open `https://seebach.<your-domain>/admin/`, issue a QR under **Devices**, and
-confirm it encodes the `https://` hostname: the admin app derives it from the
-page origin, so it is right whenever the site is served on its real name.
+Open `https://seebach.<your-domain>/admin/` and sign in with the first
+arbiter account. Issue a QR under **Devices** and confirm it encodes the
+`https://` hostname: the admin app derives it from the page origin, so it is
+right whenever the site is served on its real name. The same walk in a
+browser, from the workstation:
+
+```sh
+ZITADEL_ADMIN_EMAIL=... ZITADEL_ADMIN_PASSWORD=... node scripts/login_flow.mjs https://seebach.<your-domain>
+```
 
 Useful afterwards:
 
@@ -171,11 +199,24 @@ A nightly dump on the box itself, kept for 14 days (`crontab -e`):
 
 Copy that directory somewhere off the box now and then; nothing here does.
 
-## Auth
+## Arbiters
 
-The stack currently runs with `SEEBACH_DEV_AUTH_ENABLED=true` in the env file:
-any bearer token is accepted as a staff subject, so anyone who finds the URL
-can act as an arbiter. That is a conscious interim choice. To close it, set
-`SEEBACH_DEV_AUTH_ENABLED=false` and `SEEBACH_OIDC_ISSUER` in the env file and
-redeploy; the OIDC path is wired in the API, the admin app's login against it
-is not built yet (see PLAN.md).
+Staff sign in through Zitadel. The admin app asks the API where the issuer
+is, sends the browser there (authorization code with PKCE), and holds the
+tokens it gets back; the API verifies each request's JWT against the issuer's
+keys. The `sub` claim is the staff subject that tournament membership is
+keyed on, so an account keeps its tournaments across password changes.
+
+Arbiters are managed in Zitadel's console at `https://auth.<your-domain>/ui/console`,
+signed in as the first account: **Users** › **New** creates one, and the
+person can add a passkey at their first sign-in. Every account in the
+organisation may sign in and create tournaments; there is no further gate
+yet, roles are per tournament and given by its owner.
+
+The setup container registers the arbiter app on the first deploy and, on
+later ones, only refreshes its redirect URIs. If `SEEBACH_PUBLIC_URL` changes,
+redeploying is enough.
+
+`SEEBACH_DEV_AUTH_ENABLED=true` beside Zitadel would let any bare bearer act as
+staff. It exists for the local scripts; there is no reason to set it on a
+public URL.

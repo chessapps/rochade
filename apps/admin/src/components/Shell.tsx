@@ -6,10 +6,19 @@
 import type { ReactNode } from "react";
 import { Link, NavLink, useNavigate, useParams } from "react-router";
 
+import type { Account } from "../auth";
 import { useTournament, useTournaments } from "../queries";
 import { Select, cx } from "./ui";
 
-export function Shell({ onSignOut, children }: { onSignOut: () => void; children: ReactNode }) {
+export function Shell({
+  account,
+  onSignOut,
+  children,
+}: {
+  account?: Account;
+  onSignOut: () => void;
+  children: ReactNode;
+}) {
   const { tournamentId } = useParams();
   const tournaments = useTournaments();
   const tournament = useTournament(tournamentId);
@@ -39,6 +48,11 @@ export function Shell({ onSignOut, children }: { onSignOut: () => void; children
             </>
           )}
           <span className="flex-1" />
+          {account?.kind === "oidc" && (
+            <span className="hidden max-w-48 truncate text-sm text-slate-500 sm:inline" title={account.name}>
+              {account.name}
+            </span>
+          )}
           <button
             type="button"
             onClick={onSignOut}
