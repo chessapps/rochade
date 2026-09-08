@@ -68,7 +68,8 @@ describe("the board list", () => {
   it("shows the score once a result stands, and offers entry otherwise", () => {
     list("");
     expect(screen.getByText("1 – 0")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Board 3,/ })).toHaveTextContent("enter");
+    expect(screen.getByRole("button", { name: /Board 3,.*open$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Board 1,.*entered$/ })).toBeInTheDocument();
     // A bye is not something anyone enters.
     expect(screen.queryByRole("button", { name: /Board 12,/ })).not.toBeInTheDocument();
   });

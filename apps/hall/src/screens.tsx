@@ -3,7 +3,7 @@
  *
  *   board list (sticky search)  ->  result choice, which sends  ->  done
  *
- * Black on white, ruled like a printed pairing sheet: this is read on a
+ * Black on white, ruled like a printed pairing sheet, two columns on a tablet: this is read on a
  * five-year-old Android in a badly lit hall by someone who has just played four
  * hours of chess and wants to leave. There is no confirm step; the choice
  * screen shows both names by colour so the tap itself is the check.
@@ -74,65 +74,30 @@ export function BoardListScreen({
           spellCheck={false}
           className="mt-1.5 w-full rounded-md border-2 border-ink bg-paper px-3 py-2 text-base placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
         />
+        <div className="mt-1.5">
+          <Legend />
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto pb-6">
         {groups.map((group) => (
-          <table key={group.key} className="w-full table-fixed border-collapse text-[15px]">
-            <thead>
-              <tr className="border-b border-ink bg-neutral-100 text-left text-[11px] font-semibold tracking-wide text-mute uppercase">
-                <th className="w-9 py-1 pl-2 text-right">Bd</th>
-                <th className="py-1 pl-2">
-                  {oneGroup ? "White · Black" : `${group.section} · round ${group.round}`}
-                </th>
-                <th className="w-16 py-1 pr-2 text-right">Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {group.boards.map((board) => {
-                const pending = pendingKeys.has(board.game_id);
-                const open = !board.is_bye;
-                return (
-                  <tr
-                    key={board.game_id}
-                    role={open ? "button" : undefined}
-                    tabIndex={open ? 0 : undefined}
-                    aria-label={
-                      open ? `Board ${board.board}, ${board.white_name} against ${board.black_name}` : undefined
-                    }
-                    onClick={open ? () => onPick(board) : undefined}
-                    onKeyDown={
-                      open
-                        ? (event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              onPick(board);
-                            }
-                          }
-                        : undefined
-                    }
-                    className={[
-                      "border-b border-rule align-top",
-                      open
-                        ? "cursor-pointer active:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
-                        : "text-mute",
-                    ].join(" ")}
-                  >
-                    <td className="py-1.5 pl-2 text-right font-semibold tabular-nums">
-                      {board.board}
-                    </td>
-                    <td className="py-1.5 pl-2 leading-tight">
-                      <span className="block truncate">{board.white_name}</span>
-                      <span className="block truncate text-mute">{board.black_name ?? "bye"}</span>
-                    </td>
-                    <td className="py-1.5 pr-2 text-right align-middle">
-                      <BoardCell board={board} pending={pending} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <section key={group.key}>
+            {!oneGroup && (
+              <h2 className="border-b border-ink bg-neutral-100 px-3 py-1 text-[11px] font-semibold tracking-wide text-mute uppercase">
+                {group.section} · round {group.round}
+              </h2>
+            )}
+            <ul className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-4 sm:px-3">
+              {group.boards.map((board) => (
+                <BoardRow
+                  key={board.game_id}
+                  board={board}
+                  pending={pendingKeys.has(board.game_id)}
+                  onPick={onPick}
+                />
+              ))}
+            </ul>
+          </section>
         ))}
         {shown.length === 0 && (
           <p className="px-4 py-10 text-center text-mute">
@@ -158,25 +123,113 @@ function groupByRound(boards: Board[]) {
   return [...groups.values()];
 }
 
-function BoardCell({ board, pending }: { board: Board; pending: boolean }) {
-  if (pending) {
-    return <span className="text-xs text-mute">sending…</span>;
-  }
-  if (board.is_bye) {
-    return <span className="text-xs">bye</span>;
-  }
-  if (board.entered) {
+type Status = "open" | "sending" | "entered" | "bye";
+
+function statusOf(board: Board, pending: boolean): Status {
+  if (board.is_bye) return "bye";
+  if (pending) return "sending";
+  if (board.entered) return "entered";
+  return "open";
+}
+
+/**
+ * One colour per state, chosen to survive a dim hall and a cheap screen:
+ * hollow means nothing has happened yet, amber is on its way, green is in.
+ */
+const DOT: Record<Status, string> = {
+  open: "border-2 border-ink bg-paper",
+  sending: "border-2 border-amber-500 bg-amber-400",
+  entered: "border-2 border-emerald-700 bg-emerald-500",
+  bye: "border-2 border-neutral-300 bg-neutral-300",
+};
+
+const STATUS_LABEL: Record<Status, string> = {
+  open: "open",
+  sending: "sending",
+  entered: "entered",
+  bye: "bye",
+};
+
+function Dot({ status }: { status: Status }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={["inline-block h-3.5 w-3.5 shrink-0 rounded-full", DOT[status]].join(" ")}
+    />
+  );
+}
+
+export function Legend() {
+  return (
+    <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-mute">
+      {(["open", "sending", "entered"] as Status[]).map((status) => (
+        <li key={status} className="flex items-center gap-1">
+          <Dot status={status} />
+          {STATUS_LABEL[status]}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function BoardRow({
+  board,
+  pending,
+  onPick,
+}: {
+  board: Board;
+  pending: boolean;
+  onPick: (board: Board) => void;
+}) {
+  const status = statusOf(board, pending);
+  const open = status !== "bye";
+  const inner = (
+    <>
+      <span className="w-8 shrink-0 text-right text-base font-semibold tabular-nums">
+        {board.board}
+      </span>
+      <span className="flex shrink-0 items-center self-center">
+        <Dot status={status} />
+      </span>
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className="block truncate">{board.white_name}</span>
+        <span className="block truncate text-mute">{board.black_name ?? "bye"}</span>
+      </span>
+      <span className="shrink-0 self-center text-right">
+        <BoardCell board={board} status={status} />
+      </span>
+    </>
+  );
+  const row = "flex w-full items-start gap-2 border-b border-rule px-2 py-1.5 text-left";
+  return (
+    <li className="min-w-0">
+      {open ? (
+        <button
+          type="button"
+          onClick={() => onPick(board)}
+          aria-label={`Board ${board.board}, ${board.white_name} against ${board.black_name}, ${STATUS_LABEL[status]}`}
+          className={`${row} active:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none`}
+        >
+          {inner}
+        </button>
+      ) : (
+        <div className={`${row} text-mute`}>{inner}</div>
+      )}
+    </li>
+  );
+}
+
+function BoardCell({ board, status }: { board: Board; status: Status }) {
+  if (status === "sending") return <span className="text-xs text-mute">sending…</span>;
+  if (status === "bye") return <span className="text-xs">bye</span>;
+  if (status === "entered") {
     return (
       <span className="font-semibold tabular-nums whitespace-nowrap">
         {SHEET_SCORE[board.white_result] ?? board.white_result}
       </span>
     );
   }
-  return (
-    <span className="rounded border border-ink px-2 py-0.5 text-xs font-semibold whitespace-nowrap">
-      enter
-    </span>
-  );
+  return <span className="text-xl leading-none text-mute">›</span>;
 }
 
 function StatusLine({
@@ -214,7 +267,7 @@ export function ResultChoiceScreen({
   onBack: () => void;
 }) {
   return (
-    <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
+    <div className="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
       <Players board={board} />
       <p className="text-lg font-semibold">
@@ -322,7 +375,7 @@ export function DoneScreen({
 }) {
   const title = queued ? "Saved on this phone" : corrected ? "Correction sent" : "Result sent";
   return (
-    <div className="flex min-h-full flex-col gap-4 overflow-y-auto p-3">
+    <div className="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 overflow-y-auto p-3">
       <BoardHeading board={board} />
       <div className="flex items-center gap-3">
         <span

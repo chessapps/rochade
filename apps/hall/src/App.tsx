@@ -130,7 +130,7 @@ export function App() {
   };
 
   return (
-    <main className="mx-auto h-full w-full max-w-xl">
+    <main className="mx-auto h-full w-full max-w-3xl">
       <RejectedBanner
         claims={rejected}
         onDismiss={(key) => void queue.dismiss(key).then(syncQueueState)}
