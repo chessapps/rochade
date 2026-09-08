@@ -78,6 +78,30 @@ export function rosterNote(files: PickedFile[], rosterHeld: boolean): string | n
   return "Names come from the players already held for this section. Add Spielerdaten only if a player was added or removed.";
 }
 
+/**
+ * The file's text. Swiss-Manager writes UTF-8, but an older build or a
+ * re-saved file may be Windows-1252, where the half-point glyph is one byte
+ * that UTF-8 decoding would turn into U+FFFD. Strict UTF-8 first, then 1252.
+ */
+export async function readText(file: Blob): Promise<string> {
+  const bytes = await bytesOf(file);
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
+function bytesOf(file: Blob): Promise<ArrayBuffer> {
+  // FileReader is the one reader every browser and test runtime has.
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(reader.error ?? new Error("could not read the file"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 /** One body for the API: the files as they were, in a stable order. */
 export function joinContents(files: PickedFile[]): string {
   return [...files]

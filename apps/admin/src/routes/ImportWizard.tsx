@@ -22,6 +22,7 @@ import {
   joinContents,
   KIND_LABEL,
   missing,
+  readText,
   rosterNote,
   primaryName,
   sniff,
@@ -283,7 +284,7 @@ function DropZone({
 
   const take = (picked: FileList | null) => {
     for (const one of Array.from(picked ?? [])) {
-      void one.text().then((content) => onFile({ name: one.name, content, kind: sniff(content) }));
+      void readText(one).then((content) => onFile({ name: one.name, content, kind: sniff(content) }));
     }
   };
   const note = missing(files, rosterHeld);

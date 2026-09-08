@@ -14,7 +14,7 @@ import { errorMessage, type SectionStandings } from "../api";
 import { useToast } from "../components/Toast";
 import { Banner, Button, Card, CardHeader, EmptyState, Input, Skeleton, cx } from "../components/ui";
 import { plural } from "../format";
-import { sniff } from "../importFiles";
+import { readText, sniff } from "../importFiles";
 import { useImportStandings, useNameTiebreaks, useStandings, useTournament } from "../queries";
 
 export function Standings() {
@@ -248,7 +248,7 @@ function ImportStandingsCard({
   const take = (picked: FileList | null) => {
     const one = picked?.[0];
     if (!one) return;
-    void one.text().then((content) => setFile({ name: one.name, content }));
+    void readText(one).then((content) => setFile({ name: one.name, content }));
   };
   const kind = file ? sniff(file.content) : null;
   const ready = kind === "players" && section.trim() !== "";

@@ -143,12 +143,26 @@ def _rating(international: str, national: str) -> int | None:
     return None
 
 
+#: How Swiss-Manager spells a half: the glyph in `Pkt`, a decimal comma in
+#: the tiebreak columns, and U+FFFD when a Windows-1252 file was read as UTF-8.
+_HALVES = ("½", "�", "1/2")
+
+
 def _number(value: str) -> float | None:
-    """A score as Swiss-Manager writes it: `1`, `0,5` or `0.5`; empty is None."""
+    """A score as Swiss-Manager writes it: `1`, `2½`, `0,5` or `0.5`; empty is None."""
     if not value:
         return None
+    text = value.replace(" ", "")
+    half = 0.0
+    for glyph in _HALVES:
+        if text.endswith(glyph):
+            text = text[: -len(glyph)]
+            half = 0.5
+            break
+    if not text:
+        return half if half else None
     try:
-        return float(value.replace(",", "."))
+        return float(text.replace(",", ".")) + half
     except ValueError:
         return None
 

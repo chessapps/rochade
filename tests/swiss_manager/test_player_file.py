@@ -67,6 +67,25 @@ def test_a_half_point_reads_with_either_decimal_mark() -> None:
     assert players[8].rank == 4
 
 
+def test_a_half_is_a_glyph_in_the_points_column() -> None:
+    """Swiss-Manager writes `2½` in Pkt; read as Windows-1252 by a browser it is `2�`."""
+    text = "\r\n".join(
+        [
+            "Nr;Nachname;Vorname;Pkt;Wtg1;Rang",
+            "1;Suter;Katarzyna;2½;5,5;6",
+            "2;Chen;Paolo;½;2,5;16",
+            "3;Graf;Iryna;1�;4;37",
+            "4;Rossi;Davide;1 1/2;4;38",
+        ]
+    )
+    players = by_start_number(parse_player_file(text))
+
+    assert players[1].points == 2.5
+    assert players[2].points == 0.5
+    assert players[3].points == 1.5
+    assert players[4].points == 1.5
+
+
 def test_a_list_without_standings_columns_has_none() -> None:
     text = "\r\n".join(["Nr;Nachname;Vorname", "1;Iten;Nadia", ""])
     player = parse_player_file(text)[0]
