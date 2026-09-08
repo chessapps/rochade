@@ -15,6 +15,7 @@ from seebach.features.devices import (
     join_code,
     join_device,
     list_devices,
+    remove_device,
     revoke_device,
 )
 from seebach.features.games import claim_result, resolve_dispute, set_result
@@ -48,6 +49,7 @@ MODULES = (
     # /api/tournaments/{id}/devices, /api/devices/{id}
     issue_device_token,
     list_devices,
+    remove_device,
     revoke_device,
     join_code,
     join_device,

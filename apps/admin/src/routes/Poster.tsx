@@ -7,13 +7,11 @@ import { Link, useLocation, useParams } from "react-router";
 
 import { QrCode } from "../components/QrCode";
 import { Button } from "../components/ui";
-import { clockTime } from "../format";
 import { useTournament } from "../queries";
 
 interface PosterState {
   qr_payload: string;
   label: string;
-  expires_at: string;
 }
 
 export function Poster() {
@@ -50,13 +48,10 @@ export function Poster() {
         <h1 className="text-3xl font-bold sm:text-4xl">{tournament.data?.name ?? ""}</h1>
         <p className="text-xl text-slate-700 sm:text-2xl">Scan to enter your result</p>
         <QrCode value={state.qr_payload} size={360} />
-        <p className="text-base text-slate-500">
-          {state.label && <>{state.label} · </>}
-          valid today until {clockTime(state.expires_at)}
-        </p>
+        {state.label && <p className="text-base text-slate-500">{state.label}</p>}
         <p className="max-w-md text-sm text-slate-400">
-          Find your board by name, tap the result, confirm. The arbiter checks every entry
-          before it counts.
+          Find your board by name and tap the result. The arbiter checks every entry before
+          it counts.
         </p>
       </article>
     </div>

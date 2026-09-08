@@ -186,8 +186,25 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** Remove Device */
+        delete: operations["remove_device_api_devices__device_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/{device_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Revoke Device */
-        delete: operations["revoke_device_api_devices__device_id__delete"];
+        post: operations["revoke_device_api_devices__device_id__revoke_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -503,11 +520,6 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
             /** Revoked At */
             revoked_at: string | null;
             /** Last Seen At */
@@ -520,7 +532,7 @@ export interface components {
          * @description Every entry in the append-only audit log.
          * @enum {string}
          */
-        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked";
+        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed";
         /** ExportBody */
         ExportBody: {
             /**
@@ -713,8 +725,6 @@ export interface components {
              * @default
              */
             label: string;
-            /** Expires At */
-            expires_at?: string | null;
             /**
              * Base Url
              * @default
@@ -732,11 +742,6 @@ export interface components {
             label: string;
             /** Token */
             token: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
             /** Qr Payload */
             qr_payload: string;
         };
@@ -773,11 +778,6 @@ export interface components {
             label: string;
             /** Token */
             token: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
         };
         /** ManagerSummary */
         ManagerSummary: {
@@ -912,6 +912,14 @@ export interface components {
             confirmed: number;
             /** Forced */
             forced: boolean;
+        };
+        /** RemoveDeviceResult */
+        RemoveDeviceResult: {
+            /**
+             * Device Id
+             * Format: uuid
+             */
+            device_id: string;
         };
         /** ResolveBody */
         ResolveBody: {
@@ -1607,7 +1615,41 @@ export interface operations {
             };
         };
     };
-    revoke_device_api_devices__device_id__delete: {
+    remove_device_api_devices__device_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveDeviceResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_device_api_devices__device_id__revoke_post: {
         parameters: {
             query?: never;
             header?: {

@@ -1,15 +1,14 @@
 """Mint a device token and hand back the QR payload.
 
 App-issued, never through the IdP: the thing being admitted is a phone in a
-hall for one playing day, not a person with an account. The token is shown
-exactly once, here, because only its hash is stored -- a database read cannot
-mint access.
+hall, not a person with an account. The token is shown exactly once, here,
+because only its hash is stored -- a database read cannot mint access. It has
+no expiry; the arbiter revokes it when it should stop working.
 """
 
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -17,7 +16,6 @@ from pydantic import BaseModel, Field
 from seebach.features.audit import record
 from seebach.platform.auth.tokens import mint
 from seebach.platform.bus import bus
-from seebach.platform.config import settings
 from seebach.platform.errors import NotFound
 from seebach.platform.http import get_context
 from seebach.platform.mediator import Access, Command, Context
@@ -32,7 +30,6 @@ class IssueDeviceTokenResult(BaseModel):
     label: str
     #: Shown once. Not recoverable afterwards.
     token: str
-    expires_at: datetime
     qr_payload: str
 
 
@@ -42,8 +39,6 @@ class IssueDeviceToken(Command):
 
     tournament_id: uuid.UUID
     label: str = Field(default="", max_length=120)
-    #: Defaults to the end of the current playing day.
-    expires_at: datetime | None = None
     base_url: str = Field(default="", max_length=255)
 
 
@@ -54,16 +49,8 @@ def handle(command: IssueDeviceToken, ctx: Context) -> IssueDeviceTokenResult:
         raise NotFound("tournament not found", tournament_id=str(command.tournament_id))
 
     token, token_hash = mint()
-    expires_at = command.expires_at or datetime.now(UTC) + timedelta(
-        hours=settings().device_token_ttl_hours
-    )
 
-    device = Device(
-        tournament_id=tournament.id,
-        label=command.label,
-        token_hash=token_hash,
-        expires_at=expires_at,
-    )
+    device = Device(tournament_id=tournament.id, label=command.label, token_hash=token_hash)
     ctx.session.add(device)
     ctx.session.flush()
 
@@ -78,14 +65,12 @@ def handle(command: IssueDeviceToken, ctx: Context) -> IssueDeviceTokenResult:
             action=EventAction.DEVICE_ISSUED,
             device=str(device.id),
             label=device.label,
-            expires_at=expires_at.isoformat(),
         )
 
     return IssueDeviceTokenResult(
         device_id=device.id,
         label=device.label,
         token=token,
-        expires_at=expires_at,
         qr_payload=_qr_payload(command.base_url, tournament.id, token),
     )
 
@@ -97,7 +82,6 @@ def _qr_payload(base_url: str, tournament_id: uuid.UUID, token: str) -> str:
 
 class IssueDeviceBody(BaseModel):
     label: str = ""
-    expires_at: datetime | None = None
     base_url: str = ""
 
 

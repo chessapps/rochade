@@ -161,11 +161,16 @@ def test_a_revoked_device_loses_access_immediately(client: TestClient, round1_te
     phone = {"Authorization": f"Device {issued['token']}"}
 
     assert client.get(f"/api/tournaments/{tournament_id}/boards", headers=phone).status_code == 200
-    client.delete(f"/api/devices/{issued['device_id']}", headers=staff())
+    # Removing is not a way to revoke.
+    assert client.delete(f"/api/devices/{issued['device_id']}", headers=staff()).status_code == 409
+    client.post(f"/api/devices/{issued['device_id']}/revoke", headers=staff())
 
     denied = client.get(f"/api/tournaments/{tournament_id}/boards", headers=phone)
     assert denied.status_code == 401
     assert "revoked" in denied.json()["message"]
+
+    assert client.delete(f"/api/devices/{issued['device_id']}", headers=staff()).status_code == 200
+    assert client.get(f"/api/tournaments/{tournament_id}/devices", headers=staff()).json() == []
 
 
 def test_a_conflict_becomes_a_409(client: TestClient, round1_text: str) -> None:

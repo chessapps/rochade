@@ -87,6 +87,7 @@ class EventAction(StrEnum):
     CLAIM_DROPPED = "claim_dropped"
     DEVICE_ISSUED = "device_issued"
     DEVICE_REVOKED = "device_revoked"
+    DEVICE_REMOVED = "device_removed"
 
 
 #: (white, black) TRF codes for each player-enterable outcome. The pair form is

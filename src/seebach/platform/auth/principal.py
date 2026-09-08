@@ -51,8 +51,6 @@ def _device_principal(token: str, session: Session) -> Principal:
         raise Unauthenticated("unknown device token")
     if device.revoked_at is not None:
         raise Unauthenticated("this device has been revoked")
-    if device.expires_at <= datetime.now(UTC):
-        raise Unauthenticated("this device token has expired")
 
     device.last_seen_at = datetime.now(UTC)
     session.commit()

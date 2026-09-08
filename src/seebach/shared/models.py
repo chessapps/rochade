@@ -256,10 +256,11 @@ class GameEvent(Base):
 
 
 class Device(Base):
-    """A phone or tablet admitted to one tournament for one playing day.
+    """A phone or tablet admitted to one tournament.
 
     App-issued, never through the IdP. The token is stored hashed, so a database
-    read cannot mint access.
+    read cannot mint access. It does not expire: a poster on the wall must keep
+    working on day three, and the arbiter revokes what should stop.
     """
 
     __tablename__ = "device"
@@ -271,7 +272,6 @@ class Device(Base):
     label: Mapped[str] = mapped_column(String(120), default="")
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 

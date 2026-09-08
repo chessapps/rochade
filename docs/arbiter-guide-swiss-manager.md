@@ -12,8 +12,9 @@ they appear there.
   (`Fehler (Message:42)`), and a rated tournament needs them anyway.
 - In Seebach: **New tournament**, then **Devices → Issue a QR code**. Open it
   as a poster and print it, or show it on the arbiter's screen. One code admits
-  any number of phones to this tournament for the day; issue a second one for
-  the other end of the hall if you like, and revoke either at any time.
+  any number of phones to this tournament for as long as it runs; issue a second one for
+  the other end of the hall if you like. Revoke either at any time, and remove it from
+  the list once revoked.
 
 ### If a phone cannot scan
 

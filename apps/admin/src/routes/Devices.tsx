@@ -1,6 +1,6 @@
 /**
- * The phones. Each QR admits one phone to this tournament for today; the
- * token behind it is shown once, here, and never again.
+ * The phones. Each QR admits phones to this tournament until the arbiter
+ * revokes it; the token behind it is shown once, here, and never again.
  */
 
 import { useState, type FormEvent } from "react";
@@ -13,8 +13,14 @@ import { QrCode } from "../components/QrCode";
 import { DeviceChip } from "../components/StateChip";
 import { useToast } from "../components/Toast";
 import { Banner, Button, Card, CardHeader, EmptyState, Input, Skeleton } from "../components/ui";
-import { clockTime, plural, relativeTime } from "../format";
-import { useDevices, useIssueDevice, useRevokeDevice, useTournament } from "../queries";
+import { plural, relativeTime } from "../format";
+import {
+  useDevices,
+  useIssueDevice,
+  useRemoveDevices,
+  useRevokeDevice,
+  useTournament,
+} from "../queries";
 import { useNow } from "../useNow";
 import { useSingleFlight } from "../useSingleFlight";
 
@@ -23,6 +29,7 @@ export function Devices() {
   const tournament = useTournament(tournamentId);
   const devices = useDevices(tournamentId);
   const issue = useIssueDevice();
+  const remove = useRemoveDevices();
   const once = useSingleFlight();
   const toast = useToast();
   const now = useNow(10_000);
@@ -45,6 +52,19 @@ export function Devices() {
 
   const list = devices.data ?? [];
   const active = list.filter((d) => d.active);
+  const revoked = list.filter((d) => !d.active);
+
+  const removeAll = (deviceIds: string[]) =>
+    remove.mutate(
+      { deviceIds, tournamentId },
+      {
+        onSuccess: () =>
+          toast.success(
+            deviceIds.length === 1 ? "Removed." : `${plural(deviceIds.length, "phone")} removed.`,
+          ),
+        onError: (error) => toast.error(errorMessage(error)),
+      },
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -54,9 +74,9 @@ export function Devices() {
         </Link>
         <h1 className="mt-1 text-xl font-semibold">Phones in the hall</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-500">
-          A QR code admits one phone to this tournament for today. Print it as a poster for
-          the hall, or hand it to a helper. Revoking is immediate, and every result the phone
-          entered stays in the log.
+          A QR code admits phones to this tournament until you revoke it. Print it as a poster
+          for the hall, or hand it to a helper. Revoking is immediate, and every result the
+          phone entered stays in the log; a revoked phone can then be removed from the list.
         </p>
       </header>
 
@@ -82,7 +102,18 @@ export function Devices() {
         <CardHeader
           title="Issued"
           aside={active.length > 0 ? `${plural(active.length, "phone")} can enter results` : undefined}
-        />
+        >
+          {revoked.length > 1 && (
+            <Button
+              size="sm"
+              tone="ghost"
+              busy={remove.isPending}
+              onClick={() => removeAll(revoked.map((d) => d.id))}
+            >
+              Remove all revoked
+            </Button>
+          )}
+        </CardHeader>
         {devices.isPending ? (
           <Skeleton rows={3} />
         ) : devices.isError ? (
@@ -116,7 +147,15 @@ export function Devices() {
                     Revoke
                   </Button>
                 ) : (
-                  <span className="w-[4.5rem]" />
+                  <Button
+                    size="sm"
+                    tone="ghost"
+                    disabled={remove.isPending}
+                    onClick={() => removeAll([device.id])}
+                    aria-label={`Remove ${device.label || "unlabelled phone"}`}
+                  >
+                    Remove
+                  </Button>
                 )}
               </li>
             ))}
@@ -134,9 +173,8 @@ export function Devices() {
   );
 }
 
-function stateOf(device: DeviceSummary): "active" | "expired" | "revoked" {
-  if (device.active) return "active";
-  return device.revoked_at ? "revoked" : "expired";
+function stateOf(device: DeviceSummary): "active" | "revoked" {
+  return device.active ? "active" : "revoked";
 }
 
 function IssuedDialog({
@@ -161,7 +199,7 @@ function IssuedDialog({
             onClick={() =>
               issued &&
               navigate(`/t/${tournamentId}/devices/poster`, {
-                state: { qr_payload: issued.qr_payload, label: issued.label, expires_at: issued.expires_at },
+                state: { qr_payload: issued.qr_payload, label: issued.label },
               })
             }
           >
@@ -176,9 +214,7 @@ function IssuedDialog({
       {issued && (
         <div className="flex flex-col items-center gap-3 text-center">
           <QrCode value={issued.qr_payload} />
-          <p>
-            Scan with the phone's camera. Valid until {clockTime(issued.expires_at)} today.
-          </p>
+          <p>Scan with the phone's camera. It works until you revoke it.</p>
           <Banner tone="warn" className="w-full text-left">
             Shown once. Close this and the code is gone — issue another if you need it again.
           </Banner>

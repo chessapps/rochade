@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     oidc_audience: str = "seebach-api"
     oidc_jwks_url: str = ""
 
-    device_token_ttl_hours: int = 14
     #: Let a phone mint its own device by typing a tournament's join code.
     #: Off by default: a six-character code is short enough to guess at, and
     #: the QR is the intended way in. See `features/devices/join_device.py`.

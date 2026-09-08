@@ -12,7 +12,6 @@ be revoked without stranding the hall.
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -39,7 +38,6 @@ class JoinedDevice(BaseModel):
     label: str
     #: Shown once, exactly as the QR payload carries it.
     token: str
-    expires_at: datetime
 
 
 class JoinDevice(Command):
@@ -65,12 +63,10 @@ def handle(command: JoinDevice, ctx: Context) -> JoinedDevice:
         raise NotFound("that code does not open anything")
 
     token, token_hash = mint()
-    expires_at = datetime.now(UTC) + timedelta(hours=settings().device_token_ttl_hours)
     device = Device(
         tournament_id=tournament.id,
         label=command.label.strip() or f"code {code}",
         token_hash=token_hash,
-        expires_at=expires_at,
     )
     ctx.session.add(device)
     ctx.session.flush()
@@ -85,7 +81,6 @@ def handle(command: JoinDevice, ctx: Context) -> JoinedDevice:
             device=str(device.id),
             label=device.label,
             joined_with_code=True,
-            expires_at=expires_at.isoformat(),
         )
 
     return JoinedDevice(
@@ -94,7 +89,6 @@ def handle(command: JoinDevice, ctx: Context) -> JoinedDevice:
         device_id=device.id,
         label=device.label,
         token=token,
-        expires_at=expires_at,
     )
 
 

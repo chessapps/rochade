@@ -290,7 +290,26 @@ export function useRevokeDevice() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ deviceId }: { deviceId: string; tournamentId: string }) =>
-      unwrap(api.DELETE("/api/devices/{device_id}", { params: { path: { device_id: deviceId } } })),
+      unwrap(
+        api.POST("/api/devices/{device_id}/revoke", { params: { path: { device_id: deviceId } } }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      void client.invalidateQueries({ queryKey: keys.devices(vars.tournamentId) });
+    },
+  });
+}
+
+/** Takes revoked devices off the list. Refused by the server for a live one. */
+export function useRemoveDevices() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ deviceIds }: { deviceIds: string[]; tournamentId: string }) => {
+      for (const deviceId of deviceIds) {
+        await unwrap(
+          api.DELETE("/api/devices/{device_id}", { params: { path: { device_id: deviceId } } }),
+        );
+      }
+    },
     onSettled: (_data, _error, vars) => {
       void client.invalidateQueries({ queryKey: keys.devices(vars.tournamentId) });
     },

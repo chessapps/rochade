@@ -63,7 +63,7 @@ def handle(command: RevokeDevice, ctx: Context) -> RevokeDeviceResult:
     return RevokeDeviceResult(device_id=device.id, revoked_at=device.revoked_at)
 
 
-@router.delete("/{device_id}", response_model=RevokeDeviceResult)
+@router.post("/{device_id}/revoke", response_model=RevokeDeviceResult)
 def revoke_device(device_id: uuid.UUID, ctx: Context = Depends(get_context)) -> RevokeDeviceResult:
     result: RevokeDeviceResult = bus.send(RevokeDevice(device_id=device_id), ctx)
     return result

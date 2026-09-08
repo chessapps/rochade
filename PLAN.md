@@ -420,7 +420,7 @@ EMPTY ──claim_result──▶ CLAIMED ──release_round──▶ CONFIRMED
 
 - **Staff: Zitadel**, self-hosted (single Go binary + the Postgres already in the stack, first-class passkeys and magic link, runs on a venue box later). The API only ever sees a standard OIDC JWT, so the IdP stays swappable. Passkeys primary — waiting on a magic-link email over venue WiFi is a real failure mode.
 - The `authorize` pipeline behaviour validates the JWT and resolves a **per-tournament** role (`owner` | `arbiter` | `assistant`) from `tournament_member`.
-- **Device tokens are app-issued and never touch the IdP.** `issue_device_token` mints a tournament- and day-scoped random token (stored hashed), rendered as a QR; the phone scans it and stores it in localStorage. Individually revocable, expires at end of playing day, every use logged. A leaked token is one click to kill and the damage is bounded to reversible claims.
+- **Device tokens are app-issued and never touch the IdP.** `issue_device_token` mints a tournament-scoped random token (stored hashed), rendered as a QR; the phone scans it and stores it in localStorage. Individually revocable and never expiring (a poster must keep working on day three), every use logged; a revoked device can be removed from the list. A leaked token is one click to kill and the damage is bounded to reversible claims.
 
 ---
 

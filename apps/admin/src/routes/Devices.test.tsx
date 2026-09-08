@@ -16,10 +16,17 @@ describe("Devices", () => {
             id: "d1",
             label: "poster",
             issued_at: "2026-09-02T10:00:00Z",
-            expires_at: "2026-09-02T23:00:00Z",
             revoked_at: null,
             last_seen_at: null,
             active: true,
+          },
+          {
+            id: "d0",
+            label: "old poster",
+            issued_at: "2026-09-01T10:00:00Z",
+            revoked_at: "2026-09-01T20:00:00Z",
+            last_seen_at: "2026-09-01T19:00:00Z",
+            active: false,
           },
         ],
         [`/api/tournaments/${T}`]: { id: T, name: "Test Open", city: "", federation: "", start_date: null, end_date: null, sections: [] },
@@ -29,11 +36,11 @@ describe("Devices", () => {
           device_id: "d2",
           label: "wall",
           token: "secret",
-          expires_at: "2026-09-02T23:00:00Z",
           qr_payload: "http://localhost/hall/t1#t=secret",
         },
+        "/api/devices/d1/revoke": { device_id: "d1", revoked_at: "2026-09-02T12:00:00Z" },
       },
-      DELETE: { "/api/devices/d1": { device_id: "d1", revoked_at: "2026-09-02T12:00:00Z" } },
+      DELETE: { "/api/devices/d0": { device_id: "d0" } },
     });
     renderAt(`/t/${T}/devices`, "/t/:tournamentId/devices", <Devices />);
     expect(await screen.findByText("poster")).toBeInTheDocument();
@@ -47,9 +54,17 @@ describe("Devices", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Revoke" }));
-    expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+    const revoked = () => calls.some((c) => c.method === "POST" && c.path.endsWith("/revoke"));
+    expect(revoked()).toBe(false);
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Revoke" }));
-    await waitFor(() => expect(calls.some((c) => c.method === "DELETE")).toBe(true));
+    await waitFor(() => expect(revoked()).toBe(true));
+
+    // Only the revoked phone offers removal, and removal is a plain DELETE.
+    expect(screen.queryByRole("button", { name: /Remove poster/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Remove old poster" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.method === "DELETE" && c.path === "/api/devices/d0")).toBe(true),
+    );
   });
 });
 

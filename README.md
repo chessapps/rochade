@@ -147,7 +147,7 @@ src/seebach/
     imports/       /api/tournaments/{id}/imports        preview + commit
     boards/        /api/tournaments/{id}/boards         the hall board list
     queue/         /api/tournaments/{id}/queue          what the arbiter owes
-    devices/       /api/tournaments/{id}/devices        QR issue, list, revoke
+    devices/       /api/tournaments/{id}/devices        QR issue, list, revoke, remove
     rounds/        /api/rounds/{id}                     release, export
     games/         /api/games/{id}                      claim, override, resolve
     audit.py locking.py scoping.py    shared mechanics, named for what they do

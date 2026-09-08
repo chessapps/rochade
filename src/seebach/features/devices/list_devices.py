@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -21,7 +21,6 @@ class DeviceSummary(BaseModel):
     id: uuid.UUID
     label: str
     issued_at: datetime
-    expires_at: datetime
     revoked_at: datetime | None
     last_seen_at: datetime | None
     active: bool
@@ -35,7 +34,6 @@ class ListDevices(Query):
 
 @bus.register(ListDevices)
 def handle(query: ListDevices, ctx: Context) -> list[DeviceSummary]:
-    now = datetime.now(UTC)
     devices = ctx.session.scalars(
         select(Device)
         .where(Device.tournament_id == query.tournament_id)
@@ -46,18 +44,12 @@ def handle(query: ListDevices, ctx: Context) -> list[DeviceSummary]:
             id=device.id,
             label=device.label,
             issued_at=device.issued_at,
-            expires_at=device.expires_at,
             revoked_at=device.revoked_at,
             last_seen_at=device.last_seen_at,
-            active=device.revoked_at is None and _aware(device.expires_at) > now,
+            active=device.revoked_at is None,
         )
         for device in devices
     ]
-
-
-def _aware(value: datetime) -> datetime:
-    """SQLite hands back naive datetimes; Postgres does not."""
-    return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 @router.get("/{tournament_id}/devices", response_model=list[DeviceSummary])

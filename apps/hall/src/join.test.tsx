@@ -32,7 +32,6 @@ describe("a phone with no QR code", () => {
       device_id: "d1",
       label: "code K7QW2M",
       token: "secret-token",
-      expires_at: "2026-10-03T22:00:00Z",
     });
 
     render(<App />);

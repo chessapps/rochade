@@ -51,10 +51,9 @@ export function RoundChip({ state, className }: { state: RoundState; className?:
   );
 }
 
-export function DeviceChip({ state }: { state: "active" | "expired" | "revoked" }) {
+export function DeviceChip({ state }: { state: "active" | "revoked" }) {
   const style = {
     active: "bg-emerald-100 text-emerald-800",
-    expired: "bg-slate-100 text-slate-600",
     revoked: "bg-rose-100 text-rose-800",
   }[state];
   return (
