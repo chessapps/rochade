@@ -21,3 +21,6 @@ sandbox/
 
 # TypeScript incremental build state, per machine.
 *.tsbuildinfo
+
+# Deployment env files carry the database password. Never committed.
+*.prod.env

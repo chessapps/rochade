@@ -1,0 +1,14 @@
+# One site block per stack. The upstream is the container_name the stack
+# gives its public-facing service, resolvable because both sit on the
+# `proxy` docker network. Certificates come from Let's Encrypt on their own.
+#
+# After editing:
+#   docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+{
+	email {$ACME_EMAIL}
+}
+
+seebach.example.com {
+	encode gzip
+	reverse_proxy seebach-web:8080
+}

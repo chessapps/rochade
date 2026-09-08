@@ -1,9 +1,14 @@
+# Production-safe base. Local conveniences (the host port, dev auth, join by
+# code) live in docker-compose.override.yml, which `docker compose up` picks
+# up on its own; a deployment passes docker-compose.prod.yml instead and never
+# sees them. See deploy/README.md.
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: seebach
-      POSTGRES_PASSWORD: seebach
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seebach}
       POSTGRES_DB: seebach
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -17,28 +22,34 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
-      SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:seebach@postgres:5432/seebach
-      # Bootstrap auth: the bearer token is taken as the staff subject.
-      # Replace with SEEBACH_OIDC_ISSUER once Zitadel is in front of this.
-      SEEBACH_DEV_AUTH_ENABLED: "true"
-      # Let a phone join by typing the tournament's code instead of scanning.
-      # Also off by default; the QR needs a camera and a reachable URL, which
-      # a laptop browser or a phone on another network does not always have.
-      SEEBACH_DEVICE_JOIN_ENABLED: "true"
+      SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:${POSTGRES_PASSWORD:-seebach}@postgres:5432/seebach
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      # python-slim has no curl; the standard library does the same job.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
   web:
     build:
       context: .
       dockerfile: Dockerfile.web
+    restart: unless-stopped
     depends_on:
-      - api
-    ports:
-      # Host port only; Caddy still listens on 8080 inside the container.
-      - "${SEEBACH_WEB_PORT:-8092}:8080"
+      api:
+        condition: service_healthy
+    healthcheck:
+      # /health is proxied to the API, so this checks the whole path.
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 volumes:
   pgdata:

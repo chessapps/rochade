@@ -4,11 +4,18 @@
 }
 
 :8080 {
+	# In a deployment a shared Caddy in front of this one terminates TLS and
+	# sets X-Forwarded-Proto/Host. Trust those from the docker network, or
+	# they get replaced with plain http here and the API redirects to http://.
 	handle /api/* {
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			trusted_proxies private_ranges
+		}
 	}
 	handle /health {
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			trusted_proxies private_ranges
+		}
 	}
 
 	handle /admin* {

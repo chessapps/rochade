@@ -1,0 +1,28 @@
+# The box's one shared entry point. Lives in ~/stacks/proxy on the box; this
+# copy is the reference. Every app stack that wants a hostname joins the
+# external `proxy` network (created once: docker network create proxy) and
+# gets a site block in the Caddyfile next to this file.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env next to this file}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  proxy:
+    external: true

@@ -49,6 +49,8 @@ SEEBACH_WEB_PORT=8093 docker compose up --build
 Compose runs with `SEEBACH_DEV_AUTH_ENABLED=true`, which takes the bearer token
 as the staff subject with no verification. That is a development affordance and
 it is **off by default** — a real deployment sets `SEEBACH_OIDC_ISSUER` instead.
+The host port and both dev flags live in `docker-compose.override.yml`, which
+compose merges in on its own; `docker-compose.yml` alone is production-safe.
 
 It also runs with `SEEBACH_DEVICE_JOIN_ENABLED=true`, which lets a phone admit
 itself by typing a tournament's six-character join code instead of scanning the
@@ -60,6 +62,10 @@ Smoke-test a running stack, including one full round trip:
 ```sh
 uv run python scripts/smoke.py http://localhost:8092
 ```
+
+Putting the stack on a Linux box behind a shared Caddy, with TLS and room for
+other stacks on the same machine, is one command once the box is prepared:
+see [deploy/README.md](deploy/README.md).
 
 The same round through the arbiter app in a real browser — screens, dialogs,
 polling, the download, phone widths — using the Edge or Chrome already on the

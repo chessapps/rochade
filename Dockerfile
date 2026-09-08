@@ -10,4 +10,6 @@ RUN pip install --no-cache-dir .
 
 EXPOSE 8000
 # Migrations run inside the app on startup (SEEBACH_MIGRATE_ON_START).
-CMD ["uvicorn", "seebach.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Behind Caddy (twice, in a deployment): trust the X-Forwarded-* headers so
+# redirects and request.url carry the public scheme and host.
+CMD ["uvicorn", "seebach.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]

@@ -1,0 +1,30 @@
+# The build context is streamed to the docker daemon, over SSH when deploying
+# through a docker context. Keep it to the sources the Dockerfiles copy.
+.git
+.venv
+node_modules
+**/node_modules
+**/dist
+**/build
+__pycache__
+**/__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.tsbuildinfo
+.env
+.env.*
+*.prod.env
+sandbox
+spikes
+scripts/out
+docs
+.github
+.claude
+.hypothesis
+tests
+*.stackdump
+openapi.json
+*.png

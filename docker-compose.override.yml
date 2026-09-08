@@ -1,0 +1,17 @@
+# Development only. `docker compose up` merges this over docker-compose.yml
+# automatically; a deployment does not pass it and gets none of it.
+services:
+  api:
+    environment:
+      # Bootstrap auth: the bearer token is taken as the staff subject.
+      # A deployment sets SEEBACH_OIDC_ISSUER instead.
+      SEEBACH_DEV_AUTH_ENABLED: "true"
+      # Let a phone join by typing the tournament's code instead of scanning.
+      # Also off by default; the QR needs a camera and a reachable URL, which
+      # a laptop browser or a phone on another network does not always have.
+      SEEBACH_DEVICE_JOIN_ENABLED: "true"
+
+  web:
+    ports:
+      # Host port only; Caddy still listens on 8080 inside the container.
+      - "${SEEBACH_WEB_PORT:-8092}:8080"
