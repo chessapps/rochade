@@ -29,6 +29,7 @@ from seebach.features.rounds import (
     get_round_events,
     release_round,
 )
+from seebach.features.standings import get_standings, import_standings, name_tiebreaks
 from seebach.features.tournaments import (
     add_member,
     create_tournament,
@@ -57,6 +58,10 @@ MODULES = (
     list_devices,
     remove_device,
     revoke_device,
+    # /api/tournaments/{id}/standings
+    get_standings,
+    import_standings,
+    name_tiebreaks,
     join_code,
     join_device,
     # /api/rounds/{id}

@@ -30,7 +30,7 @@ The manager keeps doing what it is already good at and what arbiters already tru
 | Which manager | **A port with adapters.** Vega and Swiss-Manager both, our own later. Not a hardcoded choice. |
 | Tournament setup & player list | **The manager owns it.** We only ever import. No player-list export direction in v1. |
 | Pairings | **The manager owns it.** No pairing engine integration in v1 — and note both target managers delegate to JaVaFo anyway. |
-| Standings / tiebreaks | **The manager owns it.** No scoring module in v1. |
+| Standings / tiebreaks | **The manager owns it.** No scoring module in v1. Its table is *shown*: Swiss-Manager's player list carries points, tiebreaks and rank, and the import keeps them (2026-09-08). |
 | Public results view | **Out of scope for v1** — the managers already publish one. |
 | Frontends | **Two**: arbiter admin app, hall PWA. |
 | Result trust | Claim + arbiter release — a player entry is provisional until the arbiter confirms the round. |

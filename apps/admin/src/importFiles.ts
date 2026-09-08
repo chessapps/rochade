@@ -64,7 +64,9 @@ export function missing(files: PickedFile[], rosterHeld = false): string | null 
     return "The pairings name nobody on their own. Add the players file: Extras → Daten Import/Export → Spielerdaten (Text-File).";
   }
   if (kinds.has("players")) {
-    return "The players pair nobody on their own. Add the pairings file: Extras → Daten Import/Export → Spielerauslosung (Text-File).";
+    return rosterHeld
+      ? "The players pair nobody on their own. Add the pairings file for the next round, or drop this list on the Standings page to update the table only."
+      : "The players pair nobody on their own. Add the pairings file: Extras → Daten Import/Export → Spielerauslosung (Text-File).";
   }
   return "This does not look like a manager export. Choose the file the manager wrote.";
 }

@@ -88,6 +88,9 @@ def test_the_pairing_file_alone_is_named_from_the_roster_we_hold(
 
     assert again.board_rows(1) == first.board_rows(1)
     assert again.players == first.players
+    # Only a fresh list carries fresh standings.
+    assert first.standings_from_file
+    assert not again.standings_from_file
 
 
 def test_a_start_number_the_roster_lacks_asks_for_the_player_file(pairings: str) -> None:

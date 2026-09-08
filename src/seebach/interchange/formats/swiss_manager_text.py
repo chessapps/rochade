@@ -73,6 +73,9 @@ def read_document(
                     rating=player.rating,
                     federation=player.federation,
                     fide_id=player.fide_id,
+                    points=player.points,
+                    tiebreaks=player.tiebreaks,
+                    rank=player.rank,
                 )
                 for number, player in by_start_number(parse_player_file(players_text)).items()
             }
@@ -127,6 +130,7 @@ def read_document(
         players={number: roster[number] for number in sorted(roster)},
         pairings=pairings,
         source=content,
+        standings_from_file=players_text is not None,
     )
 
 

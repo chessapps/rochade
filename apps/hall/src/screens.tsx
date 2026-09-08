@@ -10,7 +10,9 @@
  * screen shows both names by colour so the tap itself is the check.
  */
 
-import type { Board } from "./api";
+import type { ReactNode } from "react";
+
+import type { Board, SectionStandings } from "./api";
 import type { GameResult, PendingClaim } from "./queue";
 
 export const RESULT_LABELS: Record<
@@ -25,6 +27,44 @@ export const RESULT_LABELS: Record<
 /** The stored code, as the row shows it once a result stands. */
 const SHEET_SCORE: Record<string, string> = { "1": "1 – 0", "=": "½ – ½", "0": "0 – 1" };
 
+export type View = "boards" | "standings";
+
+/** Boards | Standings, at the top of the list. */
+export function ViewTabs({
+  view,
+  onView,
+  hasStandings,
+}: {
+  view: View;
+  onView: (view: View) => void;
+  hasStandings: boolean;
+}) {
+  if (!hasStandings) return null;
+  const tabs: { key: View; label: string }[] = [
+    { key: "boards", label: "Boards" },
+    { key: "standings", label: "Standings" },
+  ];
+  return (
+    <div role="tablist" className="mt-1.5 grid grid-cols-2 gap-1 rounded-md border-2 border-ink p-0.5">
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={view === tab.key}
+          onClick={() => onView(tab.key)}
+          className={[
+            "rounded py-1.5 text-sm font-semibold",
+            view === tab.key ? "bg-ink text-paper" : "text-ink active:bg-neutral-100",
+          ].join(" ")}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function BoardListScreen({
   boards,
   query,
@@ -34,6 +74,7 @@ export function BoardListScreen({
   offline,
   queued,
   tournamentName,
+  tabs,
 }: {
   boards: Board[];
   query: string;
@@ -43,6 +84,7 @@ export function BoardListScreen({
   offline: boolean;
   queued: number;
   tournamentName?: string;
+  tabs?: ReactNode;
 }) {
   const needle = query.trim().toLowerCase();
   const shown = needle
@@ -75,6 +117,7 @@ export function BoardListScreen({
           spellCheck={false}
           className="mt-1.5 w-full rounded-md border-2 border-ink bg-paper px-3 py-2 text-base placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
         />
+        {tabs}
       </header>
 
       <div className="flex-1 overflow-y-auto pb-6">
@@ -446,6 +489,108 @@ function SecondaryButton({
     >
       {children}
     </button>
+  );
+}
+
+/** "2½", as it is written on the wall. */
+export function score(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  const whole = Math.floor(value);
+  const half = value - whole >= 0.5;
+  if (whole === 0 && half) return "½";
+  return `${whole}${half ? "½" : ""}`;
+}
+
+/**
+ * The manager's table, not ours: the points, tiebreaks and ranks arrive with
+ * its player list and are shown as they came. Dense, like the printout.
+ */
+export function StandingsScreen({
+  sections,
+  query,
+  onQuery,
+  tournamentName,
+  tabs,
+}: {
+  sections: SectionStandings[];
+  query: string;
+  onQuery: (value: string) => void;
+  tournamentName?: string;
+  tabs?: ReactNode;
+}) {
+  const needle = query.trim().toLowerCase();
+  return (
+    <div className="flex h-full flex-col">
+      <header className="sticky top-0 z-10 border-b-2 border-ink bg-paper px-3 pt-2 pb-2">
+        <p className="truncate text-xs font-semibold tracking-wide uppercase">
+          {tournamentName ?? "Standings"}
+        </p>
+        <input
+          value={query}
+          onChange={(event) => onQuery(event.target.value)}
+          placeholder="Your name"
+          aria-label="Search the standings"
+          autoComplete="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          className="mt-1.5 w-full rounded-md border-2 border-ink bg-paper px-3 py-2 text-base placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
+        />
+        {tabs}
+      </header>
+      <div className="flex-1 overflow-y-auto pb-6">
+        {sections.map((section) => {
+          const columns = Math.max(section.tiebreak_columns, section.tiebreak_names.length);
+          const names = Array.from(
+            { length: columns },
+            (_, i) => section.tiebreak_names[i] || `TB${i + 1}`,
+          );
+          const rows = needle
+            ? section.rows.filter((row) => row.name.toLowerCase().includes(needle))
+            : section.rows;
+          return (
+            <section key={section.section_id}>
+              <h2 className="flex items-baseline justify-between border-b border-ink bg-neutral-100 px-3 py-1 text-[11px] font-semibold tracking-wide text-mute uppercase">
+                <span>{sections.length > 1 ? section.section_name : "Standings"}</span>
+                <span>
+                  {section.after_round === 0 ? "starting order" : `after round ${section.after_round}`}
+                </span>
+              </h2>
+              <table className="w-full table-fixed border-collapse text-[15px]">
+                <thead>
+                  <tr className="border-b border-rule text-[11px] tracking-wide text-mute uppercase">
+                    <th className="w-9 py-1 pl-2 text-right">#</th>
+                    <th className="py-1 pl-2 text-left">Name</th>
+                    <th className="w-11 py-1 pr-1 text-right">Pts</th>
+                    {names.map((name) => (
+                      <th key={name} className="w-12 truncate py-1 pr-2 text-right" title={name}>
+                        {name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.start_rank} className="border-b border-rule tabular-nums">
+                      <td className="py-1.5 pl-2 text-right font-semibold">{row.rank}</td>
+                      <td className="truncate py-1.5 pl-2">{row.name}</td>
+                      <td className="py-1.5 pr-1 text-right font-semibold">{score(row.points)}</td>
+                      {names.map((name, i) => (
+                        <td key={name} className="py-1.5 pr-2 text-right text-mute">
+                          {score(row.tiebreaks[i])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rows.length === 0 && (
+                <p className="px-4 py-6 text-center text-mute">No player matches that.</p>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

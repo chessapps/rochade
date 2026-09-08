@@ -8,6 +8,7 @@ import { Devices } from "./routes/Devices";
 import { ImportWizard } from "./routes/ImportWizard";
 import { Poster } from "./routes/Poster";
 import { RoundBoard } from "./routes/RoundBoard";
+import { Standings } from "./routes/Standings";
 import { TournamentHome } from "./routes/TournamentHome";
 import { TournamentList } from "./routes/TournamentList";
 
@@ -44,6 +45,7 @@ export function App() {
         <Route path="/t/:tournamentId" element={<TournamentHome />} />
         <Route path="/t/:tournamentId/import" element={<ImportWizard />} />
         <Route path="/t/:tournamentId/rounds/:roundId" element={<RoundBoard />} />
+        <Route path="/t/:tournamentId/standings" element={<Standings />} />
         <Route path="/t/:tournamentId/devices" element={<Devices />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -96,6 +96,19 @@ Nothing is shown on success. Check `Listen → Ergebnisse` (F9): the results are
 there, forfeits as `+ - -`, the bye scored by your tournament's setting. Then
 pair the next round — back to step 1.
 
+### 6. Standings
+
+Swiss-Manager's player list carries its Rangliste: points, the tiebreaks in
+the order of your tournament settings, and the rank. Whenever you import a
+round with both files, the standings after the previous round come along, and
+**Standings** in the admin app shows them; players see the same table behind
+the **Standings** tab in the hall app. Nothing is computed in Seebach.
+
+After the last round there is no pairing to import: export Spielerdaten once
+more and drop it on the Standings page under **Import standings on their own**.
+The file numbers the tiebreak columns without naming them; **Name them** once
+from your tournament settings and the names stay.
+
 ## Things to know
 
 - **Do not use `Datei → FIDE-Datenformat importieren TRF16` to bring results

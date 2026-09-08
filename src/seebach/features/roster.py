@@ -23,6 +23,9 @@ def roster_of(section: Section | None) -> dict[int, PlayerRow]:
             rating=p.rating,
             federation=p.federation,
             fide_id=p.fide_id,
+            points=p.points,
+            tiebreaks=tuple(p.tiebreaks or ()),
+            rank=p.rank,
         )
         for p in section.players
     }

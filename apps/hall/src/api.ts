@@ -47,6 +47,18 @@ function messageOf(error: unknown): string {
   return "the server refused this result";
 }
 
+export type Standings =
+  paths["/api/tournaments/{tournament_id}/standings"]["get"]["responses"]["200"]["content"]["application/json"];
+export type SectionStandings = NonNullable<Standings["sections"]>[number];
+
+export async function fetchStandings(tournamentId: string): Promise<Standings> {
+  const { data, error } = await api.GET("/api/tournaments/{tournament_id}/standings", {
+    params: { path: { tournament_id: tournamentId } },
+  });
+  if (error || !data) throw new Error("could not load the standings");
+  return data;
+}
+
 export type JoinedDevice =
   paths["/api/devices/join"]["post"]["responses"]["201"]["content"]["application/json"];
 

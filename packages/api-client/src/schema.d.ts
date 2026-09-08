@@ -210,6 +210,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{tournament_id}/standings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Standings */
+        get: operations["get_standings_api_tournaments__tournament_id__standings_get"];
+        put?: never;
+        /** Import Standings */
+        post: operations["import_standings_api_tournaments__tournament_id__standings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tournaments/{tournament_id}/sections/{section_name}/tiebreaks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Name Tiebreaks */
+        put: operations["name_tiebreaks_api_tournaments__tournament_id__sections__section_name__tiebreaks_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/{tournament_id}/join-code": {
         parameters: {
             query?: never;
@@ -571,7 +606,7 @@ export interface components {
          * @description Every entry in the append-only audit log.
          * @enum {string}
          */
-        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "result_confirmed" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed";
+        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "result_confirmed" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed" | "standings_imported";
         /** ExportBody */
         ExportBody: {
             /**
@@ -756,6 +791,25 @@ export interface components {
             claims_carried: number;
             /** Claims Dropped */
             claims_dropped: number;
+        };
+        /** ImportStandingsBody */
+        ImportStandingsBody: {
+            /** Section Name */
+            section_name: string;
+            /** Content */
+            content: string;
+        };
+        /** ImportStandingsResult */
+        ImportStandingsResult: {
+            /** Section Name */
+            section_name: string;
+            /** After Round */
+            after_round: number;
+            /** Players Updated */
+            players_updated: number;
+            /** Unknown Start Numbers */
+            unknown_start_numbers?: number[];
+            standings: components["schemas"]["SectionStandings"];
         };
         /** IssueDeviceBody */
         IssueDeviceBody: {
@@ -1121,6 +1175,30 @@ export interface components {
             /** Exported At */
             exported_at: string | null;
         };
+        /** SectionStandings */
+        SectionStandings: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Section Name */
+            section_name: string;
+            /** Manager Label */
+            manager_label: string;
+            /** After Round */
+            after_round: number;
+            /** Rounds Held */
+            rounds_held: number;
+            /** Stale */
+            stale: boolean;
+            /** Tiebreak Names */
+            tiebreak_names: string[];
+            /** Tiebreak Columns */
+            tiebreak_columns: number;
+            /** Rows */
+            rows: components["schemas"]["StandingRow"][];
+        };
         /** SectionSummary */
         SectionSummary: {
             /**
@@ -1169,6 +1247,25 @@ export interface components {
             /** Black Result */
             black_result: string;
         };
+        /** StandingRow */
+        StandingRow: {
+            /** Rank */
+            rank: number;
+            /** Start Rank */
+            start_rank: number;
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Federation */
+            federation: string;
+            /** Rating */
+            rating: number | null;
+            /** Points */
+            points: number;
+            /** Tiebreaks */
+            tiebreaks: (number | null)[];
+        };
         /**
          * Support
          * @description Whether a behaviour has actually been observed against the real program.
@@ -1179,6 +1276,18 @@ export interface components {
          * @enum {string}
          */
         Support: "yes" | "no" | "unverified";
+        /** TiebreakNamesBody */
+        TiebreakNamesBody: {
+            /** Names */
+            names?: string[];
+        };
+        /** TiebreakNamesResult */
+        TiebreakNamesResult: {
+            /** Section Name */
+            section_name: string;
+            /** Tiebreak Names */
+            tiebreak_names: string[];
+        };
         /** TournamentDetail */
         TournamentDetail: {
             /**
@@ -1200,6 +1309,18 @@ export interface components {
             join_code?: string | null;
             /** Sections */
             sections: components["schemas"]["SectionSummary"][];
+        };
+        /** TournamentStandings */
+        TournamentStandings: {
+            /**
+             * Tournament Id
+             * Format: uuid
+             */
+            tournament_id: string;
+            /** Tournament Name */
+            tournament_name: string;
+            /** Sections */
+            sections?: components["schemas"]["SectionStandings"][];
         };
         /** TournamentSummary */
         TournamentSummary: {
@@ -1709,6 +1830,117 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokeDeviceResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_standings_api_tournaments__tournament_id__standings_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentStandings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_standings_api_tournaments__tournament_id__standings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportStandingsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportStandingsResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    name_tiebreaks_api_tournaments__tournament_id__sections__section_name__tiebreaks_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+                section_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TiebreakNamesBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TiebreakNamesResult"];
                 };
             };
             /** @description Validation Error */

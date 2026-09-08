@@ -14,10 +14,16 @@ Columns are looked up **by name from the header row**, never by position. The
 number of tiebreak columns (`Wtg1`..`Wtg6`) follows the tournament's settings,
 so counting fields from the left is how a reader breaks on somebody else's
 tournament.
+
+The same file carries the standings: `Pkt` (points), `Wtg1`.. (the tiebreaks
+in the order the tournament's settings define, unnamed) and `Rang` (rank), as
+Swiss-Manager's own Rangliste has them at export time. That is the whole
+reason Seebach never computes a tiebreak of its own.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -41,6 +47,16 @@ class PlayerLine:
     rating: int | None = None
     federation: str = ""
     fide_id: str = ""
+    #: `Pkt`; None when the column is absent or empty.
+    points: float | None = None
+    #: `Wtg1`.. in file order, trailing empties dropped. Unnamed: the file does
+    #: not say which system each column is.
+    tiebreaks: tuple[float | None, ...] = ()
+    #: `Rang`; None when the column is absent or empty.
+    rank: int | None = None
+
+
+_TIEBREAK = re.compile(r"^Wtg(\d+)$")
 
 
 def looks_like_player_file(text: str) -> bool:
@@ -55,6 +71,9 @@ def parse_player_file(text: str) -> list[PlayerLine]:
 
     header = [cell.strip() for cell in rows[0].lstrip("﻿").split(";")]
     index = {name: i for i, name in enumerate(header)}
+    tiebreak_columns = sorted(
+        (int(m.group(1)), name) for name in header if (m := _TIEBREAK.match(name))
+    )
     missing = [name for name in REQUIRED if name not in index]
     if missing:
         raise PlayerFileError(
@@ -89,6 +108,10 @@ def parse_player_file(text: str) -> list[PlayerLine]:
         if not name:
             raise PlayerFileError(f"player {start_number} has no name", line_no=line_no)
 
+        tiebreaks = [_number(cell(name)) for _, name in tiebreak_columns]
+        while tiebreaks and tiebreaks[-1] is None:
+            tiebreaks.pop()
+
         lines.append(
             PlayerLine(
                 start_number=start_number,
@@ -97,6 +120,9 @@ def parse_player_file(text: str) -> list[PlayerLine]:
                 rating=_rating(cell("EloInt"), cell("EloNat")),
                 federation=cell("Fed"),
                 fide_id=_identity(cell("FideIdent")),
+                points=_number(cell("Pkt")),
+                tiebreaks=tuple(tiebreaks),
+                rank=_integer(cell("Rang")),
             )
         )
 
@@ -115,6 +141,23 @@ def _rating(international: str, national: str) -> int | None:
         if number > 0:
             return number
     return None
+
+
+def _number(value: str) -> float | None:
+    """A score as Swiss-Manager writes it: `1`, `0,5` or `0.5`; empty is None."""
+    if not value:
+        return None
+    try:
+        return float(value.replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _integer(value: str) -> int | None:
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 def _identity(value: str) -> str:

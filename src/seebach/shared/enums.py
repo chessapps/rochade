@@ -90,6 +90,7 @@ class EventAction(StrEnum):
     DEVICE_ISSUED = "device_issued"
     DEVICE_REVOKED = "device_revoked"
     DEVICE_REMOVED = "device_removed"
+    STANDINGS_IMPORTED = "standings_imported"
 
 
 #: (white, black) TRF codes for each player-enterable outcome. The pair form is

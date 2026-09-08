@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
-import { fetchBoards, joinWithCode, submitClaim, type Board, type BoardList } from "./api";
+import {
+  fetchBoards,
+  fetchStandings,
+  joinWithCode,
+  submitClaim,
+  type Board,
+  type BoardList,
+  type Standings,
+} from "./api";
 import { ClaimQueue, type GameResult, type PendingClaim } from "./queue";
 import {
   BoardListScreen,
   DoneScreen,
   RejectedBanner,
   ResultChoiceScreen,
+  StandingsScreen,
+  ViewTabs,
+  type View,
 } from "./screens";
 import {
   adoptCredential,
@@ -28,6 +39,8 @@ export function App() {
   const queue = useMemo(() => new ClaimQueue(queueStorage, submitClaim), []);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const [boards, setBoards] = useState<BoardList | null>(null);
+  const [standings, setStandings] = useState<Standings | null>(null);
+  const [view, setView] = useState<View>("boards");
   const [query, setQuery] = useState("");
   const [offline, setOffline] = useState(!navigator.onLine);
   const [pending, setPending] = useState<PendingClaim[]>([]);
@@ -56,6 +69,14 @@ export function App() {
       await cacheBoards(listing);
     } catch {
       if (mounted.current) setOffline(true);
+      return;
+    }
+    // The table is a nicety; a failure here must not mark the phone offline.
+    try {
+      const table = await fetchStandings(tournament);
+      if (mounted.current) setStandings(table);
+    } catch {
+      /* keep whatever we had */
     }
   }, []);
 
@@ -106,6 +127,7 @@ export function App() {
     () => new Set(pending.map((claim) => claim.gameId)),
     [pending],
   );
+  const hasStandings = (standings?.sections ?? []).length > 0;
 
   if (!admitted) {
     return <NeedsToken onJoined={() => setAdmitted(true)} />;
@@ -141,7 +163,7 @@ export function App() {
         </p>
       )}
 
-      {screen.name === "list" && (
+      {screen.name === "list" && view === "boards" && (
         <BoardListScreen
           boards={boards?.boards ?? []}
           tournamentName={boards?.tournament_name}
@@ -151,6 +173,17 @@ export function App() {
           pendingKeys={pendingKeys}
           offline={offline}
           queued={pending.length}
+          tabs={<ViewTabs view={view} onView={setView} hasStandings={hasStandings} />}
+        />
+      )}
+
+      {screen.name === "list" && view === "standings" && (
+        <StandingsScreen
+          sections={standings?.sections ?? []}
+          tournamentName={boards?.tournament_name}
+          query={query}
+          onQuery={setQuery}
+          tabs={<ViewTabs view={view} onView={setView} hasStandings={hasStandings} />}
         />
       )}
 

@@ -1,6 +1,6 @@
 /**
  * The frame around every screen: where am I (breadcrumb), where else can I go
- * (Rounds · Devices), and the way out. Nothing else lives up here.
+ * (Rounds · Standings · Devices), and the way out. Nothing else lives up here.
  */
 
 import type { ReactNode } from "react";
@@ -33,6 +33,7 @@ export function Shell({ onSignOut, children }: { onSignOut: () => void; children
                 <Tab to={`/t/${tournamentId}`} end>
                   Rounds
                 </Tab>
+                <Tab to={`/t/${tournamentId}/standings`}>Standings</Tab>
                 <Tab to={`/t/${tournamentId}/devices`}>Devices</Tab>
               </nav>
             </>

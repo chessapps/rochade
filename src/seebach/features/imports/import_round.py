@@ -464,8 +464,16 @@ def _rebuild(
                 rating=player.rating,
                 federation=player.federation,
                 fide_id=player.fide_id,
+                points=player.points,
+                tiebreaks=list(player.tiebreaks),
+                rank=player.rank,
             )
         )
+    # The manager's standings travel with its player list, and are as of the
+    # results it held when it paired this round: the round before. A file
+    # named from the roster we hold carries the standings we already had.
+    if document.standings_from_file:
+        section.standings_after_round = file_round - 1
 
     for round_no in range(1, file_round + 1):
         is_current = round_no == file_round

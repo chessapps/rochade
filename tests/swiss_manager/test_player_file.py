@@ -39,6 +39,42 @@ def test_a_real_export_reads(players_text: str) -> None:
     assert first.fide_id == ""
 
 
+def test_the_standings_ride_along(players_text: str) -> None:
+    """Pkt, Wtg1.. and Rang are Swiss-Manager's own table, as of the export."""
+    players = by_start_number(parse_player_file(players_text))
+
+    assert players[1].points == 1.0
+    assert players[1].tiebreaks == (1.0,)
+    assert players[1].rank == 1
+    assert players[2].points == 0.0
+    assert players[2].rank == 61
+
+
+def test_a_half_point_reads_with_either_decimal_mark() -> None:
+    text = "\r\n".join(
+        [
+            "Nr;Nachname;Vorname;Pkt;Wtg1;Wtg2;Wtg3;Rang",
+            "7;Iten;Nadia;2,5;13,5;;;3",
+            "8;Keller;Urs;2.5;12.0;9;;4",
+            "",
+        ]
+    )
+    players = by_start_number(parse_player_file(text))
+
+    assert players[7].points == 2.5
+    assert players[7].tiebreaks == (13.5,)
+    assert players[8].tiebreaks == (12.0, 9.0)
+    assert players[8].rank == 4
+
+
+def test_a_list_without_standings_columns_has_none() -> None:
+    text = "\r\n".join(["Nr;Nachname;Vorname", "1;Iten;Nadia", ""])
+    player = parse_player_file(text)[0]
+    assert player.points is None
+    assert player.tiebreaks == ()
+    assert player.rank is None
+
+
 def test_columns_are_found_by_name_not_by_position() -> None:
     """The number of tiebreak columns follows the tournament's settings."""
     text = "Nr;Nachname;Vorname;EloInt;Fed;Titel\r\n7;Iten;Nadia;1804;SUI;WFM\r\n"

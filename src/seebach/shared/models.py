@@ -18,6 +18,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -108,6 +109,11 @@ class Section(Base):
     # tournament: a tournament may hold groups run in different programs.
     manager: Mapped[str] = mapped_column(String(32), default="vega", server_default="vega")
     declared_rounds: Mapped[int | None] = mapped_column(Integer(), default=None)
+    #: The round the players' points, tiebreaks and ranks are current for;
+    #: None until a manager export carrying standings has been imported.
+    standings_after_round: Mapped[int | None] = mapped_column(Integer(), default=None)
+    #: What the manager's unnamed tiebreak columns are, typed in by the arbiter.
+    tiebreak_names: Mapped[list[str]] = mapped_column(Json, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     tournament: Mapped[Tournament] = relationship(back_populates="sections")
@@ -140,6 +146,10 @@ class SectionPlayer(Base):
     rating: Mapped[int | None] = mapped_column(Integer(), default=None)
     federation: Mapped[str] = mapped_column(String(8), default="")
     fide_id: Mapped[str] = mapped_column(String(16), default="")
+    #: The manager's standings for this player, as last imported. Display only.
+    points: Mapped[float | None] = mapped_column(Float(), default=None)
+    tiebreaks: Mapped[list[float | None]] = mapped_column(Json, default=list)
+    rank: Mapped[int | None] = mapped_column(Integer(), default=None)
 
     section: Mapped[Section] = relationship(back_populates="players")
 

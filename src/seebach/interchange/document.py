@@ -23,6 +23,16 @@ class PlayerRow:
     rating: int | None = None
     federation: str = ""
     fide_id: str = ""
+    #: The manager's own standings, when its export carries them: points, the
+    #: tiebreaks in the manager's configured order, and the rank. Seebach
+    #: displays these and computes none of them.
+    points: float | None = None
+    tiebreaks: tuple[float | None, ...] = ()
+    rank: int | None = None
+
+    @property
+    def has_standing(self) -> bool:
+        return self.rank is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +74,10 @@ class RoundDocument:
     tournament_name: str = ""
     declared_rounds: int | None = None
     unknown_result_codes: list[str] = field(default_factory=list)
+    #: True when the export itself carried the players' points, tiebreaks and
+    #: ranks (a fresh manager player list), False when the players were filled
+    #: in from what we already held.
+    standings_from_file: bool = False
 
     @property
     def rounds_present(self) -> int:

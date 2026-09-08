@@ -48,6 +48,11 @@ export type DeviceSummary = Json<
 export type IssuedDevice = Json<
   paths["/api/tournaments/{tournament_id}/devices"]["post"]["responses"]["201"]
 >;
+export type TournamentStandings = Json<
+  paths["/api/tournaments/{tournament_id}/standings"]["get"]["responses"]["200"]
+>;
+export type SectionStandings = NonNullable<TournamentStandings["sections"]>[number];
+export type StandingRow = SectionStandings["rows"][number];
 export type GameResult = "white_win" | "draw" | "black_win";
 export type ManagerSummary = Json<
   paths["/api/managers"]["get"]["responses"]["200"]

@@ -38,6 +38,7 @@ export const keys = {
   roundFile: (id: string) => ["round", id, "file"] as const,
   events: (id: string) => ["round", id, "events"] as const,
   devices: (tournamentId: string) => ["devices", tournamentId] as const,
+  standings: (tournamentId: string) => ["standings", tournamentId] as const,
   managers: ["managers"] as const,
 };
 
@@ -118,6 +119,19 @@ export function useDevices(tournamentId: string | undefined) {
       ),
     enabled: Boolean(tournamentId),
     refetchInterval: 30_000,
+  });
+}
+
+export function useStandings(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: keys.standings(tournamentId ?? ""),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/tournaments/{tournament_id}/standings", {
+          params: { path: { tournament_id: tournamentId! } },
+        }),
+      ),
+    enabled: Boolean(tournamentId),
   });
 }
 
@@ -231,6 +245,55 @@ export function useConfirmBoards() {
         }),
       ),
     onSettled: (_data, _error, vars) => invalidateRound(client, vars),
+  });
+}
+
+/** The manager's player list on its own: only points, tiebreaks and ranks move. */
+export function useImportStandings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      tournamentId,
+      sectionName,
+      content,
+    }: {
+      tournamentId: string;
+      sectionName: string;
+      content: string;
+    }) =>
+      unwrap(
+        api.POST("/api/tournaments/{tournament_id}/standings", {
+          params: { path: { tournament_id: tournamentId } },
+          body: { section_name: sectionName, content },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      void client.invalidateQueries({ queryKey: keys.standings(vars.tournamentId) });
+    },
+  });
+}
+
+export function useNameTiebreaks() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      tournamentId,
+      sectionName,
+      names,
+    }: {
+      tournamentId: string;
+      sectionName: string;
+      names: string[];
+    }) =>
+      unwrap(
+        api.PUT("/api/tournaments/{tournament_id}/sections/{section_name}/tiebreaks", {
+          params: { path: { tournament_id: tournamentId, section_name: sectionName } },
+          body: { names },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      void client.invalidateQueries({ queryKey: keys.standings(vars.tournamentId) });
+    },
   });
 }
 
