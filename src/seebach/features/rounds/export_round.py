@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from seebach.features.audit import record
 from seebach.features.locking import lock_round
+from seebach.features.roster import roster_of
 from seebach.features.scoping import tournament_of_round
 from seebach.interchange import (
     InterchangeError,
@@ -100,8 +101,11 @@ def render(round_: Round, *, force: bool) -> Rendered:
     except UnknownManager as exc:  # pragma: no cover - written by import
         raise ValidationFailed(str(exc), manager=round_.section.manager) from exc
 
+    # The source may be the pairings alone, named from the roster we hold; the
+    # roster is the one that import saw, since the next round cannot come in
+    # before this one goes out.
     try:
-        document = manager.read_round(round_.source_trf)
+        document = manager.read_round(round_.source_trf, roster_of(round_.section))
     except InterchangeError as exc:  # pragma: no cover - it parsed on import
         raise ValidationFailed(f"the stored source file no longer reads: {exc}") from exc
 

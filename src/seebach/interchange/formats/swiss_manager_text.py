@@ -11,12 +11,18 @@ start number. The two files arrive as one content string, in either order, with
 their own header lines telling them apart -- so an arbiter can hand over both
 without anyone having to invent an envelope format.
 
+From the second round on, the player file is optional: the roster we hold from
+the last import names the start numbers just as well, and only changes when a
+player is added or removed, which the next player file corrects.
+
 A half-point bye is a player status in Swiss-Manager, not a pairing, so it does
 not appear in either file; a player holding one is simply absent from that
 round. TRF16 would have said `H`. Nothing else observed on 15.0.0.3 is lost.
 """
 
 from __future__ import annotations
+
+from collections.abc import Mapping
 
 from seebach.interchange.document import PairingRow, PlayerRow, RoundDocument
 from seebach.interchange.port import InterchangeError
@@ -46,23 +52,39 @@ def looks_like(content: str) -> bool:
     return False
 
 
-def read_document(content: str) -> RoundDocument:
+def read_document(
+    content: str, known_players: Mapping[int, PlayerRow] | None = None
+) -> RoundDocument:
+    """Join the two files; or the pairings alone with the roster already held."""
     players_text, pairings_text = split_blocks(content)
-    if players_text is None:
-        raise InterchangeError(
-            "this is the pairing file on its own; the player file belongs with it "
-            "(Extras → Daten Import/Export → Spielerdaten), or the boards have no names"
-        )
     if pairings_text is None:
         raise InterchangeError(
             "this is the player file on its own; the pairings belong with it "
             "(Extras → Daten Import/Export → Spielerauslosung)"
         )
 
-    try:
-        roster = by_start_number(parse_player_file(players_text))
-    except PlayerFileError as exc:
-        raise InterchangeError(f"player file: {exc}", line_no=exc.line_no) from exc
+    if players_text is not None:
+        try:
+            roster: Mapping[int, PlayerRow] = {
+                number: PlayerRow(
+                    start_rank=number,
+                    name=player.name,
+                    title=player.title,
+                    rating=player.rating,
+                    federation=player.federation,
+                    fide_id=player.fide_id,
+                )
+                for number, player in by_start_number(parse_player_file(players_text)).items()
+            }
+        except PlayerFileError as exc:
+            raise InterchangeError(f"player file: {exc}", line_no=exc.line_no) from exc
+    elif known_players:
+        roster = known_players
+    else:
+        raise InterchangeError(
+            "this is the pairing file on its own; the player file belongs with it "
+            "(Extras → Daten Import/Export → Spielerdaten), or the boards have no names"
+        )
     try:
         lines = parse_pairing_file(pairings_text)
     except PairingFileError as exc:
@@ -74,6 +96,12 @@ def read_document(content: str) -> RoundDocument:
     def name_of(start_number: int) -> str:
         player = roster.get(start_number)
         if player is None:
+            if players_text is None:
+                raise InterchangeError(
+                    f"the pairings use start number {start_number}, which the last "
+                    "player file did not have -- a player was added, so export "
+                    "Spielerdaten again and hand it over with the pairings"
+                )
             raise InterchangeError(
                 f"the pairings use start number {start_number}, which the player file "
                 "does not have -- export both files from the same tournament"
@@ -96,17 +124,7 @@ def read_document(content: str) -> RoundDocument:
 
     return RoundDocument(
         round_number=max(pairings),
-        players={
-            number: PlayerRow(
-                start_rank=number,
-                name=player.name,
-                title=player.title,
-                rating=player.rating,
-                federation=player.federation,
-                fide_id=player.fide_id,
-            )
-            for number, player in sorted(roster.items())
-        },
+        players={number: roster[number] for number in sorted(roster)},
         pairings=pairings,
         source=content,
     )

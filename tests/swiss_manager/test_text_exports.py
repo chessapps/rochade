@@ -11,7 +11,7 @@ import pathlib
 
 import pytest
 
-from seebach.interchange import manager_for
+from seebach.interchange import PlayerRow, manager_for
 from seebach.interchange.formats import swiss_manager_text
 from seebach.interchange.port import InterchangeError
 
@@ -76,6 +76,26 @@ def test_the_pairing_file_on_its_own_says_what_is_missing(pairings: str) -> None
         swiss_manager_text.read_document(pairings)
 
     assert "Spielerdaten" in str(caught.value)
+
+
+def test_the_pairing_file_alone_is_named_from_the_roster_we_hold(
+    players: str, pairings: str
+) -> None:
+    """Round two: the arbiter hands over one file, the names come from round one."""
+    first = swiss_manager_text.read_document(players + "\n" + pairings)
+
+    again = swiss_manager_text.read_document(pairings, first.players)
+
+    assert again.board_rows(1) == first.board_rows(1)
+    assert again.players == first.players
+
+
+def test_a_start_number_the_roster_lacks_asks_for_the_player_file(pairings: str) -> None:
+    roster = {1: PlayerRow(start_rank=1, name="Brunner,Livia")}
+    with pytest.raises(InterchangeError) as caught:
+        swiss_manager_text.read_document(pairings, roster)
+
+    assert "Spielerdaten again" in str(caught.value)
 
 
 def test_the_player_file_on_its_own_says_what_is_missing(players: str) -> None:

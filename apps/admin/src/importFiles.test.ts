@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isReady, joinContents, missing, primaryName, sniff, withFile } from "./importFiles";
+import { isReady, joinContents, missing, primaryName, rosterNote, sniff, withFile } from "./importFiles";
 
 const PLAYERS = "Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;Nachname;Vorname\r\n1;Brunner Livia;WGM;;0;2447;01.06.1992;SUI;W;Brunner;Livia\r\n";
 const PAIRINGS = "Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS\r\n1;1;0;0;1;51;0;0;;0:0;0;;\r\n";
@@ -30,6 +30,15 @@ describe("what is still needed", () => {
 
   it("asks for the players when only the pairings are there", () => {
     expect(missing([pick("pairings.txt", PAIRINGS)])).toMatch(/Spielerdaten/);
+  });
+
+  it("takes the pairings alone once the section holds a roster", () => {
+    const files = [pick("pairings.txt", PAIRINGS)];
+    expect(missing(files, true)).toBeNull();
+    expect(isReady(files, true)).toBe(true);
+    expect(rosterNote(files, true)).toMatch(/already held/);
+    expect(rosterNote(files, false)).toBeNull();
+    expect(rosterNote([pick("players.txt", PLAYERS), ...files], true)).toBeNull();
   });
 
   it("asks for the pairings when only the players are there", () => {

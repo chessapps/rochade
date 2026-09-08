@@ -22,6 +22,7 @@ import {
   joinContents,
   KIND_LABEL,
   missing,
+  rosterNote,
   primaryName,
   sniff,
   withFile,
@@ -51,6 +52,8 @@ export function ImportWizard() {
 
   const sections = tournament.data?.sections ?? [];
   const existing = sections.find((s) => s.name === section);
+  // From round two the pairings alone will do: the section names them.
+  const rosterHeld = (existing?.players ?? 0) > 0;
 
   // The section's own manager first; failing that, the one we have watched work.
   useEffect(() => {
@@ -76,7 +79,7 @@ export function ImportWizard() {
         : `round ${latest.number} is not exported yet`;
 
   const runPreview = () => {
-    if (!isReady(files)) return;
+    if (!isReady(files, rosterHeld)) return;
     preview.mutate(
       {
         tournamentId,
@@ -99,7 +102,7 @@ export function ImportWizard() {
 
   const runImport = (force: boolean) =>
     once(async () => {
-      if (!isReady(files)) return;
+      if (!isReady(files, rosterHeld)) return;
       const data = await commit.mutateAsync({
         tournamentId,
         section_name: section.trim(),
@@ -175,6 +178,7 @@ export function ImportWizard() {
 
           <DropZone
             files={files}
+            rosterHeld={rosterHeld}
             onFile={(picked) => setFiles((held) => withFile(held, picked))}
             onClear={() => setFiles([])}
           />
@@ -187,7 +191,7 @@ export function ImportWizard() {
               size="lg"
               onClick={runPreview}
               busy={preview.isPending}
-              disabled={!isReady(files) || !section.trim() || !manager}
+              disabled={!isReady(files, rosterHeld) || !section.trim() || !manager}
             >
               Preview the changes
             </Button>
@@ -266,10 +270,12 @@ function countLines(content: string): number {
 
 function DropZone({
   files,
+  rosterHeld,
   onFile,
   onClear,
 }: {
   files: PickedFile[];
+  rosterHeld: boolean;
   onFile: (file: PickedFile) => void;
   onClear: () => void;
 }) {
@@ -280,7 +286,8 @@ function DropZone({
       void one.text().then((content) => onFile({ name: one.name, content, kind: sniff(content) }));
     }
   };
-  const note = missing(files);
+  const note = missing(files, rosterHeld);
+  const roster = rosterNote(files, rosterHeld);
 
   return (
     <div className="space-y-2">
@@ -332,6 +339,7 @@ function DropZone({
       )}
 
       {note && files.length > 0 && <Banner tone="warn">{note}</Banner>}
+      {roster && <Banner tone="info">{roster}</Banner>}
       {files.length > 0 && (
         <button
           type="button"

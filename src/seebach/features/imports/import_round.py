@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from seebach.features.audit import record
+from seebach.features.roster import roster_of
 from seebach.interchange import (
     DEFAULT_MANAGER,
     InterchangeError,
@@ -148,8 +149,11 @@ def build_plan(
     force: bool = False,
 ) -> tuple[ImportPlan, RoundDocument]:
     """Diff a file against what we hold. Pure: reads only, writes nothing."""
+    existing = _load_existing(session, tournament.id, section_name)
+    # A manager whose export can arrive without its player list is handed the
+    # roster from the last import, so the second round needs one file, not two.
     try:
-        document = manager.read_round(content)
+        document = manager.read_round(content, roster_of(existing.section))
     except InterchangeError as exc:
         raise ValidationFailed(f"the file could not be read: {exc}", line_no=exc.line_no) from exc
 
@@ -160,7 +164,6 @@ def build_plan(
     if file_round < 1:
         raise ValidationFailed("the file contains no rounds")
 
-    existing = _load_existing(session, tournament.id, section_name)
     expected = max(existing.rounds, default=0) + 1 if existing.rounds else 1
     # A TRF is a whole-tournament document, so the first import may legitimately
     # arrive mid-event carrying rounds 1..N -- an arbiter adopting the tool for

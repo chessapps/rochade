@@ -23,10 +23,10 @@ So this adapter reads one format and writes another, which is exactly the case
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import ClassVar
 
-from seebach.interchange.document import ManagerFile, ResultEntry, RoundDocument
+from seebach.interchange.document import ManagerFile, PlayerRow, ResultEntry, RoundDocument
 from seebach.interchange.formats import swiss_manager_text
 from seebach.interchange.formats import trf as trf_format
 from seebach.interchange.port import Capabilities, InterchangeError, Support, register
@@ -68,15 +68,18 @@ class SwissManager:
         ),
     )
 
-    def read_round(self, content: str) -> RoundDocument:
+    def read_round(
+        self, content: str, known_players: Mapping[int, PlayerRow] | None = None
+    ) -> RoundDocument:
         """Its own text exports, or a TRF16 -- whichever the file turns out to be.
 
-        The text pair is the way in now (see the module docstring). TRF16 still
-        reads, because rounds imported before this exist and are re-read from
-        their stored source every time one is exported again.
+        The text pair is the way in now (see the module docstring); from round
+        two the pairings alone will do, named from the roster we hold. TRF16
+        still reads, because rounds imported before this exist and are re-read
+        from their stored source every time one is exported again.
         """
         if swiss_manager_text.looks_like(content):
-            return swiss_manager_text.read_document(content)
+            return swiss_manager_text.read_document(content, known_players)
         return trf_format.read_document(content)
 
     def write_results(

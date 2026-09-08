@@ -44,8 +44,10 @@ not in a group chat.
    anything when it works.
 
 The first file is the entry list, the second is the boards; they mean nothing
-apart, so Seebach wants both. The players file only changes when the entry list
-does, so on a quiet round you can hand over the one you already have.
+apart, so the first round needs both. **From round 2 on, the pairings file alone
+is enough**: Seebach names the boards from the players it already holds. Export
+Spielerdaten again only when a player was added or removed, and Seebach tells
+you if the pairings mention a start number it does not know.
 
 In Seebach the section card says **Import round N** — press it, drop **both**
 files on the page, **Preview the changes**, read what the file changes,

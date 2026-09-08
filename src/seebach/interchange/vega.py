@@ -10,10 +10,10 @@ it, so every field Vega wrote that we never modelled goes back unchanged.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import ClassVar
 
-from seebach.interchange.document import ManagerFile, ResultEntry, RoundDocument
+from seebach.interchange.document import ManagerFile, PlayerRow, ResultEntry, RoundDocument
 from seebach.interchange.formats import trf as trf_format
 from seebach.interchange.port import Capabilities, Support, register
 from seebach.trf import Dialect
@@ -47,7 +47,10 @@ class VegaManager:
     #: The dialect we emit. Named explicitly -- never serialize "TRF" generically.
     dialect: ClassVar[Dialect] = Dialect.TRF16
 
-    def read_round(self, content: str) -> RoundDocument:
+    def read_round(
+        self, content: str, known_players: Mapping[int, PlayerRow] | None = None
+    ) -> RoundDocument:
+        # A TRF carries its own players; nothing held here is needed.
         return trf_format.read_document(content)
 
     def write_results(

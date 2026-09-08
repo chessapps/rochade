@@ -208,7 +208,59 @@ def test_the_round_comes_in_as_the_two_text_exports(send: Send, tournament: Tour
     assert result.round_number == 1
 
 
-def test_one_of_the_two_text_files_alone_is_refused(send: Send, tournament: Tournament) -> None:
+def test_from_round_two_the_pairings_alone_are_enough(
+    send: Send, session: Session, tournament: Tournament
+) -> None:
+    """The roster from round one names round two's boards; the export still reads."""
+    send(
+        ImportRound(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=read("players_round1.txt") + "\n" + read("pairings_round1_played.txt"),
+            manager="swiss_manager",
+        )
+    )
+    first = session.scalars(select(Round).where(Round.number == 1)).one()
+    send(ReleaseRound(round_id=first.id, force=True))
+    send(ExportRound(round_id=first.id, force=True))
+
+    # Round two's pairing file, as Swiss-Manager would write it for the same
+    # players: the fixtures on disk come from two different tournaments.
+    round_two = chr(10).join(
+        line if line.startswith("Runde") else "2;" + line.split(";", 1)[1]
+        for line in read("pairings_round1_played.txt").splitlines()
+        if line.strip()
+    )
+
+    plan = send(
+        PreviewImport(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=round_two,
+            manager="swiss_manager",
+        )
+    )
+    assert plan.file_round == 2
+    assert plan.players_added == []
+    assert plan.players_removed == []
+
+    send(
+        ImportRound(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=round_two,
+            manager="swiss_manager",
+        )
+    )
+    second = session.scalars(select(Round).where(Round.number == 2)).one()
+    assert all(g.white_name for g in second.games)
+
+    send(ReleaseRound(round_id=second.id, force=True))
+    exported = send(ExportRound(round_id=second.id, force=True))
+    assert exported.filename == "A-round2.txt"
+
+
+def test_the_first_round_still_needs_both_files(send: Send, tournament: Tournament) -> None:
     with pytest.raises(ValidationFailed) as caught:
         send(
             PreviewImport(

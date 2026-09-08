@@ -13,12 +13,12 @@ if the adapter says in advance what it drops.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import ClassVar, Protocol, runtime_checkable
 
-from seebach.interchange.document import ManagerFile, ResultEntry, RoundDocument
+from seebach.interchange.document import ManagerFile, PlayerRow, ResultEntry, RoundDocument
 
 
 class Support(StrEnum):
@@ -76,8 +76,14 @@ class Manager(Protocol):
     label: ClassVar[str]
     capabilities: ClassVar[Capabilities]
 
-    def read_round(self, content: str) -> RoundDocument:
-        """Turn one manager export into a format-neutral document."""
+    def read_round(
+        self, content: str, known_players: Mapping[int, PlayerRow] | None = None
+    ) -> RoundDocument:
+        """Turn one manager export into a format-neutral document.
+
+        `known_players` is the roster we already hold for the section, by start
+        number, for a manager whose export can arrive without one.
+        """
         ...
 
     def write_results(

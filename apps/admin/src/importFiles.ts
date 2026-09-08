@@ -44,26 +44,36 @@ export function withFile(files: PickedFile[], picked: PickedFile): PickedFile[] 
   return [...kept, picked];
 }
 
-export function isReady(files: PickedFile[]): boolean {
-  return missing(files) === null;
+export function isReady(files: PickedFile[], rosterHeld = false): boolean {
+  return missing(files, rosterHeld) === null;
 }
 
 /**
  * The one sentence that says what is still needed, or null when nothing is.
- * A TRF stands alone; the two text files only count together.
+ * A TRF stands alone; the two text files only count together -- unless the
+ * section already holds a roster from an earlier round, when the pairings
+ * alone will do.
  */
-export function missing(files: PickedFile[]): string | null {
+export function missing(files: PickedFile[], rosterHeld = false): string | null {
   if (files.length === 0) return "Nothing chosen yet.";
   const kinds = new Set(files.map((file) => file.kind));
   if (kinds.has("trf")) return null;
   if (kinds.has("players") && kinds.has("pairings")) return null;
   if (kinds.has("pairings")) {
+    if (rosterHeld) return null;
     return "The pairings name nobody on their own. Add the players file: Extras → Daten Import/Export → Spielerdaten (Text-File).";
   }
   if (kinds.has("players")) {
     return "The players pair nobody on their own. Add the pairings file: Extras → Daten Import/Export → Spielerauslosung (Text-File).";
   }
   return "This does not look like a manager export. Choose the file the manager wrote.";
+}
+
+/** What to tell the arbiter when the pairings will be named from the roster we hold. */
+export function rosterNote(files: PickedFile[], rosterHeld: boolean): string | null {
+  const kinds = new Set(files.map((file) => file.kind));
+  if (!rosterHeld || !kinds.has("pairings") || kinds.has("players")) return null;
+  return "Names come from the players already held for this section. Add Spielerdaten only if a player was added or removed.";
 }
 
 /** One body for the API: the files as they were, in a stable order. */

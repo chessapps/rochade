@@ -8,7 +8,7 @@ leaks TRF, this is where it shows.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import ClassVar
 
 import pytest
@@ -64,7 +64,9 @@ class SimpleManager:
         notes=("Cannot carry forfeits or byes.",),
     )
 
-    def read_round(self, content: str) -> RoundDocument:
+    def read_round(
+        self, content: str, known_players: Mapping[int, PlayerRow] | None = None
+    ) -> RoundDocument:
         lines = [line for line in content.splitlines() if line.strip()]
         round_number = int(lines[0].split()[1])
         players: dict[int, PlayerRow] = {}
