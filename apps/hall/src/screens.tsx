@@ -5,7 +5,8 @@
  *
  * Black on white, ruled like a printed pairing sheet, two columns on a tablet: this is read on a
  * five-year-old Android in a badly lit hall by someone who has just played four
- * hours of chess and wants to leave. There is no confirm step; the choice
+ * hours of chess and wants to leave. A white and a black disc mark who has
+ * which colour, everywhere a name appears. There is no confirm step; the choice
  * screen shows both names by colour so the tap itself is the check.
  */
 
@@ -74,9 +75,6 @@ export function BoardListScreen({
           spellCheck={false}
           className="mt-1.5 w-full rounded-md border-2 border-ink bg-paper px-3 py-2 text-base placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
         />
-        <div className="mt-1.5">
-          <Legend />
-        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto pb-6">
@@ -132,16 +130,18 @@ function statusOf(board: Board, pending: boolean): Status {
   return "open";
 }
 
-/**
- * One colour per state, chosen to survive a dim hall and a cheap screen:
- * hollow means nothing has happened yet, amber is on its way, green is in.
- */
-const DOT: Record<Status, string> = {
-  open: "border-2 border-ink bg-paper",
-  sending: "border-2 border-amber-500 bg-amber-400",
-  entered: "border-2 border-emerald-700 bg-emerald-500",
-  bye: "border-2 border-neutral-300 bg-neutral-300",
-};
+/** The piece colour, as it sits on the board: a white disc and a black one. */
+function Piece({ colour }: { colour: "white" | "black" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={[
+        "inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 border-ink",
+        colour === "white" ? "bg-paper" : "bg-ink",
+      ].join(" ")}
+    />
+  );
+}
 
 const STATUS_LABEL: Record<Status, string> = {
   open: "open",
@@ -149,28 +149,6 @@ const STATUS_LABEL: Record<Status, string> = {
   entered: "entered",
   bye: "bye",
 };
-
-function Dot({ status }: { status: Status }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={["inline-block h-3.5 w-3.5 shrink-0 rounded-full", DOT[status]].join(" ")}
-    />
-  );
-}
-
-export function Legend() {
-  return (
-    <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-mute">
-      {(["open", "sending", "entered"] as Status[]).map((status) => (
-        <li key={status} className="flex items-center gap-1">
-          <Dot status={status} />
-          {STATUS_LABEL[status]}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function BoardRow({
   board,
@@ -188,12 +166,15 @@ function BoardRow({
       <span className="w-8 shrink-0 text-right text-base font-semibold tabular-nums">
         {board.board}
       </span>
-      <span className="flex shrink-0 items-center self-center">
-        <Dot status={status} />
-      </span>
       <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate">{board.white_name}</span>
-        <span className="block truncate text-mute">{board.black_name ?? "bye"}</span>
+        <span className="flex items-center gap-2">
+          <Piece colour="white" />
+          <span className="truncate">{board.white_name}</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <Piece colour="black" />
+          <span className="truncate">{board.black_name ?? "bye"}</span>
+        </span>
       </span>
       <span className="shrink-0 self-center text-right">
         <BoardCell board={board} status={status} />
@@ -314,15 +295,15 @@ function winnerLine(board: Board, result: GameResult): string {
  * the winner's line inverted so the eye lands on it even at arm's length.
  */
 function ScoreSheet({ board, result }: { board: Board; result: GameResult }) {
-  const rows: { colour: string; name: string; score: string; wins: boolean }[] = [
+  const rows: { colour: "white" | "black"; name: string; score: string; wins: boolean }[] = [
     {
-      colour: "White",
+      colour: "white" as const,
       name: board.white_name,
       score: RESULT_LABELS[result].white,
       wins: result === "white_win",
     },
     {
-      colour: "Black",
+      colour: "black" as const,
       name: board.black_name ?? "bye",
       score: RESULT_LABELS[result].black,
       wins: result === "black_win",
@@ -341,11 +322,21 @@ function ScoreSheet({ board, result }: { board: Board; result: GameResult }) {
           >
             <td
               className={[
-                "w-[4.5rem] py-3 pr-2 pl-3 text-xs font-semibold tracking-wide uppercase",
+                "w-[5.5rem] py-3 pr-2 pl-3 text-xs font-semibold tracking-wide uppercase",
                 row.wins ? "text-neutral-300" : "text-mute",
               ].join(" ")}
             >
-              {row.colour}
+              <span className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2",
+                    row.colour === "white" ? "border-ink bg-paper" : "border-paper bg-ink",
+                    row.wins && row.colour === "white" ? "border-paper" : "",
+                  ].join(" ")}
+                />
+                {row.colour}
+              </span>
             </td>
             <td className="py-3 pr-2 leading-tight">
               <span className="block font-semibold break-words">{row.name}</span>
@@ -412,9 +403,15 @@ export function DoneScreen({
 function Players({ board }: { board: Board }) {
   return (
     <dl className="grid grid-cols-[4.5rem_1fr] gap-y-1 text-lg leading-tight">
-      <dt className="text-xs font-semibold tracking-wide text-mute uppercase self-center">White</dt>
+      <dt className="flex items-center gap-1.5 self-center text-xs font-semibold tracking-wide text-mute uppercase">
+        <Piece colour="white" />
+        White
+      </dt>
       <dd className="font-semibold break-words">{board.white_name}</dd>
-      <dt className="text-xs font-semibold tracking-wide text-mute uppercase self-center">Black</dt>
+      <dt className="flex items-center gap-1.5 self-center text-xs font-semibold tracking-wide text-mute uppercase">
+        <Piece colour="black" />
+        Black
+      </dt>
       <dd className="font-semibold break-words">{board.black_name ?? "bye"}</dd>
     </dl>
   );
