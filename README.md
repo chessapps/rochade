@@ -1,14 +1,15 @@
-# Seebach
+# Rochade
 
 Digital result entry for chess tournaments that someone else is running.
+Live at <https://rochade.app>.
 
 An existing manager — Vega, Swiss-Manager — stays the tournament manager: it
 owns setup, the player list, the pairings, the tiebreaks and the public view.
-Seebach does the one thing it cannot — put a phone in every player's hand — and
+Rochade does the one thing it cannot — put a phone in every player's hand — and
 hands the results back each round.
 
 ```
-  manager                       Seebach                       manager
+  manager                       Rochade                       manager
   ───────                       ───────                       ───────
   pair round N
   export      ──────────────▶  import, open round N
@@ -19,7 +20,7 @@ hands the results back each round.
 ```
 
 Which manager is an adapter choice, not an architecture — see
-`src/seebach/interchange/`. Every adapter declares what it *cannot* do, and
+`src/seebach/interchange/` (the code keeps its working name, `seebach`). Every adapter declares what it *cannot* do, and
 ships `UNVERIFIED` until someone has watched it work.
 
 | Manager | Status | Read more |
