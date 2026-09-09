@@ -1,5 +1,5 @@
-"""How the admin app should sign in: the one thing it asks before it has a
-credential.
+"""What a browser with no credential may ask: how the admin app signs in, and
+whether the hall's landing page should offer a join code field.
 
 With an issuer configured it starts an OIDC authorization-code flow against
 it; without one, and with dev auth switched on, it shows the token field.
@@ -26,6 +26,9 @@ class AuthConfig(BaseModel):
     client_id: str
     #: Whether a bare token is accepted as the staff subject.
     dev_auth: bool
+    #: Whether a phone may join a tournament by typing its code, so the landing
+    #: page knows whether to offer the field at all.
+    device_join: bool
 
 
 class GetAuthConfig(Query):
@@ -39,6 +42,7 @@ def handle(query: GetAuthConfig, ctx: Context) -> AuthConfig:
         issuer=config.oidc_issuer,
         client_id=config.oidc_client_id,
         dev_auth=config.dev_auth_enabled,
+        device_join=config.device_join_enabled,
     )
 
 

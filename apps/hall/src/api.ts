@@ -59,6 +59,16 @@ export async function fetchStandings(tournamentId: string): Promise<Standings> {
   return data;
 }
 
+export type AuthConfig =
+  paths["/api/auth/config"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/** What a browser with no credential may ask: here, whether a code can be typed. */
+export async function fetchAuthConfig(): Promise<AuthConfig> {
+  const { data, error } = await api.GET("/api/auth/config");
+  if (error || !data) throw new Error("could not load the site configuration");
+  return data;
+}
+
 export type JoinedDevice =
   paths["/api/devices/join"]["post"]["responses"]["201"]["content"]["application/json"];
 

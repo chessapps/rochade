@@ -112,6 +112,7 @@ def test_the_browser_is_told_where_to_sign_in(client: TestClient) -> None:
         "issuer": ISSUER,
         "client_id": CLIENT_ID,
         "dev_auth": False,
+        "device_join": False,
     }
 
 

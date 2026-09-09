@@ -35,7 +35,10 @@ See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 docker compose up --build
 ```
 
-- hall app — <http://localhost:8092>
+- landing page — <http://localhost:8092>: what this is, the way in for players
+  (the QR, or the join code where that is switched on) and the link to the
+  arbiter area. A phone that scanned a QR never sees it; it lands on its
+  tournament's board list, which is the hall app behind the same URL
 - arbiter app — <http://localhost:8092/admin/>
 - API docs — <http://localhost:8092/api> (OpenAPI at `/openapi.json` on the API)
 - Zitadel, the arbiters' sign-in — <http://localhost:8093> (console at `/ui/console`)
@@ -59,9 +62,10 @@ in `docker-compose.override.yml`, which compose merges in on its own;
 `docker-compose.yml` alone is production-safe.
 
 It also runs with `SEEBACH_DEVICE_JOIN_ENABLED=true`, which lets a phone admit
-itself by typing a tournament's six-character join code instead of scanning the
-QR. The arbiter opens and closes it under **Devices**, and it grants exactly
-what the QR grants — so it is off by default too.
+itself by typing a tournament's six-character join code on the landing page
+instead of scanning the QR. The arbiter opens and closes it under **Devices**,
+and it grants exactly what the QR grants — so it is off by default too, and the
+landing page then shows no code field at all.
 
 Smoke-test a running stack, including one full round trip:
 

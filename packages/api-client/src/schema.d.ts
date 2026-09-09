@@ -493,6 +493,8 @@ export interface components {
             client_id: string;
             /** Dev Auth */
             dev_auth: boolean;
+            /** Device Join */
+            device_join: boolean;
         };
         /** BoardDetail */
         BoardDetail: {

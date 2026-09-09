@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   fetchBoards,
   fetchStandings,
-  joinWithCode,
   submitClaim,
   type Board,
   type BoardList,
   type Standings,
 } from "./api";
+import { Landing } from "./landing";
 import { ClaimQueue, type GameResult, type PendingClaim } from "./queue";
 import {
   BoardListScreen,
@@ -20,7 +20,6 @@ import {
   type View,
 } from "./screens";
 import {
-  adoptCredential,
   cacheBoards,
   cachedBoards,
   deviceToken,
@@ -130,7 +129,7 @@ export function App() {
   const hasStandings = (standings?.sections ?? []).length > 0;
 
   if (!admitted) {
-    return <NeedsToken onJoined={() => setAdmitted(true)} />;
+    return <Landing onJoined={() => setAdmitted(true)} />;
   }
 
   const confirm = async (board: Board, result: GameResult, correcting = false) => {
@@ -212,66 +211,5 @@ export function App() {
         />
       )}
     </main>
-  );
-}
-
-function NeedsToken({ onJoined }: { onJoined: () => void }) {
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const join = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const joined = await joinWithCode(code.trim());
-      adoptCredential(joined.token, joined.tournament_id);
-      onJoined();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The code could not be used.");
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="mx-auto flex min-h-full w-full max-w-xl flex-col justify-center gap-6 overflow-y-auto p-5">
-      <div>
-        <p className="text-xs font-semibold tracking-wide text-mute uppercase">Seebach</p>
-        <h1 className="mt-1 text-3xl font-bold leading-tight">Enter your result</h1>
-        <p className="mt-2 text-base text-mute">
-          Scan the QR code the arbiter put up.
-        </p>
-      </div>
-
-      <form onSubmit={join} className="flex flex-col gap-2">
-        <label htmlFor="join-code" className="text-sm font-semibold">
-          Or type the code the arbiter reads out
-        </label>
-        <input
-          id="join-code"
-          value={code}
-          onChange={(event) => setCode(event.target.value.toUpperCase())}
-          autoCapitalize="characters"
-          autoCorrect="off"
-          spellCheck={false}
-          inputMode="text"
-          placeholder="ABC123"
-          className="w-full rounded-md border-2 border-ink bg-paper px-4 py-3 text-center font-mono text-3xl tracking-[0.3em] uppercase placeholder:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
-        />
-        <button
-          type="submit"
-          disabled={busy || code.trim().length < 4}
-          className="w-full rounded-md bg-ink py-4 text-xl font-bold text-paper active:bg-neutral-800 disabled:opacity-40"
-        >
-          {busy ? "Joining…" : "Join"}
-        </button>
-        {error && (
-          <p role="alert" className="text-sm font-semibold">
-            {error}
-          </p>
-        )}
-      </form>
-    </div>
   );
 }

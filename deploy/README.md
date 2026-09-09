@@ -143,7 +143,10 @@ curl https://seebach.<your-domain>/api/auth/config  # names https://auth.<your-d
 curl https://auth.<your-domain>/.well-known/openid-configuration
 ```
 
-Open `https://seebach.<your-domain>/admin/` and sign in with the first
+Open `https://seebach.<your-domain>/`: the landing page names the site, tells a
+player to scan the QR and links an arbiter to `/admin/`. With
+`SEEBACH_DEVICE_JOIN_ENABLED` unset it shows no join code field, so nothing on
+the front door invites a guess. Follow the link and sign in with the first
 arbiter account. Issue a QR under **Devices** and confirm it encodes the
 `https://` hostname: the admin app derives it from the page origin, so it is
 right whenever the site is served on its real name. The same walk in a

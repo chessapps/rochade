@@ -8,8 +8,10 @@ const TOURNAMENT = "11111111-2222-3333-4444-555555555555";
 
 const joinWithCode = vi.fn();
 const fetchBoards = vi.fn(async () => ({ tournament_name: "Test Open", boards: [] }));
+const fetchAuthConfig = vi.fn();
 
 vi.mock("./api", () => ({
+  fetchAuthConfig: () => fetchAuthConfig(),
   joinWithCode: (code: string) => joinWithCode(code),
   fetchBoards: () => fetchBoards(),
   submitClaim: vi.fn(async () => ({ status: "accepted" })),
@@ -19,6 +21,8 @@ describe("a phone with no QR code", () => {
   beforeEach(() => {
     localStorage.clear();
     joinWithCode.mockReset();
+    fetchAuthConfig.mockReset();
+    fetchAuthConfig.mockResolvedValue({ issuer: "", client_id: "", dev_auth: false, device_join: true });
   });
 
   afterEach(() => {
@@ -35,7 +39,7 @@ describe("a phone with no QR code", () => {
     });
 
     render(<App />);
-    const field = screen.getByLabelText(/type the code/i);
+    const field = await screen.findByLabelText(/type the code/i);
     await userEvent.type(field, "k7qw2m");
     // Typed in any case, shown as the arbiter reads it out.
     expect(field).toHaveValue("K7QW2M");
@@ -53,7 +57,7 @@ describe("a phone with no QR code", () => {
     joinWithCode.mockRejectedValue(new Error("That code does not open anything."));
 
     render(<App />);
-    await userEvent.type(screen.getByLabelText(/type the code/i), "ZZZZZZ");
+    await userEvent.type(await screen.findByLabelText(/type the code/i), "ZZZZZZ");
     await userEvent.click(screen.getByRole("button", { name: "Join" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/does not open anything/i);
@@ -63,9 +67,25 @@ describe("a phone with no QR code", () => {
 
   it("will not send a code too short to be one", async () => {
     render(<App />);
-    await userEvent.type(screen.getByLabelText(/type the code/i), "AB");
+    await userEvent.type(await screen.findByLabelText(/type the code/i), "AB");
 
     expect(screen.getByRole("button", { name: "Join" })).toBeDisabled();
     expect(joinWithCode).not.toHaveBeenCalled();
+  });
+
+  it("offers no code field where joining by code is switched off, only the QR and the arbiter area", async () => {
+    fetchAuthConfig.mockResolvedValue({ issuer: "", client_id: "", dev_auth: false, device_join: false });
+
+    render(<App />);
+    expect(await screen.findByText(/no code to type here/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/type the code/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /arbiter area/i })).toHaveAttribute("href", "/admin/");
+  });
+
+  it("offers the field anyway when the API cannot be asked, so the server gets to say no", async () => {
+    fetchAuthConfig.mockRejectedValue(new Error("offline"));
+
+    render(<App />);
+    expect(await screen.findByLabelText(/type the code/i)).toBeInTheDocument();
   });
 });
