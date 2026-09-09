@@ -1,0 +1,82 @@
+name: Deploy
+
+# Every commit on main that CI passed is deployed to the box, the same way
+# scripts/deploy.sh does it from a workstation: a docker context over SSH,
+# the images built on the box, the env file interpolated on the runner.
+#
+# The secrets live on the `production` environment, whose branch policy
+# allows only main (scripts/github_protect.sh). A workflow on any other
+# branch, or from a fork, cannot read them. deploy/README.md explains the
+# one-time setup.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://rochade.app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: SSH identity for the box
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -eu
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          # The key on the box is restricted to `docker system dial-stdio`,
+          # which is all the docker CLI ever runs over an SSH context.
+          cat > ~/.ssh/config <<CFG
+          Host box
+              HostName ${{ secrets.DEPLOY_HOST }}
+              User ${{ secrets.DEPLOY_USER }}
+              IdentityFile ~/.ssh/id_ed25519
+              IdentitiesOnly yes
+              ServerAliveInterval 30
+              ServerAliveCountMax 4
+          CFG
+          chmod 600 ~/.ssh/config
+          docker context create workbench --docker "host=ssh://box"
+          docker --context workbench version --format '{{.Server.Version}}'
+
+      - name: Production env file
+        env:
+          ROCHADE_PROD_ENV: ${{ secrets.ROCHADE_PROD_ENV }}
+        run: |
+          set -eu
+          umask 077
+          printf '%s\n' "$ROCHADE_PROD_ENV" > rochade.prod.env
+
+      - name: Deploy
+        run: sh scripts/deploy.sh workbench rochade.prod.env
+
+      - name: Smoke
+        run: |
+          set -eu
+          curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -o /dev/null https://rochade.app/health
+          curl -fsS https://rochade.app/api/auth/config | grep -q issuer
+
+      - name: Clean up
+        if: always()
+        run: rm -f rochade.prod.env ~/.ssh/id_ed25519

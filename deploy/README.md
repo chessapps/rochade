@@ -90,8 +90,8 @@ Then:
 
 ```powershell
 ssh box docker ps                                   # must work with no prompt
-docker context create box --docker "host=ssh://box"
-docker --context box ps                             # same list, through the context
+docker context create workbench --docker "host=ssh://box"
+docker --context workbench ps                             # same list, through the context
 ```
 
 ## DNS
@@ -159,10 +159,69 @@ ZITADEL_ADMIN_EMAIL=... ZITADEL_ADMIN_PASSWORD=... node scripts/login_flow.mjs h
 Useful afterwards:
 
 ```sh
-docker --context box compose -p rochade ps
-docker --context box compose -p rochade logs -f api
-docker --context box compose -p rochade exec postgres psql -U rochade
+docker --context workbench compose -p rochade ps
+docker --context workbench compose -p rochade logs -f api
+docker --context workbench compose -p rochade exec postgres psql -U rochade
 ```
+
+## Automatic deploys
+
+Every commit on `main` that passes CI is deployed by
+`.github/workflows/deploy.yml`. It does exactly what `scripts/deploy.sh`
+does from a workstation, on a GitHub runner: a docker context over SSH, the
+images built on the box, the env file written from a secret. Two merges in a
+row queue rather than race, and a red commit is never deployed.
+
+The secrets live on the repository's `production` environment, which admits
+workflow runs on `main` only. Secret values are write-only in GitHub, for
+admins too; `gh secret list --env production` shows names. A workflow on
+another branch, or a pull request from a fork, cannot read them.
+
+`main` is owned by the repository admins. Anyone else, collaborator or not,
+opens a pull request that needs green CI and an admin's merge; force-pushes
+and deletion are blocked. `scripts/github_protect.sh` is the source of truth
+for both the environment and the ruleset; run it again after changing it.
+(Rulesets and environment branch policies need the repository to be public
+or on a paid plan.)
+
+### One-time setup
+
+On the workstation, a key that exists only for this and is not the one you
+use yourself:
+
+```sh
+ssh-keygen -t ed25519 -N "" -C rochade-deploy -f rochade-deploy
+```
+
+On the box, append the public half to `~/.ssh/authorized_keys` *with a forced
+command*. The docker CLI runs `docker system dial-stdio` over an SSH context
+and nothing else, so the key gets exactly that: no shell, no scp, no tunnels,
+even if it ever leaks.
+
+```
+command="docker system dial-stdio",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ssh-ed25519 AAAA... rochade-deploy
+```
+
+Then the five secrets. The host key is pinned so the runner never trusts on
+first use; the env file is the same `rochade.prod.env` a manual deploy uses.
+
+```sh
+gh secret set DEPLOY_HOST        --env production --body 37.27.106.229
+gh secret set DEPLOY_USER        --env production --body roman
+gh secret set DEPLOY_KNOWN_HOSTS --env production --body "$(ssh-keyscan -t ed25519 37.27.106.229 2>/dev/null)"
+gh secret set DEPLOY_SSH_KEY     --env production < rochade-deploy
+gh secret set ROCHADE_PROD_ENV   --env production < rochade.prod.env
+rm rochade-deploy rochade-deploy.pub
+```
+
+Whenever the env file changes, set `ROCHADE_PROD_ENV` again; the next deploy
+picks it up. Whenever the box's host key changes, set `DEPLOY_KNOWN_HOSTS`.
+
+### Rolling back
+
+Revert the commit on `main` and push; the pipeline deploys the revert. For a
+one-off, **Actions › Deploy › Run workflow** deploys the current `main`
+again.
 
 ## When the box already has a proxy
 
@@ -208,13 +267,13 @@ Three steps, nothing else restarts:
 The database is the only state. Dump it from the workstation:
 
 ```sh
-docker --context box compose -p rochade exec -T postgres pg_dump -U rochade -Fc rochade > rochade-$(date +%F).dump
+docker --context workbench compose -p rochade exec -T postgres pg_dump -U rochade -Fc rochade > rochade-$(date +%F).dump
 ```
 
 Restore into an empty database:
 
 ```sh
-docker --context box compose -p rochade exec -T postgres pg_restore -U rochade -d rochade --clean --if-exists < rochade-2026-09-08.dump
+docker --context workbench compose -p rochade exec -T postgres pg_restore -U rochade -d rochade --clean --if-exists < rochade-2026-09-08.dump
 ```
 
 A nightly dump on the box itself, kept for 14 days (`crontab -e`):

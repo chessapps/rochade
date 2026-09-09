@@ -77,6 +77,8 @@ uv run python scripts/smoke.py http://localhost:8092
 Putting the stack on a Linux box behind a shared Caddy, with TLS and room for
 other stacks on the same machine, is one command once the box is prepared:
 see [deploy/README.md](deploy/README.md).
+Every commit on `main` that passes CI deploys itself from GitHub Actions; the
+same file explains the secrets and who may merge to `main`.
 
 The same round through the arbiter app in a real browser — screens, dialogs,
 polling, the download, phone widths — using the Edge or Chrome already on the
