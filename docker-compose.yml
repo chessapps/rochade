@@ -7,6 +7,10 @@
 # and its login UI) sharing the stack's Postgres. It is reached on its own
 # hostname, AUTH_URL, which the stack's Caddy serves on :8081. The four AUTH_*
 # variables describe that one URL and must agree with each other.
+# Pinned so the project, and with it the volumes, stays the same whichever
+# folder the checkout lives in (it started life as seebach).
+name: seebach
+
 services:
   postgres:
     image: postgres:16-alpine
