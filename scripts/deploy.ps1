@@ -6,7 +6,7 @@
 #
 # One-time setup on both ends is in deploy/README.md.
 param(
-    [string]$Context = "box",
+    [string]$Context = "workbench",
     [string]$EnvFile = "seebach.prod.env",
     [switch]$Plain
 )

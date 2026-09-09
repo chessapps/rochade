@@ -161,6 +161,29 @@ docker --context box compose -p seebach logs -f api
 docker --context box compose -p seebach exec postgres psql -U seebach
 ```
 
+## When the box already has a proxy
+
+The shared Caddy above is for a box that has nothing on ports 80 and 443
+yet. Where another stack's proxy already owns them, that proxy is the shared
+one: seebach's `web` container joins its network (`PROXY_NETWORK` in the env
+file) and the proxy gets two server blocks, one per hostname, pointing at
+`seebach-web:8080` and `seebach-web:8081`.
+
+That is how `workbench` (rochade.app) runs: the bognerchess production nginx
+owns the ports, its two seebach blocks are the reference copy in
+`deploy/nginx-seebach.conf`, and the `rochade.app` certificate was issued
+through that stack's certbot webroot so its renewal timer covers it. Two
+things learned there:
+
+- The nginx config is a single-file bind mount. If the host file is ever
+  replaced rather than edited in place, the container keeps the old inode
+  and a reload changes nothing; test the new file with `nginx -t` in a
+  throwaway container with the same mounts, then restart the proxy container.
+- Containers on that box resolve DNS through the Incus bridge first, which
+  times out and starves `pnpm install` during image builds. The production
+  overlay therefore builds with `network: host`. The box-wide fix is a
+  `"dns"` entry in `/etc/docker/daemon.json`, which restarts every container.
+
 ## Adding another stack to the box
 
 Three steps, nothing else restarts:

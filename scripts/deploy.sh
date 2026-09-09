@@ -4,7 +4,7 @@
 # One-time setup on both ends is in deploy/README.md.
 set -eu
 cd "$(dirname "$0")/.."
-context="${1:-box}"
+context="${1:-workbench}"
 envfile="${2:-seebach.prod.env}"
 
 if [ ! -f "$envfile" ]; then

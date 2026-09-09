@@ -31,12 +31,18 @@ services:
     environment:
       CUSTOM_REQUEST_HEADERS: Host:${AUTH_DOMAIN:?set AUTH_DOMAIN in the env file},X-Forwarded-Proto:${AUTH_SCHEME:-https}
 
+  # Builds on the box use its network directly: the docker bridge's first
+  # nameserver there (the Incus bridge) times out, which starves pnpm.
   zitadel-setup:
+    build:
+      network: host
     environment:
       ZITADEL_ISSUER: ${AUTH_URL:?set AUTH_URL in the env file}
       SEEBACH_PUBLIC_URL: ${SEEBACH_PUBLIC_URL:?set SEEBACH_PUBLIC_URL in the env file}
 
   api:
+    build:
+      network: host
     environment:
       # Both default to off. Dev auth beside Zitadel would let any bare
       # bearer act as staff; there is no reason to have it on a public URL.
@@ -44,13 +50,40 @@ services:
       SEEBACH_DEVICE_JOIN_ENABLED: ${SEEBACH_DEVICE_JOIN_ENABLED:-false}
 
   web:
-    # Fixed name so the shared Caddyfile can say `reverse_proxy seebach-web:8080`
-    # whatever the compose project is called.
+    build:
+      network: host
+    # Fixed name so the shared proxy can say `seebach-web:8080` whatever the
+    # compose project is called.
     container_name: seebach-web
     networks:
       - default
       - proxy
 
+  # State lives in plain directories under SEEBACH_DATA_DIR on the box, so
+  # it is obvious what to back up and it survives any compose down/up.
+volumes:
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SEEBACH_DATA_DIR:?set SEEBACH_DATA_DIR in the env file}/postgres
+  zitadel_bootstrap:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SEEBACH_DATA_DIR:?set SEEBACH_DATA_DIR in the env file}/zitadel
+  auth_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SEEBACH_DATA_DIR:?set SEEBACH_DATA_DIR in the env file}/auth
+
 networks:
   proxy:
     external: true
+    # The network the box's shared proxy sits on; `proxy` for the Caddy in
+    # deploy/proxy, or an existing proxy's own network.
+    name: ${PROXY_NETWORK:-proxy}
