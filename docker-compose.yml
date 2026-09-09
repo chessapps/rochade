@@ -117,6 +117,14 @@ services:
       ZITADEL_PAT_FILE: /zitadel/bootstrap/setup.pat
       SEEBACH_PUBLIC_URL: ${SEEBACH_PUBLIC_URL:-http://localhost:8092}
       SEEBACH_OIDC_CONFIG_FILE: /run/seebach/oidc.json
+      # Outgoing mail (invitations, passkey links, password resets). Left
+      # unset locally: nothing sends, and the console shows the links instead.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Rochade}
+      SMTP_TLS: ${SMTP_TLS:-true}
     volumes:
       - zitadel_bootstrap:/zitadel/bootstrap:ro
       - auth_config:/run/seebach

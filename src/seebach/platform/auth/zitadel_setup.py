@@ -17,6 +17,10 @@ Environment:
     ZITADEL_PAT_FILE     the bootstrap machine user's PAT
     SEEBACH_PUBLIC_URL   the app's origin, for the redirect URIs
     SEEBACH_OIDC_CONFIG_FILE  where to write the result
+    SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SMTP_FROM_NAME, SMTP_TLS
+                         optional: the relay Zitadel sends invitations and
+                         passkey links through; nothing is configured without
+                         SMTP_HOST
 """
 
 from __future__ import annotations
@@ -48,6 +52,8 @@ def main() -> int:
         _await_ready(client)
         project_id = _ensure_project(client)
         client_id = _ensure_app(client, project_id, public_url)
+        if os.environ.get("SMTP_HOST"):
+            _ensure_smtp(client)
 
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
@@ -142,6 +148,43 @@ def _ensure_app(client: httpx.Client, project_id: str, public_url: str) -> str:
         client, f"/management/v1/projects/{project_id}/apps/oidc", {"name": APP_NAME, **desired}
     )
     return str(created["clientId"])
+
+
+def _ensure_smtp(client: httpx.Client) -> None:
+    """Point Zitadel's outgoing mail at the SMTP relay in the environment.
+
+    Without it nothing that starts with an email works: inviting an arbiter,
+    the passkey registration link, a password reset. One active config, by
+    description, replaced whenever the environment differs from it.
+    """
+    desired = {
+        "description": "seebach",
+        "senderAddress": os.environ["SMTP_FROM"],
+        "senderName": os.environ.get("SMTP_FROM_NAME", "Rochade"),
+        "replyToAddress": os.environ.get("SMTP_REPLY_TO", ""),
+        "tls": os.environ.get("SMTP_TLS", "true").lower() == "true",
+        "host": os.environ["SMTP_HOST"],
+        "user": os.environ["SMTP_USER"],
+    }
+    password = os.environ["SMTP_PASSWORD"]
+
+    existing = _post(client, "/admin/v1/smtp/_search", {}).get("result", [])
+    ours = next((c for c in existing if c.get("description") == desired["description"]), None)
+    watched = ("senderAddress", "senderName", "replyToAddress", "tls", "host", "user")
+    if ours is None:
+        created = _post(client, "/admin/v1/smtp", {**desired, "password": password})
+        smtp_id = str(created["id"])
+        print("zitadel: smtp relay configured")
+    else:
+        smtp_id = str(ours["id"])
+        if any(_differs(ours.get(key), desired[key]) for key in watched):
+            _put(client, f"/admin/v1/smtp/{smtp_id}", desired)
+            print("zitadel: smtp relay brought back to the configuration here")
+        # The password is never read back, so it is written on every run.
+        _put(client, f"/admin/v1/smtp/{smtp_id}/password", {"password": password})
+    if (ours or {}).get("state") != "SMTP_CONFIG_ACTIVE":
+        _post(client, f"/admin/v1/smtp/{smtp_id}/_activate", {})
+        print("zitadel: smtp relay activated")
 
 
 def _differs(current: Any, desired: Any) -> bool:

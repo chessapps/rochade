@@ -231,10 +231,29 @@ keys. The `sub` claim is the staff subject that tournament membership is
 keyed on, so an account keeps its tournaments across password changes.
 
 Arbiters are managed in Zitadel's console at `https://auth.<your-domain>/ui/console`,
-signed in as the first account: **Users** › **New** creates one, and the
-person can add a passkey at their first sign-in. Every account in the
-organisation may sign in and create tournaments; there is no further gate
-yet, roles are per tournament and given by its owner.
+signed in as the first account (the full address is the login name).
+**Users** › **New** creates one; choose the passkey invitation and the person
+gets an email with a link that registers a passkey on their phone or laptop,
+after which they sign in with that alone, no password ever set. Someone who
+already has a password can add a passkey under their own account in the
+console, or when the login offers it after a password sign-in.
+`scripts/passkey_flow.mjs` proves the whole path against a running stack
+with a throwaway account.
+
+Those emails, password resets and email codes go through the SMTP relay in
+the env file (`SMTP_*`); the setup container configures Zitadel with it on
+every deploy, and nothing that starts with an email works without it. On
+rochade.app that is Scaleway Transactional Email for `mail.rochade.app`,
+sending as `no-reply@mail.rochade.app`: the user is the Scaleway project id
+and the password an API key of the IAM application `seebach-zitadel`
+(permission `TransactionalEmailEmailSmtpCreate` only) which expires on
+2027-09-09 and must be rotated before then: `scw iam api-key create
+application-id=... expires-at=...`, then the new secret into the env file and
+a redeploy. To check a relay: `curl -X POST https://auth.<your-domain>/admin/v1/smtp/<id>/_test`
+with the setup PAT and `{"receiverAddress": "..."}`.
+
+Every account in the organisation may sign in and create tournaments; there
+is no further gate yet, roles are per tournament and given by its owner.
 
 The setup container registers the arbiter app on the first deploy and, on
 later ones, only refreshes its redirect URIs. If `SEEBACH_PUBLIC_URL` changes,

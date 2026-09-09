@@ -88,6 +88,13 @@ back, then out again:
 node scripts/login_flow.mjs http://localhost:8092
 ```
 
+And an arbiter who never gets a password: invited, a passkey registered from
+the link, signed in with that alone. Needs the setup machine user's token:
+
+```sh
+ZITADEL_PAT=$(docker compose exec zitadel cat /zitadel/bootstrap/setup.pat) node scripts/passkey_flow.mjs http://localhost:8092
+```
+
 ## The arbiter's day
 
 Sign in at `/admin/` with a staff token, create the tournament, and issue a QR
