@@ -15,13 +15,13 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.games.set_result import SetResult
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.imports.preview_import import PreviewImport
-from seebach.features.managers.list_managers import ListManagers
-from seebach.features.rounds.export_round import ExportRound
-from seebach.features.rounds.release_round import ReleaseRound
-from seebach.interchange import (
+from rochade.features.games.set_result import SetResult
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.imports.preview_import import PreviewImport
+from rochade.features.managers.list_managers import ListManagers
+from rochade.features.rounds.export_round import ExportRound
+from rochade.features.rounds.release_round import ReleaseRound
+from rochade.interchange import (
     Capabilities,
     ManagerFile,
     PairingRow,
@@ -31,9 +31,9 @@ from seebach.interchange import (
     Support,
     manager_for,
 )
-from seebach.interchange import port as port_module
-from seebach.platform.errors import Conflict, ValidationFailed
-from seebach.shared.models import Round, Section, Tournament
+from rochade.interchange import port as port_module
+from rochade.platform.errors import Conflict, ValidationFailed
+from rochade.shared.models import Round, Section, Tournament
 from tests.conftest import Send
 
 pytestmark = pytest.mark.db

@@ -24,8 +24,8 @@ from collections import Counter
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 
-from seebach.interchange import InterchangeError, RoundDocument, manager_for
-from seebach.trf.results import RESULT_CODES
+from rochade.interchange import InterchangeError, RoundDocument, manager_for
+from rochade.trf.results import RESULT_CODES
 
 RECOGNISED = {"001", "012", "022", "032", "042", "052", "102", "XXR"}
 

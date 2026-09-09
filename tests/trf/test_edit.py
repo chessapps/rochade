@@ -1,8 +1,8 @@
 import pytest
 
-from seebach.trf import Dialect, parse, serialize
-from seebach.trf.edit import set_result
-from seebach.trf.results import mirror, points_for
+from rochade.trf import Dialect, parse, serialize
+from rochade.trf.edit import set_result
+from rochade.trf.results import mirror, points_for
 
 #: Built from character codes: every attempt to write this escape literally
 #: had it turned into a real line break somewhere in the tooling.
@@ -86,7 +86,7 @@ def test_only_the_result_and_points_columns_move(round3_text: str) -> None:
     Everything else on those lines -- and every other line in the file -- comes
     back byte for byte, which is the property the whole round trip rests on.
     """
-    from seebach.trf import columns
+    from rochade.trf import columns
 
     trf = parse(round3_text)
     set_result(trf, 3, 1, "1")
@@ -106,7 +106,7 @@ def test_only_the_result_and_points_columns_move(round3_text: str) -> None:
 
 
 def columns_result_index(round_no: int) -> int:
-    from seebach.trf import columns
+    from rochade.trf import columns
 
     return columns.result_index(round_no)
 

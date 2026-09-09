@@ -9,7 +9,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages ./packages
 COPY apps ./apps
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @seebach/hall run build && pnpm --filter @seebach/admin run build
+RUN pnpm --filter @rochade/hall run build && pnpm --filter @rochade/admin run build
 
 FROM caddy:2-alpine
 COPY --from=build /src/apps/hall/dist /srv/hall

@@ -8,21 +8,21 @@
 # hostname, AUTH_URL, which the stack's Caddy serves on :8081. The four AUTH_*
 # variables describe that one URL and must agree with each other.
 # Pinned so the project, and with it the volumes, stays the same whichever
-# folder the checkout lives in (it started life as seebach).
-name: seebach
+# folder the checkout lives in (it started life as seebach; the rename to rochade moved it to fresh volumes).
+name: rochade
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: seebach
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seebach}
-      POSTGRES_DB: seebach
+      POSTGRES_USER: rochade
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rochade}
+      POSTGRES_DB: rochade
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U seebach"]
+      test: ["CMD-SHELL", "pg_isready -U rochade"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -44,25 +44,25 @@ services:
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
       ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
       ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
-      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD:-seebach}
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD:-rochade}
       ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
-      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: seebach
-      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:-seebach}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: rochade
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:-rochade}
       ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
 
       # First start only: the organisation, the first arbiter account, and
       # two machine users -- one for the login UI, one for zitadel_setup.
-      ZITADEL_FIRSTINSTANCE_ORG_NAME: Seebach
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_EMAIL:-admin@seebach.localhost}
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: ${ZITADEL_ADMIN_EMAIL:-admin@seebach.localhost}
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: Rochade
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_EMAIL:-admin@rochade.localhost}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: ${ZITADEL_ADMIN_EMAIL:-admin@rochade.localhost}
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: Chief
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: Arbiter
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD:-Password1!}
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
       ZITADEL_FIRSTINSTANCE_PATPATH: /zitadel/bootstrap/setup.pat
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: seebach-setup
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Seebach setup
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: rochade-setup
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Rochade setup
       ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: "2035-01-01T00:00:00Z"
       ZITADEL_FIRSTINSTANCE_LOGINCLIENTPATPATH: /zitadel/bootstrap/login-client.pat
       ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME: login-client
@@ -114,13 +114,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "seebach.platform.auth.zitadel_setup"]
+    command: ["python", "-m", "rochade.platform.auth.zitadel_setup"]
     environment:
       ZITADEL_URL: http://zitadel:8080
       ZITADEL_ISSUER: ${AUTH_URL:-http://localhost:8093}
       ZITADEL_PAT_FILE: /zitadel/bootstrap/setup.pat
-      SEEBACH_PUBLIC_URL: ${SEEBACH_PUBLIC_URL:-http://localhost:8092}
-      SEEBACH_OIDC_CONFIG_FILE: /run/seebach/oidc.json
+      ROCHADE_PUBLIC_URL: ${ROCHADE_PUBLIC_URL:-http://localhost:8092}
+      ROCHADE_OIDC_CONFIG_FILE: /run/rochade/oidc.json
       # Outgoing mail (invitations, passkey links, password resets). Left
       # unset locally: nothing sends, and the console shows the links instead.
       SMTP_HOST: ${SMTP_HOST:-}
@@ -131,7 +131,7 @@ services:
       SMTP_TLS: ${SMTP_TLS:-true}
     volumes:
       - zitadel_bootstrap:/zitadel/bootstrap:ro
-      - auth_config:/run/seebach
+      - auth_config:/run/rochade
     depends_on:
       zitadel:
         condition: service_healthy
@@ -142,12 +142,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:${POSTGRES_PASSWORD:-seebach}@postgres:5432/seebach
+      ROCHADE_DATABASE_URL: postgresql+psycopg://rochade:${POSTGRES_PASSWORD:-rochade}@postgres:5432/rochade
       # Issuer and client id come from the file zitadel-setup wrote.
-      SEEBACH_OIDC_CONFIG_FILE: /run/seebach/oidc.json
-      SEEBACH_OIDC_INTERNAL_URL: http://zitadel:8080
+      ROCHADE_OIDC_CONFIG_FILE: /run/rochade/oidc.json
+      ROCHADE_OIDC_INTERNAL_URL: http://zitadel:8080
     volumes:
-      - auth_config:/run/seebach:ro
+      - auth_config:/run/rochade:ro
     depends_on:
       postgres:
         condition: service_healthy

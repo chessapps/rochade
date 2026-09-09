@@ -11,7 +11,7 @@
  *     docker compose up -d --build
  *     node scripts/admin_flow.mjs [http://localhost:8092]
  *
- * Uses the browser already on the machine (SEEBACH_BROWSER, default msedge;
+ * Uses the browser already on the machine (ROCHADE_BROWSER, default msedge;
  * "chrome" works too) so nothing is downloaded. Playwright is a root
  * devDependency for this script alone.
  */
@@ -43,9 +43,9 @@ for (let i = 0; i < 60; i++) {
   try { if ((await fetch(BASE + "/api/managers", { headers: staff })).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 1000));
 }
-const browser = await chromium.launch({ channel: process.env.SEEBACH_BROWSER ?? "msedge", headless: true });
+const browser = await chromium.launch({ channel: process.env.ROCHADE_BROWSER ?? "msedge", headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
-await ctx.addInitScript((tok) => localStorage.setItem("seebach.staff-token", tok), TOKEN);
+await ctx.addInitScript((tok) => localStorage.setItem("rochade.staff-token", tok), TOKEN);
 const page = await ctx.newPage();
 page.on("pageerror", (e) => check("no page error", false, e.message));
 
@@ -174,7 +174,7 @@ check("revoke shows on the list", true);
 // 8. Phone widths render without horizontal overflow.
 for (const width of [375, 768]) {
   const small = await browser.newContext({ viewport: { width, height: 800 } });
-  await small.addInitScript((tok) => localStorage.setItem("seebach.staff-token", tok), TOKEN);
+  await small.addInitScript((tok) => localStorage.setItem("rochade.staff-token", tok), TOKEN);
   const p = await small.newPage();
   for (const path of [`/t/${tournamentId}`, `/t/${tournamentId}/rounds/${roundId}`, `/t/${tournamentId}/import`, `/t/${tournamentId}/devices`]) {
     await p.goto(BASE + "/admin" + path, { waitUntil: "networkidle" });

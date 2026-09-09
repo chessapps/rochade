@@ -11,18 +11,18 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: seebach
-          POSTGRES_PASSWORD: seebach
-          POSTGRES_DB: seebach
+          POSTGRES_USER: rochade
+          POSTGRES_PASSWORD: rochade
+          POSTGRES_DB: rochade
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U seebach"
+          --health-cmd "pg_isready -U rochade"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
     env:
-      SEEBACH_TEST_DATABASE_URL: postgresql+psycopg://seebach:seebach@127.0.0.1:5432/seebach
+      ROCHADE_TEST_DATABASE_URL: postgresql+psycopg://rochade:rochade@127.0.0.1:5432/rochade
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -38,7 +38,7 @@ jobs:
         run: uv run pytest -q
       - name: Migrations match the models
         env:
-          SEEBACH_DATABASE_URL: postgresql+psycopg://seebach:seebach@127.0.0.1:5432/seebach
+          ROCHADE_DATABASE_URL: postgresql+psycopg://rochade:rochade@127.0.0.1:5432/rochade
         run: |
           uv run alembic upgrade head
           uv run alembic check

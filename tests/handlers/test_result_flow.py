@@ -14,19 +14,19 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.devices.issue_device_token import IssueDeviceToken
-from seebach.features.games.claim_result import ClaimResult
-from seebach.features.games.resolve_dispute import ResolveDispute
-from seebach.features.games.set_result import SetResult
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.rounds.confirm_boards import ConfirmBoards
-from seebach.features.rounds.export_round import ExportRound
-from seebach.features.rounds.get_round_events import GetRoundEvents
-from seebach.features.rounds.release_round import ReleaseRound
-from seebach.platform.errors import Conflict, Forbidden, RoundFrozen, ValidationFailed
-from seebach.platform.mediator import Principal
-from seebach.shared.enums import EventAction, GameResult, PrincipalKind, ResultState, RoundState
-from seebach.shared.models import Game, GameEvent, Round, Tournament
+from rochade.features.devices.issue_device_token import IssueDeviceToken
+from rochade.features.games.claim_result import ClaimResult
+from rochade.features.games.resolve_dispute import ResolveDispute
+from rochade.features.games.set_result import SetResult
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.rounds.confirm_boards import ConfirmBoards
+from rochade.features.rounds.export_round import ExportRound
+from rochade.features.rounds.get_round_events import GetRoundEvents
+from rochade.features.rounds.release_round import ReleaseRound
+from rochade.platform.errors import Conflict, Forbidden, RoundFrozen, ValidationFailed
+from rochade.platform.mediator import Principal
+from rochade.shared.enums import EventAction, GameResult, PrincipalKind, ResultState, RoundState
+from rochade.shared.models import Game, GameEvent, Round, Tournament
 from tests.conftest import ARBITER, Send
 
 pytestmark = pytest.mark.db

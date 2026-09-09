@@ -1,0 +1,265 @@
+"""Write the round's results back in whatever the section's manager takes, and freeze it.
+
+The adapter decides the file: Vega gets the TRF we imported with this round's
+result cells patched, Swiss-Manager gets its own pairing file. Either way
+nothing is rebuilt, so what the manager wrote and we never modelled goes back
+unchanged.
+
+Freezing is the divergence guard. During a round we own the results; between
+rounds the manager owns the pairings. Without the freeze, an arbiter can edit a
+result there while a player edits it here and neither system can say which is
+right.
+"""
+
+from __future__ import annotations
+
+import re
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from rochade.features.audit import record
+from rochade.features.locking import lock_round
+from rochade.features.roster import roster_of
+from rochade.features.scoping import tournament_of_round
+from rochade.interchange import (
+    InterchangeError,
+    Manager,
+    ResultEntry,
+    UnknownManager,
+    manager_for,
+)
+from rochade.platform.bus import bus
+from rochade.platform.errors import Conflict, NotFound, ValidationFailed
+from rochade.platform.http import get_context
+from rochade.platform.mediator import Access, Command, Context, Query
+from rochade.shared.enums import EventAction, ResultState, RoundState
+from rochade.shared.models import Round
+
+router = APIRouter(prefix="/rounds", tags=["arbiter"])
+
+
+class ExportRoundResult(BaseModel):
+    round_id: uuid.UUID
+    round_number: int
+    filename: str
+    content: str
+    #: Which adapter produced it, and in what format. Both are worth recording:
+    #: the arbiter has to know which program this file is for.
+    manager: str
+    manager_label: str
+    file_format: str
+    #: What the arbiter does with the file, in the manager's own menu terms.
+    next_step: str
+    boards_written: int
+    boards_left_blank: list[int] = Field(default_factory=list)
+    forced: bool
+
+
+class ExportRound(Command):
+    access = Access.ARBITER
+    result_model = ExportRoundResult
+
+    round_id: uuid.UUID
+    #: Export a round that still has unconfirmed boards. Logged as forced.
+    force: bool = False
+
+    def tournament_scope(self, session: Session) -> uuid.UUID | None:
+        return tournament_of_round(session, self.round_id)
+
+
+@dataclass(frozen=True)
+class Rendered:
+    """The file for one round, and what went into it."""
+
+    filename: str
+    content: str
+    manager: Manager
+    written: int
+    blank: list[int]
+
+
+def render(round_: Round, *, force: bool) -> Rendered:
+    """Write the round's confirmed results into its source document.
+
+    Pure over the round's rows: the export command calls it once and freezes
+    the round, and the re-download reads it again later -- the round is frozen
+    by then, so the file comes out the same.
+    """
+    if not round_.source_trf:
+        raise ValidationFailed(
+            "this round has no source file to write back into",
+            round_number=round_.number,
+        )
+
+    try:
+        manager = manager_for(round_.section.manager)
+    except UnknownManager as exc:  # pragma: no cover - written by import
+        raise ValidationFailed(str(exc), manager=round_.section.manager) from exc
+
+    # The source may be the pairings alone, named from the roster we hold; the
+    # roster is the one that import saw, since the next round cannot come in
+    # before this one goes out.
+    try:
+        document = manager.read_round(round_.source_trf, roster_of(round_.section))
+    except InterchangeError as exc:  # pragma: no cover - it parsed on import
+        raise ValidationFailed(f"the stored source file no longer reads: {exc}") from exc
+
+    # What the manager already knows. A bye it allocated, or a result it exported
+    # with the round, is not something we write -- it goes back as it came, so it
+    # is neither counted nor checked against what the manager can carry.
+    before = {
+        row.white_rank: (row.white_result, row.black_result)
+        for row in document.board_rows(round_.number)
+    }
+
+    results: list[ResultEntry] = []
+    blank: list[int] = []
+    for game in sorted(round_.games, key=lambda g: g.board):
+        if game.state is not ResultState.CONFIRMED or game.white_result == " ":
+            blank.append(game.board)
+            continue
+        if before.get(game.white_rank) == (game.white_result, game.black_result):
+            continue
+        results.append(
+            ResultEntry(
+                white_rank=game.white_rank,
+                white_result=game.white_result,
+                black_result=game.black_result,
+            )
+        )
+
+    dropped = manager.capabilities.drops(
+        [code for entry in results for code in (entry.white_result, entry.black_result)]
+    )
+    if dropped and not force:
+        raise Conflict(
+            f"{manager.label} cannot carry these result codes, so exporting would "
+            "silently change them",
+            codes=dropped,
+        )
+
+    try:
+        emitted = manager.write_results(document, round_.number, results, stem=_stem(round_))
+    except InterchangeError as exc:
+        raise ValidationFailed(f"{manager.label} cannot write this round: {exc}") from exc
+
+    return Rendered(emitted.filename, emitted.content, manager, len(results), blank)
+
+
+def _result(round_: Round, rendered: Rendered, *, forced: bool) -> ExportRoundResult:
+    return ExportRoundResult(
+        round_id=round_.id,
+        round_number=round_.number,
+        filename=rendered.filename,
+        content=rendered.content,
+        manager=rendered.manager.key,
+        manager_label=rendered.manager.label,
+        file_format=rendered.manager.capabilities.writes_format,
+        next_step=rendered.manager.capabilities.import_howto,
+        boards_written=rendered.written,
+        boards_left_blank=rendered.blank,
+        forced=forced,
+    )
+
+
+@bus.register(ExportRound)
+def handle(command: ExportRound, ctx: Context) -> ExportRoundResult:
+    round_ = lock_round(ctx, command.round_id)
+
+    if round_.state is RoundState.EXPORTED:
+        raise Conflict(
+            "this round has already been exported",
+            round_number=round_.number,
+            exported_at=round_.exported_at.isoformat() if round_.exported_at else None,
+        )
+    if round_.state is not RoundState.CONFIRMED and not command.force:
+        raise Conflict(
+            "the arbiter has not released this round yet",
+            round_number=round_.number,
+            state=round_.state.value,
+        )
+
+    unconfirmed = [g.board for g in round_.games if g.state is not ResultState.CONFIRMED]
+    if unconfirmed and not command.force:
+        raise Conflict("some boards are not confirmed", boards=unconfirmed)
+
+    rendered = render(round_, force=command.force)
+    manager, written, blank = rendered.manager, rendered.written, rendered.blank
+
+    round_.state = RoundState.EXPORTED
+    round_.exported_at = datetime.now(UTC)
+
+    record(
+        ctx,
+        section_id=round_.section_id,
+        round_number=round_.number,
+        action=EventAction.ROUND_EXPORTED,
+        filename=rendered.filename,
+        manager=manager.key,
+        file_format=manager.capabilities.writes_format,
+        boards_written=written,
+        boards_left_blank=blank,
+        forced=command.force,
+    )
+
+    return _result(round_, rendered, forced=command.force)
+
+
+class GetExportFile(Query):
+    """The file again, for a round already exported.
+
+    A download lost between the browser and the manager is otherwise the end of
+    the round: the export cannot run twice. The round is frozen, so rendering it
+    again yields the same file.
+    """
+
+    access = Access.ARBITER
+
+    round_id: uuid.UUID
+
+    def tournament_scope(self, session: Session) -> uuid.UUID | None:
+        return tournament_of_round(session, self.round_id)
+
+
+@bus.register(GetExportFile)
+def handle_get(query: GetExportFile, ctx: Context) -> ExportRoundResult:
+    round_ = ctx.session.get(Round, query.round_id)
+    if round_ is None:
+        raise NotFound("round not found", round_id=str(query.round_id))
+    if round_.state is not RoundState.EXPORTED:
+        raise Conflict(
+            "this round has not been exported yet",
+            round_number=round_.number,
+            state=round_.state.value,
+        )
+    forced = any(g.state is not ResultState.CONFIRMED for g in round_.games)
+    return _result(round_, render(round_, force=True), forced=forced)
+
+
+def _stem(round_: Round) -> str:
+    """The filename without an extension -- the adapter picks that."""
+    section = re.sub(r"[^A-Za-z0-9_-]+", "-", round_.section.name).strip("-") or "section"
+    return f"{section}-round{round_.number}"
+
+
+class ExportBody(BaseModel):
+    force: bool = False
+
+
+@router.post("/{round_id}/export", response_model=ExportRoundResult)
+def export_round(
+    round_id: uuid.UUID, body: ExportBody, ctx: Context = Depends(get_context)
+) -> ExportRoundResult:
+    result: ExportRoundResult = bus.send(ExportRound(round_id=round_id, **body.model_dump()), ctx)
+    return result
+
+
+@router.get("/{round_id}/export", response_model=ExportRoundResult)
+def get_export_file(round_id: uuid.UUID, ctx: Context = Depends(get_context)) -> ExportRoundResult:
+    result: ExportRoundResult = bus.send(GetExportFile(round_id=round_id), ctx)
+    return result

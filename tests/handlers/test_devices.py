@@ -6,17 +6,17 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.devices.issue_device_token import IssueDeviceToken
-from seebach.features.devices.list_devices import ListDevices
-from seebach.features.devices.remove_device import RemoveDevice
-from seebach.features.devices.revoke_device import RevokeDevice
-from seebach.features.imports.import_round import ImportRound
-from seebach.platform.auth.principal import current_principal
-from seebach.platform.auth.tokens import hash_token, mint
-from seebach.platform.errors import Conflict, Forbidden, NotFound, Unauthenticated
-from seebach.platform.mediator import Principal
-from seebach.shared.enums import EventAction, PrincipalKind
-from seebach.shared.models import Device, GameEvent, Tournament
+from rochade.features.devices.issue_device_token import IssueDeviceToken
+from rochade.features.devices.list_devices import ListDevices
+from rochade.features.devices.remove_device import RemoveDevice
+from rochade.features.devices.revoke_device import RevokeDevice
+from rochade.features.imports.import_round import ImportRound
+from rochade.platform.auth.principal import current_principal
+from rochade.platform.auth.tokens import hash_token, mint
+from rochade.platform.errors import Conflict, Forbidden, NotFound, Unauthenticated
+from rochade.platform.mediator import Principal
+from rochade.shared.enums import EventAction, PrincipalKind
+from rochade.shared.models import Device, GameEvent, Tournament
 from tests.conftest import Send
 
 pytestmark = pytest.mark.db
@@ -38,9 +38,9 @@ def test_the_qr_payload_carries_the_tournament_and_the_token(
     send: Send, tournament: Tournament
 ) -> None:
     issued = send(
-        IssueDeviceToken(tournament_id=tournament.id, base_url="https://seebach.example/")
+        IssueDeviceToken(tournament_id=tournament.id, base_url="https://rochade.example/")
     )
-    assert issued.qr_payload == f"https://seebach.example/hall/{tournament.id}#t={issued.token}"
+    assert issued.qr_payload == f"https://rochade.example/hall/{tournament.id}#t={issued.token}"
 
 
 def test_a_token_works_until_it_is_revoked(

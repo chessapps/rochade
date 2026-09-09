@@ -4,7 +4,7 @@ import { isReady, joinContents, missing, primaryName, readText, rosterNote, snif
 
 const PLAYERS = "Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;Nachname;Vorname\r\n1;Brunner Livia;WGM;;0;2447;01.06.1992;SUI;W;Brunner;Livia\r\n";
 const PAIRINGS = "Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS\r\n1;1;0;0;1;51;0;0;;0:0;0;;\r\n";
-const TRF = "012 Seebach Open 2026\r\n001    1 m    Baumann, Lukas                 2201 SUI\r\n";
+const TRF = "012 Rochade Open 2026\r\n001    1 m    Baumann, Lukas                 2201 SUI\r\n";
 
 const pick = (name: string, content: string) => ({ name, content, kind: sniff(content) });
 

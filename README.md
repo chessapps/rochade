@@ -20,7 +20,7 @@ hands the results back each round.
 ```
 
 Which manager is an adapter choice, not an architecture — see
-`src/seebach/interchange/` (the code keeps its working name, `seebach`). Every adapter declares what it *cannot* do, and
+`src/rochade/interchange/` (the code keeps its working name, `rochade`). Every adapter declares what it *cannot* do, and
 ships `UNVERIFIED` until someone has watched it work.
 
 | Manager | Status | Read more |
@@ -45,24 +45,24 @@ docker compose up --build
 - Zitadel, the arbiters' sign-in — <http://localhost:8093> (console at `/ui/console`)
 
 The first start takes a minute longer: Zitadel initialises itself in the
-stack's Postgres and creates the first arbiter account, `admin@seebach.localhost`
+stack's Postgres and creates the first arbiter account, `admin@rochade.localhost`
 with password `Password1!` (both from `.env.example`). Then a small setup
 container registers the arbiter app with Zitadel and hands its client id to
 the API, so the arbiter app's **Sign in** button just works. More arbiters are
 added in Zitadel's console; passkeys are offered there and at sign-in.
 
-If 8092 or 8093 is taken on your machine, set `SEEBACH_WEB_PORT` or the
+If 8092 or 8093 is taken on your machine, set `ROCHADE_WEB_PORT` or the
 `AUTH_*` variables in a `.env` (see `.env.example`); the ports move, and
 everything is served same-origin, so nothing else changes.
 
-Compose also runs with `SEEBACH_DEV_AUTH_ENABLED=true`: beside Zitadel, a
+Compose also runs with `ROCHADE_DEV_AUTH_ENABLED=true`: beside Zitadel, a
 bearer that is not a JWT is taken as the staff subject with no verification,
 which is how the smoke and browser scripts sign in. That is a development
 affordance and it is **off by default**. The host ports and both dev flags live
 in `docker-compose.override.yml`, which compose merges in on its own;
 `docker-compose.yml` alone is production-safe.
 
-It also runs with `SEEBACH_DEVICE_JOIN_ENABLED=true`, which lets a phone admit
+It also runs with `ROCHADE_DEVICE_JOIN_ENABLED=true`, which lets a phone admit
 itself by typing a tournament's six-character join code on the landing page
 instead of scanning the QR. The arbiter opens and closes it under **Devices**,
 and it grants exactly what the QR grants — so it is off by default too, and the
@@ -80,7 +80,7 @@ see [deploy/README.md](deploy/README.md).
 
 The same round through the arbiter app in a real browser — screens, dialogs,
 polling, the download, phone widths — using the Edge or Chrome already on the
-machine (`SEEBACH_BROWSER=chrome` for Chrome):
+machine (`ROCHADE_BROWSER=chrome` for Chrome):
 
 ```sh
 node scripts/admin_flow.mjs http://localhost:8092
@@ -127,7 +127,7 @@ always names the next step:
 uv venv && uv pip install -e ".[dev]"
 pnpm install
 
-uv run pytest                 # needs docker, or set SEEBACH_TEST_DATABASE_URL
+uv run pytest                 # needs docker, or set ROCHADE_TEST_DATABASE_URL
 uv run ruff check src tests
 uv run mypy
 
@@ -137,23 +137,23 @@ pnpm -r run typecheck
 
 The API server and the two frontends, each against a locally running Postgres.
 The API applies the migrations itself when it starts, so the database only has
-to exist (`SEEBACH_MIGRATE_ON_START=false` turns that off for a deployment that
+to exist (`ROCHADE_MIGRATE_ON_START=false` turns that off for a deployment that
 migrates as its own step). Settings are read from the environment or from a
-`.env` in the repo root, `SEEBACH_DATABASE_URL` among them:
+`.env` in the repo root, `ROCHADE_DATABASE_URL` among them:
 
 ```sh
-docker compose up -d postgres            # or any Postgres with a database named seebach
-SEEBACH_DEV_AUTH_ENABLED=true uv run uvicorn seebach.app:app --reload
+docker compose up -d postgres            # or any Postgres with a database named rochade
+ROCHADE_DEV_AUTH_ENABLED=true uv run uvicorn rochade.app:app --reload
 pnpm run dev:hall     # :5173
 pnpm run dev:admin    # :5174/admin/
 ```
 
 Uvicorn defaults to :8000. If that one is taken too, pass `--port` and point the
-Vite dev proxy at it with `SEEBACH_API_URL`:
+Vite dev proxy at it with `ROCHADE_API_URL`:
 
 ```sh
-SEEBACH_DEV_AUTH_ENABLED=true uv run uvicorn seebach.app:app --reload --port 8001
-SEEBACH_API_URL=http://localhost:8001 pnpm run dev:hall
+ROCHADE_DEV_AUTH_ENABLED=true uv run uvicorn rochade.app:app --reload --port 8001
+ROCHADE_API_URL=http://localhost:8001 pnpm run dev:hall
 ```
 
 The TypeScript client is generated from the API and checked in, so a change to
@@ -169,7 +169,7 @@ One folder per REST resource, so a route and the file that serves it are found
 the same way. Each file holds one use case whole: request model, handler, route.
 
 ```
-src/seebach/
+src/rochade/
   shared/          anemic models and enums -- the whole schema in one file
   interchange/     the manager port and its adapters -- vega.py today
   features/

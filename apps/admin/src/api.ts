@@ -1,4 +1,4 @@
-import { createApi, type paths } from "@seebach/api-client";
+import { createApi, type paths } from "@rochade/api-client";
 
 import { currentCredential } from "./auth";
 

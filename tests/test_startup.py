@@ -8,9 +8,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from seebach.app import create_app
-from seebach.platform.config import settings
-from seebach.platform.migrate import MIGRATIONS, alembic_config
+from rochade.app import create_app
+from rochade.platform.config import settings
+from rochade.platform.migrate import MIGRATIONS, alembic_config
 
 
 def test_the_packaged_migrations_are_the_ones_that_run() -> None:
@@ -22,8 +22,8 @@ def test_the_packaged_migrations_are_the_ones_that_run() -> None:
 def test_startup_leaves_the_database_at_head(
     engine: Engine, database_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("SEEBACH_DATABASE_URL", database_url)
-    monkeypatch.setenv("SEEBACH_MIGRATE_ON_START", "true")
+    monkeypatch.setenv("ROCHADE_DATABASE_URL", database_url)
+    monkeypatch.setenv("ROCHADE_MIGRATE_ON_START", "true")
     settings.cache_clear()
     try:
         with TestClient(create_app()) as client:

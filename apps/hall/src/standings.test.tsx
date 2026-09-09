@@ -43,8 +43,8 @@ vi.mock("./api", () => ({
 
 describe("the standings tab", () => {
   beforeEach(() => {
-    localStorage.setItem("seebach.device-token", "t");
-    localStorage.setItem("seebach.tournament-id", TOURNAMENT);
+    localStorage.setItem("rochade.device-token", "t");
+    localStorage.setItem("rochade.tournament-id", TOURNAMENT);
   });
 
   it("shows the manager's table after the round it is current for", async () => {

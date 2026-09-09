@@ -11,7 +11,7 @@ function plan(overrides: Partial<ImportPlan> = {}): ImportPlan {
     expected_round: 2,
     is_expected_round: true,
     declared_rounds: 5,
-    tournament_name: "Seebach Open",
+    tournament_name: "Rochade Open",
     players_total: 8,
     players_added: [],
     players_removed: [],

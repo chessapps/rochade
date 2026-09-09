@@ -9,9 +9,9 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.tournaments.create_tournament import CreateTournament
-from seebach.platform.errors import Forbidden, IdempotencyConflict
-from seebach.shared.models import IdempotencyRecord, Tournament
+from rochade.features.tournaments.create_tournament import CreateTournament
+from rochade.platform.errors import Forbidden, IdempotencyConflict
+from rochade.shared.models import IdempotencyRecord, Tournament
 from tests.conftest import Send
 
 pytestmark = pytest.mark.db
@@ -23,12 +23,12 @@ def test_every_message_is_logged_at_info(send: Send, caplog: pytest.LogCaptureFi
     Only reachable when the logger is actually enabled, which is why this test
     turns it on explicitly instead of trusting the default level.
     """
-    with caplog.at_level(logging.INFO, logger="seebach.mediator"):
+    with caplog.at_level(logging.INFO, logger="rochade.mediator"):
         send(CreateTournament(name="Logged"))
 
-    record = next(r for r in caplog.records if r.name == "seebach.mediator")
-    assert record.seebach_message == "CreateTournament"  # type: ignore[attr-defined]
-    assert record.seebach_outcome == "ok"  # type: ignore[attr-defined]
+    record = next(r for r in caplog.records if r.name == "rochade.mediator")
+    assert record.rochade_message == "CreateTournament"  # type: ignore[attr-defined]
+    assert record.rochade_outcome == "ok"  # type: ignore[attr-defined]
     assert record.getMessage() == "CreateTournament ok"
 
 
@@ -39,18 +39,18 @@ def test_a_rejection_is_logged_too(send: Send, caplog: pytest.LogCaptureFixture)
     the caller may not see are indistinguishable from outside -- which is the
     behaviour we want, and it is still logged.
     """
-    from seebach.features.rounds.release_round import ReleaseRound
+    from rochade.features.rounds.release_round import ReleaseRound
 
-    with caplog.at_level(logging.INFO, logger="seebach.mediator"), pytest.raises(Forbidden):
+    with caplog.at_level(logging.INFO, logger="rochade.mediator"), pytest.raises(Forbidden):
         send(ReleaseRound(round_id=uuid.uuid4()))
 
-    record = next(r for r in caplog.records if r.name == "seebach.mediator")
-    assert record.seebach_outcome == "forbidden"  # type: ignore[attr-defined]
+    record = next(r for r in caplog.records if r.name == "rochade.mediator")
+    assert record.rochade_outcome == "forbidden"  # type: ignore[attr-defined]
 
 
 def test_a_failed_command_leaves_nothing_behind(send: Send, session: Session) -> None:
-    from seebach.features.imports.import_round import ImportRound
-    from seebach.platform.errors import ValidationFailed
+    from rochade.features.imports.import_round import ImportRound
+    from rochade.platform.errors import ValidationFailed
 
     created = send(CreateTournament(name="Rollback"))
     with pytest.raises(ValidationFailed):
@@ -58,7 +58,7 @@ def test_a_failed_command_leaves_nothing_behind(send: Send, session: Session) ->
 
     session.rollback()
     assert session.scalars(select(Tournament)).all() != []
-    from seebach.shared.models import Section
+    from rochade.shared.models import Section
 
     assert session.scalars(select(Section)).all() == []
 

@@ -14,9 +14,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from seebach.app import create_app
-from seebach.platform.config import settings
-from seebach.platform.db import get_session
+from rochade.app import create_app
+from rochade.platform.config import settings
+from rochade.platform.db import get_session
 from tests.conftest import ARBITER, OWNER
 
 pytestmark = pytest.mark.db
@@ -28,10 +28,10 @@ def client(
 ) -> Iterator[TestClient]:
     # Dev auth is off by default, so the edge tests turn it on explicitly --
     # which is also a test that it is genuinely off until asked for.
-    monkeypatch.setenv("SEEBACH_DEV_AUTH_ENABLED", "true")
-    # Startup migrates whatever SEEBACH_DATABASE_URL names; make that the
+    monkeypatch.setenv("ROCHADE_DEV_AUTH_ENABLED", "true")
+    # Startup migrates whatever ROCHADE_DATABASE_URL names; make that the
     # throwaway database, never the developer's own.
-    monkeypatch.setenv("SEEBACH_DATABASE_URL", engine.url.render_as_string(hide_password=False))
+    monkeypatch.setenv("ROCHADE_DATABASE_URL", engine.url.render_as_string(hide_password=False))
     settings.cache_clear()
     app = create_app()
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
@@ -83,7 +83,7 @@ def test_an_unknown_device_token_is_rejected(client: TestClient) -> None:
 def test_the_whole_flow_over_http(client: TestClient, round1_text: str) -> None:
     created = client.post(
         "/api/tournaments",
-        json={"name": "HTTP Open", "city": "Seebach"},
+        json={"name": "HTTP Open", "city": "Rochade"},
         headers=staff(OWNER.subject),
     )
     assert created.status_code == 201
@@ -107,7 +107,7 @@ def test_the_whole_flow_over_http(client: TestClient, round1_text: str) -> None:
 
     issued = client.post(
         f"/api/tournaments/{tournament_id}/devices",
-        json={"label": "phone", "base_url": "https://seebach.example"},
+        json={"label": "phone", "base_url": "https://rochade.example"},
         headers=staff(OWNER.subject),
     )
     assert issued.status_code == 201
@@ -141,7 +141,7 @@ def test_the_whole_flow_over_http(client: TestClient, round1_text: str) -> None:
     assert body["filename"] == "A-round1.trf"
     assert body["boards_written"] == 4
 
-    from seebach.trf import parse
+    from rochade.trf import parse
 
     assert parse(body["content"]).player(1).round(1).result == "1"
 
@@ -190,9 +190,9 @@ def test_a_conflict_becomes_a_409(client: TestClient, round1_text: str) -> None:
 
 def test_dev_auth_is_off_unless_asked_for(monkeypatch: pytest.MonkeyPatch) -> None:
     """An insecure auth mode must be opted into, never inherited."""
-    monkeypatch.delenv("SEEBACH_DEV_AUTH_ENABLED", raising=False)
-    monkeypatch.delenv("SEEBACH_OIDC_ISSUER", raising=False)
-    monkeypatch.setenv("SEEBACH_MIGRATE_ON_START", "false")
+    monkeypatch.delenv("ROCHADE_DEV_AUTH_ENABLED", raising=False)
+    monkeypatch.delenv("ROCHADE_OIDC_ISSUER", raising=False)
+    monkeypatch.setenv("ROCHADE_MIGRATE_ON_START", "false")
     settings.cache_clear()
     try:
         with TestClient(create_app()) as client:

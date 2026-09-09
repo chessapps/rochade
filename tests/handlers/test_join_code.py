@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from seebach.features.boards.get_board_list import GetBoardList
-from seebach.features.devices.join_code import ALPHABET, LENGTH, SetJoinCode
-from seebach.features.devices.join_device import JoinDevice
-from seebach.features.tournaments.get_tournament import GetTournament
-from seebach.platform.config import settings
-from seebach.platform.errors import NotFound, ValidationFailed
-from seebach.platform.http import ANONYMOUS
-from seebach.platform.mediator import Principal
-from seebach.shared.enums import PrincipalKind
-from seebach.shared.models import Tournament
+from rochade.features.boards.get_board_list import GetBoardList
+from rochade.features.devices.join_code import ALPHABET, LENGTH, SetJoinCode
+from rochade.features.devices.join_device import JoinDevice
+from rochade.features.tournaments.get_tournament import GetTournament
+from rochade.platform.config import settings
+from rochade.platform.errors import NotFound, ValidationFailed
+from rochade.platform.http import ANONYMOUS
+from rochade.platform.mediator import Principal
+from rochade.shared.enums import PrincipalKind
+from rochade.shared.models import Tournament
 from tests.conftest import ARBITER, Send
 
 pytestmark = pytest.mark.db
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.db
 
 @pytest.fixture
 def joining_on(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SEEBACH_DEVICE_JOIN_ENABLED", "true")
+    monkeypatch.setenv("ROCHADE_DEVICE_JOIN_ENABLED", "true")
     settings.cache_clear()
     yield
     settings.cache_clear()

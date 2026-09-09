@@ -11,7 +11,7 @@ import pathlib
 
 import pytest
 
-from seebach.swiss_manager import (
+from rochade.swiss_manager import (
     PlayerFileError,
     by_start_number,
     looks_like_player_file,

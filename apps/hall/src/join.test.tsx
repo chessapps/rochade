@@ -46,8 +46,8 @@ describe("a phone with no QR code", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Join" }));
 
-    await waitFor(() => expect(localStorage.getItem("seebach.device-token")).toBe("secret-token"));
-    expect(localStorage.getItem("seebach.tournament-id")).toBe(TOURNAMENT);
+    await waitFor(() => expect(localStorage.getItem("rochade.device-token")).toBe("secret-token"));
+    expect(localStorage.getItem("rochade.tournament-id")).toBe(TOURNAMENT);
     expect(joinWithCode).toHaveBeenCalledWith("K7QW2M");
     // The screen moves on without a page reload, which would drop the queue.
     await waitFor(() => expect(screen.queryByLabelText(/type the code/i)).not.toBeInTheDocument());
@@ -61,7 +61,7 @@ describe("a phone with no QR code", () => {
     await userEvent.click(screen.getByRole("button", { name: "Join" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/does not open anything/i);
-    expect(localStorage.getItem("seebach.device-token")).toBeNull();
+    expect(localStorage.getItem("rochade.device-token")).toBeNull();
     expect(screen.getByRole("button", { name: "Join" })).toBeEnabled();
   });
 

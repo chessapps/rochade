@@ -7,7 +7,7 @@ every round, so anything we do not understand must come back out unchanged.
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from seebach.trf import Dialect, parse, serialize
+from rochade.trf import Dialect, parse, serialize
 
 RESULTS = ["1", "=", "0", "+", "-", "W", "D", "L", " "]
 BYE_RESULTS = ["H", "F", "U", "Z"]

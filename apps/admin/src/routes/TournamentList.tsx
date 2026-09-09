@@ -11,7 +11,7 @@ import { useCreateTournament, useTournaments } from "../queries";
 export function TournamentList() {
   const tournaments = useTournaments();
   const [creating, setCreating] = useState(false);
-  // "Seebach" in the header links here with ?all, which is how an arbiter with
+  // "Rochade" in the header links here with ?all, which is how an arbiter with
   // one tournament reaches the list to start another.
   const [params] = useSearchParams();
   const asked = params.has("all");

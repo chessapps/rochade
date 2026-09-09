@@ -29,8 +29,8 @@ def build(header, players):
 HERE = pathlib.Path(__file__).parent
 
 r1_header = [
-    "012 Seebach Open 2026",
-    "022 Seebach",
+    "012 Rochade Open 2026",
+    "022 Rochade",
     "032 SUI",
     "042 2026/03/14",
     "052 2026/03/15",
@@ -89,8 +89,8 @@ r1_players = [
 (HERE / "round1_pairings.trf").write_bytes(build(r1_header, r1_players).encode("utf-8"))
 
 r3_header = [
-    "012 Seebach Open 2026",
-    "022 Seebach",
+    "012 Rochade Open 2026",
+    "022 Rochade",
     "032 SUI",
     "042 2026/03/14",
     "052 2026/03/15",

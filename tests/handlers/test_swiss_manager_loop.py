@@ -15,17 +15,17 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.games.claim_result import ClaimResult
-from seebach.features.games.set_result import SetResult
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.imports.preview_import import PreviewImport
-from seebach.features.rounds.export_round import ExportRound
-from seebach.features.rounds.release_round import ReleaseRound
-from seebach.interchange import InterchangeError, ResultEntry, manager_for
-from seebach.platform.errors import Conflict, ValidationFailed
-from seebach.shared.enums import GameResult
-from seebach.shared.models import Round, Tournament
-from seebach.swiss_manager import parse_pairing_file
+from rochade.features.games.claim_result import ClaimResult
+from rochade.features.games.set_result import SetResult
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.imports.preview_import import PreviewImport
+from rochade.features.rounds.export_round import ExportRound
+from rochade.features.rounds.release_round import ReleaseRound
+from rochade.interchange import InterchangeError, ResultEntry, manager_for
+from rochade.platform.errors import Conflict, ValidationFailed
+from rochade.shared.enums import GameResult
+from rochade.shared.models import Round, Tournament
+from rochade.swiss_manager import parse_pairing_file
 from tests.conftest import Send
 from tests.handlers.test_result_flow import device_of
 
@@ -49,7 +49,7 @@ def test_preview_reads_the_real_export_as_round_3_with_history(
             manager="swiss_manager",
         )
     )
-    assert plan.tournament_name == "Seebach M0 Spike"
+    assert plan.tournament_name == "Rochade M0 Spike"
     assert plan.file_round == 3
     assert plan.declared_rounds == 5  # from Swiss-Manager's `142 5`
     assert plan.boards == 4

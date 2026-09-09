@@ -65,7 +65,7 @@ try {
   check("a passkey registration code is issued", Boolean(link.code?.code));
 
   // 3. A browser with a built-in authenticator registers the passkey.
-  const browser = await chromium.launch({ channel: process.env.SEEBACH_BROWSER ?? "msedge", headless: true });
+  const browser = await chromium.launch({ channel: process.env.ROCHADE_BROWSER ?? "msedge", headless: true });
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   page.on("pageerror", (e) => check("no page error", false, e.message));

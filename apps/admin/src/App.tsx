@@ -197,7 +197,7 @@ function SignIn({
 
   return (
     <form onSubmit={submit} className="mx-auto mt-24 flex max-w-sm flex-col gap-3 p-6">
-      <h1 className="text-xl font-semibold">Seebach — arbiter</h1>
+      <h1 className="text-xl font-semibold">Rochade — arbiter</h1>
       {notice && <p className="text-sm text-amber-700">{notice}</p>}
       {manager && (
         <>
@@ -230,8 +230,8 @@ function SignIn({
       )}
       {!manager && !config.dev_auth && (
         <p className="text-sm text-red-700">
-          Staff sign-in is not configured on this API. Set SEEBACH_OIDC_ISSUER, or
-          SEEBACH_DEV_AUTH_ENABLED for development.
+          Staff sign-in is not configured on this API. Set ROCHADE_OIDC_ISSUER, or
+          ROCHADE_DEV_AUTH_ENABLED for development.
         </p>
       )}
     </form>

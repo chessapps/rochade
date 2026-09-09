@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const BASE = process.argv[2] ?? "http://localhost:8092";
-const EMAIL = process.env.ZITADEL_ADMIN_EMAIL ?? "admin@seebach.localhost";
+const EMAIL = process.env.ZITADEL_ADMIN_EMAIL ?? "admin@rochade.localhost";
 const PASSWORD = process.env.ZITADEL_ADMIN_PASSWORD ?? "Password1!";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SHOTS = path.join(ROOT, "scripts", "out");
@@ -31,7 +31,7 @@ function check(label, ok, detail = "") {
 const config = await (await fetch(BASE + "/api/auth/config")).json();
 check("the API names an issuer", Boolean(config.issuer && config.client_id), JSON.stringify(config));
 
-const browser = await chromium.launch({ channel: process.env.SEEBACH_BROWSER ?? "msedge", headless: true });
+const browser = await chromium.launch({ channel: process.env.ROCHADE_BROWSER ?? "msedge", headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => check("no page error", false, e.message));
@@ -79,7 +79,7 @@ await page.waitForURL(/\/admin\/t\/[0-9a-f-]+$/, { timeout: 15_000 });
 check("a tournament is created with the issuer's token", true);
 const held = await page.evaluate(() => ({
   users: Object.keys(localStorage).filter((k) => k.startsWith("oidc.user:")).length,
-  bare: localStorage.getItem("seebach.staff-token"),
+  bare: localStorage.getItem("rochade.staff-token"),
 }));
 check("the session is held by oidc-client-ts, not as a bare token", held.users === 1 && !held.bare, JSON.stringify(held));
 

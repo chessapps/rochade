@@ -17,7 +17,7 @@ importers:
 
   apps/admin:
     dependencies:
-      '@seebach/api-client':
+      '@rochade/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
       '@tanstack/react-query':
@@ -78,7 +78,7 @@ importers:
 
   apps/hall:
     dependencies:
-      '@seebach/api-client':
+      '@rochade/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
       idb-keyval:

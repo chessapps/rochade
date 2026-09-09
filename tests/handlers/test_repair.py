@@ -11,11 +11,11 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.games.claim_result import ClaimResult
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.imports.preview_import import PreviewImport
-from seebach.shared.enums import EventAction, GameResult, ResultState
-from seebach.shared.models import GameEvent, Round, Tournament
+from rochade.features.games.claim_result import ClaimResult
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.imports.preview_import import PreviewImport
+from rochade.shared.enums import EventAction, GameResult, ResultState
+from rochade.shared.models import GameEvent, Round, Tournament
 from tests.conftest import Send
 from tests.handlers.test_result_flow import device_of
 
@@ -24,7 +24,7 @@ pytestmark = pytest.mark.db
 
 def _repair(text: str, swaps: dict[int, tuple[int, str]]) -> str:
     """Rewrite round 1 opponents/colours to simulate a Vega re-pair."""
-    from seebach.trf import Dialect, parse, serialize
+    from rochade.trf import Dialect, parse, serialize
 
     trf = parse(text)
     for rank, (opponent, colour) in swaps.items():
@@ -129,7 +129,7 @@ def test_a_late_entrant_is_reported_as_added(
 
 
 def _first_round_only(text: str) -> str:
-    from seebach.trf import columns
+    from rochade.trf import columns
 
     lines = []
     for line in text.split("\r\n"):

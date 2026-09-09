@@ -7,6 +7,6 @@ export default defineConfig({
   server: {
     port: 5173,
     // Dev only: the built app is served same-origin behind Caddy.
-    proxy: { "/api": process.env.SEEBACH_API_URL ?? "http://localhost:8000" },
+    proxy: { "/api": process.env.ROCHADE_API_URL ?? "http://localhost:8000" },
   },
 });

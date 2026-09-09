@@ -9,16 +9,16 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.rounds.export_round import ExportRound
-from seebach.features.rounds.release_round import ReleaseRound
-from seebach.features.standings.get_standings import GetStandings
-from seebach.features.standings.import_standings import ImportStandings
-from seebach.features.standings.name_tiebreaks import NameTiebreaks
-from seebach.platform.errors import NotFound, ValidationFailed
-from seebach.platform.mediator import Principal
-from seebach.shared.enums import PrincipalKind
-from seebach.shared.models import Round, Section, Tournament
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.rounds.export_round import ExportRound
+from rochade.features.rounds.release_round import ReleaseRound
+from rochade.features.standings.get_standings import GetStandings
+from rochade.features.standings.import_standings import ImportStandings
+from rochade.features.standings.name_tiebreaks import NameTiebreaks
+from rochade.platform.errors import NotFound, ValidationFailed
+from rochade.platform.mediator import Principal
+from rochade.shared.enums import PrincipalKind
+from rochade.shared.models import Round, Section, Tournament
 from tests.conftest import Send
 
 pytestmark = pytest.mark.db

@@ -14,12 +14,12 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from seebach.platform.bus import bus
-from seebach.platform.config import Settings
-from seebach.platform.mediator import Context, Message, Principal
-from seebach.platform.migrate import upgrade_to_head
-from seebach.shared.enums import PrincipalKind, Role
-from seebach.shared.models import Base, Tournament, TournamentMember
+from rochade.platform.bus import bus
+from rochade.platform.config import Settings
+from rochade.platform.mediator import Context, Message, Principal
+from rochade.platform.migrate import upgrade_to_head
+from rochade.shared.enums import PrincipalKind, Role
+from rochade.shared.models import Base, Tournament, TournamentMember
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -61,17 +61,17 @@ def database_url() -> Iterator[str]:
     library: the whole need is one image, one mapped port and a readiness
     check, and doing it explicitly means a failure says which of those broke.
 
-    Set SEEBACH_TEST_DATABASE_URL to point at an existing database instead.
+    Set ROCHADE_TEST_DATABASE_URL to point at an existing database instead.
     """
-    override = os.environ.get("SEEBACH_TEST_DATABASE_URL")
+    override = os.environ.get("ROCHADE_TEST_DATABASE_URL")
     if override:
         yield override
         return
 
     if shutil.which("docker") is None:  # pragma: no cover - environment guard
-        pytest.skip("docker is not available and SEEBACH_TEST_DATABASE_URL is not set")
+        pytest.skip("docker is not available and ROCHADE_TEST_DATABASE_URL is not set")
 
-    name = f"seebach-test-{uuid.uuid4().hex[:8]}"
+    name = f"rochade-test-{uuid.uuid4().hex[:8]}"
     subprocess.run(
         [
             "docker",
@@ -81,11 +81,11 @@ def database_url() -> Iterator[str]:
             "--name",
             name,
             "-e",
-            "POSTGRES_USER=seebach",
+            "POSTGRES_USER=rochade",
             "-e",
-            "POSTGRES_PASSWORD=seebach",
+            "POSTGRES_PASSWORD=rochade",
             "-e",
-            "POSTGRES_DB=seebach",
+            "POSTGRES_DB=rochade",
             "-p",
             "5432",
             "postgres:16-alpine",
@@ -99,7 +99,7 @@ def database_url() -> Iterator[str]:
     )
     try:
         port = _mapped_port(name)
-        url = f"postgresql+psycopg://seebach:seebach@127.0.0.1:{port}/seebach"
+        url = f"postgresql+psycopg://rochade:rochade@127.0.0.1:{port}/rochade"
         _await_ready(name, url)
         yield url
     finally:
@@ -191,7 +191,7 @@ def send(session: Session) -> Send:
 
 @pytest.fixture
 def tournament(session: Session) -> Tournament:
-    created = Tournament(name="Seebach Open 2026", city="Seebach", federation="SUI")
+    created = Tournament(name="Rochade Open 2026", city="Rochade", federation="SUI")
     session.add(created)
     session.flush()
     session.add_all(

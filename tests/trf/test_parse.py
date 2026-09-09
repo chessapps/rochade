@@ -1,13 +1,13 @@
 import pytest
 
-from seebach.trf import Colour, Dialect, TrfParseError, parse, serialize
-from seebach.trf.model import TrfFile
+from rochade.trf import Colour, Dialect, TrfParseError, parse, serialize
+from rochade.trf.model import TrfFile
 
 
 def test_headers_are_read(round1_text: str) -> None:
     trf = parse(round1_text)
-    assert trf.name == "Seebach Open 2026"
-    assert trf.city == "Seebach"
+    assert trf.name == "Rochade Open 2026"
+    assert trf.city == "Rochade"
     assert trf.federation == "SUI"
     assert trf.start_date == "2026/03/14"
     assert trf.chief_arbiter == "Muster, Anna"

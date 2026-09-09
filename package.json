@@ -1,11 +1,11 @@
 {
-  "name": "seebach",
+  "name": "rochade",
   "private": true,
   "type": "module",
   "scripts": {
-    "api:types": "pnpm --filter @seebach/api-client run generate",
-    "dev:hall": "pnpm --filter @seebach/hall run dev",
-    "dev:admin": "pnpm --filter @seebach/admin run dev",
+    "api:types": "pnpm --filter @rochade/api-client run generate",
+    "dev:hall": "pnpm --filter @rochade/hall run dev",
+    "dev:admin": "pnpm --filter @rochade/admin run dev",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck"

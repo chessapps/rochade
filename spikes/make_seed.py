@@ -18,7 +18,7 @@ probe: TRF is a fixed-*column* format, and in UTF-8 an umlaut is two bytes, so
 a reader that indexes bytes rather than characters shifts every field after the
 name -- but only on those two rows. Import the plain file first.
 
-Columns come from `seebach.trf.columns`, the same definitions the parser uses,
+Columns come from `rochade.trf.columns`, the same definitions the parser uses,
 so this file and the reader cannot drift apart.
 """
 
@@ -29,14 +29,14 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 
-from seebach.trf import columns, parse
-from seebach.trf.results import points_for
+from rochade.trf import columns, parse
+from rochade.trf.results import points_for
 
 CRLF = chr(13) + chr(10)
 
 HEADER = [
-    "012 Seebach M0 Spike",
-    "022 Seebach",
+    "012 Rochade M0 Spike",
+    "022 Rochade",
     "032 SUI",
     "042 2026/09/05",
     "052 2026/09/07",

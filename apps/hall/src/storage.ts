@@ -3,7 +3,7 @@ import { createStore, get, set } from "idb-keyval";
 import type { PendingClaim, QueueStorage } from "./queue";
 import type { BoardList } from "./api";
 
-const store = createStore("seebach-hall", "state");
+const store = createStore("rochade-hall", "state");
 
 const QUEUE_KEY = "claim-queue";
 const BOARDS_KEY = "board-list";
@@ -30,8 +30,8 @@ export async function cachedBoards(): Promise<BoardList | null> {
   return (await get<BoardList>(BOARDS_KEY, store)) ?? null;
 }
 
-const TOKEN_KEY = "seebach.device-token";
-const TOURNAMENT_KEY = "seebach.tournament-id";
+const TOKEN_KEY = "rochade.device-token";
+const TOURNAMENT_KEY = "rochade.tournament-id";
 
 /**
  * The QR code lands the phone on /hall/<tournament>#t=<token>. The token is

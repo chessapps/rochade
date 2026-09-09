@@ -2,12 +2,12 @@
 # external `proxy` network and publishes no host port of its own.
 #
 #   docker --context box compose -f docker-compose.yml -f docker-compose.prod.yml \
-#     -p seebach --env-file seebach.prod.env up -d --build
+#     -p rochade --env-file rochade.prod.env up -d --build
 #
 # Only `web` joins the proxy network; api, postgres and zitadel stay on this
 # project's own network and are unreachable from other stacks. The shared
-# Caddy routes the app's hostname to seebach-web:8080 and AUTH_URL's hostname
-# to seebach-web:8081. See deploy/README.md.
+# Caddy routes the app's hostname to rochade-web:8080 and AUTH_URL's hostname
+# to rochade-web:8081. See deploy/README.md.
 services:
   postgres:
     environment:
@@ -38,7 +38,7 @@ services:
       network: host
     environment:
       ZITADEL_ISSUER: ${AUTH_URL:?set AUTH_URL in the env file}
-      SEEBACH_PUBLIC_URL: ${SEEBACH_PUBLIC_URL:?set SEEBACH_PUBLIC_URL in the env file}
+      ROCHADE_PUBLIC_URL: ${ROCHADE_PUBLIC_URL:?set ROCHADE_PUBLIC_URL in the env file}
 
   api:
     build:
@@ -46,20 +46,20 @@ services:
     environment:
       # Both default to off. Dev auth beside Zitadel would let any bare
       # bearer act as staff; there is no reason to have it on a public URL.
-      SEEBACH_DEV_AUTH_ENABLED: ${SEEBACH_DEV_AUTH_ENABLED:-false}
-      SEEBACH_DEVICE_JOIN_ENABLED: ${SEEBACH_DEVICE_JOIN_ENABLED:-false}
+      ROCHADE_DEV_AUTH_ENABLED: ${ROCHADE_DEV_AUTH_ENABLED:-false}
+      ROCHADE_DEVICE_JOIN_ENABLED: ${ROCHADE_DEVICE_JOIN_ENABLED:-false}
 
   web:
     build:
       network: host
-    # Fixed name so the shared proxy can say `seebach-web:8080` whatever the
+    # Fixed name so the shared proxy can say `rochade-web:8080` whatever the
     # compose project is called.
-    container_name: seebach-web
+    container_name: rochade-web
     networks:
       - default
       - proxy
 
-  # State lives in plain directories under SEEBACH_DATA_DIR on the box, so
+  # State lives in plain directories under ROCHADE_DATA_DIR on the box, so
   # it is obvious what to back up and it survives any compose down/up.
 volumes:
   pgdata:
@@ -67,19 +67,19 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${SEEBACH_DATA_DIR:?set SEEBACH_DATA_DIR in the env file}/postgres
+      device: ${ROCHADE_DATA_DIR:?set ROCHADE_DATA_DIR in the env file}/postgres
   zitadel_bootstrap:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${SEEBACH_DATA_DIR:?set SEEBACH_DATA_DIR in the env file}/zitadel
+      device: ${ROCHADE_DATA_DIR:?set ROCHADE_DATA_DIR in the env file}/zitadel
   auth_config:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${SEEBACH_DATA_DIR:?set SEEBACH_DATA_DIR in the env file}/auth
+      device: ${ROCHADE_DATA_DIR:?set ROCHADE_DATA_DIR in the env file}/auth
 
 networks:
   proxy:

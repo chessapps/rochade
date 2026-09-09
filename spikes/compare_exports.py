@@ -21,7 +21,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 
-from seebach.interchange import RoundDocument, manager_for
+from rochade.interchange import RoundDocument, manager_for
 
 
 def pair_key(white: str, black: str | None) -> tuple[str, ...]:

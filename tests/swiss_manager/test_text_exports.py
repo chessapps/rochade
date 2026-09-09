@@ -11,9 +11,9 @@ import pathlib
 
 import pytest
 
-from seebach.interchange import PlayerRow, manager_for
-from seebach.interchange.formats import swiss_manager_text
-from seebach.interchange.port import InterchangeError
+from rochade.interchange import PlayerRow, manager_for
+from rochade.interchange.formats import swiss_manager_text
+from rochade.interchange.port import InterchangeError
 
 FIXTURES = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "swiss_manager"
 
@@ -129,7 +129,7 @@ def test_the_adapter_reads_the_pair_and_still_reads_trf(players: str, pairings: 
 
 def test_a_round_of_a_document_can_be_written_back(players: str, pairings: str) -> None:
     """The whole point: what came in as two files goes back as one pairing file."""
-    from seebach.interchange.document import ResultEntry
+    from rochade.interchange.document import ResultEntry
 
     manager = manager_for("swiss_manager")
     document = manager.read_round(players + "\n" + pairings)

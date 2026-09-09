@@ -6,19 +6,19 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.boards.get_board_list import GetBoardList
-from seebach.features.games.claim_result import ClaimResult
-from seebach.features.games.set_result import SetResult
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.queue.get_arbiter_queue import GetArbiterQueue
-from seebach.features.rounds.get_round import GetRound
-from seebach.features.rounds.release_round import ReleaseRound
-from seebach.features.tournaments.create_tournament import CreateTournament
-from seebach.features.tournaments.get_tournament import GetTournament
-from seebach.features.tournaments.list_tournaments import ListTournaments
-from seebach.platform.errors import Forbidden, NotFound, ValidationFailed
-from seebach.shared.enums import GameResult, ResultState, Role, RoundState
-from seebach.shared.models import Round, Tournament
+from rochade.features.boards.get_board_list import GetBoardList
+from rochade.features.games.claim_result import ClaimResult
+from rochade.features.games.set_result import SetResult
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.queue.get_arbiter_queue import GetArbiterQueue
+from rochade.features.rounds.get_round import GetRound
+from rochade.features.rounds.release_round import ReleaseRound
+from rochade.features.tournaments.create_tournament import CreateTournament
+from rochade.features.tournaments.get_tournament import GetTournament
+from rochade.features.tournaments.list_tournaments import ListTournaments
+from rochade.platform.errors import Forbidden, NotFound, ValidationFailed
+from rochade.shared.enums import GameResult, ResultState, Role, RoundState
+from rochade.shared.models import Round, Tournament
 from tests.conftest import ARBITER, OWNER, Send
 from tests.handlers.test_result_flow import device_of
 
@@ -35,8 +35,8 @@ def test_creating_a_tournament_makes_the_creator_its_owner(send: Send) -> None:
 def test_a_tournament_you_are_not_a_member_of_is_not_listed(
     send: Send, tournament: Tournament
 ) -> None:
-    from seebach.platform.mediator import Principal
-    from seebach.shared.enums import PrincipalKind
+    from rochade.platform.mediator import Principal
+    from rochade.shared.enums import PrincipalKind
 
     stranger = Principal(kind=PrincipalKind.STAFF, subject="stranger@example.test")
     assert send(ListTournaments(), principal=stranger) == []

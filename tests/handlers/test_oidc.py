@@ -22,15 +22,15 @@ from jose import jwk, jwt
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from seebach.app import create_app
-from seebach.platform.auth import oidc
-from seebach.platform.config import Settings, settings
-from seebach.platform.db import get_session
+from rochade.app import create_app
+from rochade.platform.auth import oidc
+from rochade.platform.config import Settings, settings
+from rochade.platform.db import get_session
 
 pytestmark = pytest.mark.db
 
 ISSUER = "http://auth.test:8093"
-CLIENT_ID = "123456@seebach"
+CLIENT_ID = "123456@rochade"
 
 
 class Signer:
@@ -58,7 +58,7 @@ class Signer:
         claims = {
             "iss": ISSUER,
             "sub": "224466",
-            "aud": [CLIENT_ID, "999@seebach"],
+            "aud": [CLIENT_ID, "999@rochade"],
             "exp": now + 300,
             "iat": now,
         }
@@ -84,10 +84,10 @@ def jwks(signer: Signer, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 def client(
     engine: Engine, session: Session, monkeypatch: pytest.MonkeyPatch, jwks: dict[str, Any]
 ) -> Iterator[TestClient]:
-    monkeypatch.delenv("SEEBACH_DEV_AUTH_ENABLED", raising=False)
-    monkeypatch.setenv("SEEBACH_OIDC_ISSUER", ISSUER)
-    monkeypatch.setenv("SEEBACH_OIDC_CLIENT_ID", CLIENT_ID)
-    monkeypatch.setenv("SEEBACH_DATABASE_URL", engine.url.render_as_string(hide_password=False))
+    monkeypatch.delenv("ROCHADE_DEV_AUTH_ENABLED", raising=False)
+    monkeypatch.setenv("ROCHADE_OIDC_ISSUER", ISSUER)
+    monkeypatch.setenv("ROCHADE_OIDC_CLIENT_ID", CLIENT_ID)
+    monkeypatch.setenv("ROCHADE_DATABASE_URL", engine.url.render_as_string(hide_password=False))
     settings.cache_clear()
     app = create_app()
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
@@ -207,7 +207,7 @@ def test_no_audience_fails_closed(
     client: TestClient, signer: Signer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Without a client id any client of the issuer could sign in here."""
-    monkeypatch.delenv("SEEBACH_OIDC_CLIENT_ID")
+    monkeypatch.delenv("ROCHADE_OIDC_CLIENT_ID")
     settings.cache_clear()
     response = client.get("/api/tournaments", headers=bearer(signer.token()))
     assert response.status_code == 401
@@ -218,7 +218,7 @@ def test_dev_auth_beside_oidc_takes_plain_tokens_only(
     client: TestClient, signer: Signer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The scripts sign in with a bare token; a bad JWT must not become one."""
-    monkeypatch.setenv("SEEBACH_DEV_AUTH_ENABLED", "true")
+    monkeypatch.setenv("ROCHADE_DEV_AUTH_ENABLED", "true")
     settings.cache_clear()
     assert client.get("/api/auth/config").json()["dev_auth"] is True
     assert client.get("/api/tournaments", headers=bearer("smoke-arbiter")).status_code == 200

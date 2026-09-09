@@ -12,7 +12,7 @@ import pathlib
 
 import pytest
 
-from seebach.swiss_manager import (
+from rochade.swiss_manager import (
     PairingFileError,
     PairingLine,
     parse_pairing_file,

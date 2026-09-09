@@ -4,11 +4,11 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.imports.preview_import import PreviewImport
-from seebach.platform.errors import Conflict, ValidationFailed
-from seebach.shared.enums import EventAction, ResultState, RoundState
-from seebach.shared.models import Game, GameEvent, Round, Section, SectionPlayer, Tournament
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.imports.preview_import import PreviewImport
+from rochade.platform.errors import Conflict, ValidationFailed
+from rochade.shared.enums import EventAction, ResultState, RoundState
+from rochade.shared.models import Game, GameEvent, Round, Section, SectionPlayer, Tournament
 from tests.conftest import Send
 
 pytestmark = pytest.mark.db

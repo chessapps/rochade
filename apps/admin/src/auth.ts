@@ -8,7 +8,7 @@
  * is mirrored into module state as oidc-client-ts loads and renews it.
  */
 
-import type { Credential } from "@seebach/api-client";
+import type { Credential } from "@rochade/api-client";
 import { UserManager, WebStorageStateStore, type User } from "oidc-client-ts";
 
 export interface AuthConfig {
@@ -27,8 +27,8 @@ export interface Session {
   account: Account | null;
 }
 
-const TOKEN_KEY = "seebach.staff-token";
-const RETURN_KEY = "seebach.return-to";
+const TOKEN_KEY = "rochade.staff-token";
+const RETURN_KEY = "rochade.return-to";
 
 let oidcUser: User | null = null;
 

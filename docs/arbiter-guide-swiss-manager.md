@@ -10,7 +10,7 @@ they appear there.
 - Set the round dates: `Eingabe → Termine für die einzelnen Runden…` →
   `Übernehmen` → `OK`. Swiss-Manager's TRF export refuses without them
   (`Fehler (Message:42)`), and a rated tournament needs them anyway.
-- In Seebach: **New tournament**, then **Devices → Issue a QR code**. Open it
+- In Rochade: **New tournament**, then **Devices → Issue a QR code**. Open it
   as a poster and print it, or show it on the arbiter's screen. One code admits
   any number of phones to this tournament for as long as it runs; issue a second one for
   the other end of the hall if you like. Revoke either at any time, and remove it from
@@ -33,7 +33,7 @@ not in a group chat.
 
 `Auslosen → Auslosungsmenü…` (F6), `Starten`, `OK`.
 
-### 2. Export it for Seebach — two files
+### 2. Export it for Rochade — two files
 
 `Extras → Daten Import/Export…`, on the **export** side (the left column):
 
@@ -45,11 +45,11 @@ not in a group chat.
 
 The first file is the entry list, the second is the boards; they mean nothing
 apart, so the first round needs both. **From round 2 on, the pairings file alone
-is enough**: Seebach names the boards from the players it already holds. Export
-Spielerdaten again only when a player was added or removed, and Seebach tells
+is enough**: Rochade names the boards from the players it already holds. Export
+Spielerdaten again only when a player was added or removed, and Rochade tells
 you if the pairings mention a start number it does not know.
 
-In Seebach the section card says **Import round N** — press it, drop **both**
+In Rochade the section card says **Import round N** — press it, drop **both**
 files on the page, **Preview the changes**, read what the file changes,
 **Import**. You land on the round board; the phones show the same board numbers
 Swiss-Manager printed on the pairing list.
@@ -59,7 +59,7 @@ Swiss-Manager printed on the pairing list.
 > (`Zugriffsverletzung bei Adresse 010ABD84`) for a tournament whose rounds
 > Swiss-Manager paired itself, leaving a file with a header and no players.
 > Seen 2026-09-07 on a 100-player test tournament, however the tournament was
-> created and whether or not the round had results. Seebach still *reads* a TRF
+> created and whether or not the round had results. Rochade still *reads* a TRF
 > if you have one.
 
 ### 3. Play
@@ -102,7 +102,7 @@ Swiss-Manager's player list carries its Rangliste: points, the tiebreaks in
 the order of your tournament settings, and the rank. Whenever you import a
 round with both files, the standings after the previous round come along, and
 **Standings** in the admin app shows them; players see the same table behind
-the **Standings** tab in the hall app. Nothing is computed in Seebach.
+the **Standings** tab in the hall app. Nothing is computed in Rochade.
 
 After the last round there is no pairing to import: export Spielerdaten once
 more and drop it on the Standings page under **Import standings on their own**.
@@ -116,15 +116,15 @@ from your tournament settings and the names stay.
   count from what the file holds and guesses the bye value from the points
   column. It is for rebuilding a tournament for the rating office, not for
   continuing yours.
-- Names in Seebach appear as Swiss-Manager exports them: `Surname,Given`, and
+- Names in Rochade appear as Swiss-Manager exports them: `Surname,Given`, and
   transliterated for the tournament's own federation (`Müller` → `Mueller`).
   Players find their board by typing part of their name, so this rarely matters.
 - Titles (FM, WFM…) are not in the export. Cosmetic.
 - **If you re-pair a round after exporting it** (a late entrant, a correction),
-  export again and re-import in Seebach **before** sending results back. The
+  export again and re-import in Rochade **before** sending results back. The
   results file carries the pairings too, and Swiss-Manager takes them: a file
-  built from the old pairings would quietly undo your re-pairing. Seebach's
+  built from the old pairings would quietly undo your re-pairing. Rochade's
   preview shows exactly which boards moved and which entered results would be
   dropped; nothing is applied until you accept it.
 - A half-point bye or a withdrawal is set in Swiss-Manager before pairing, as
-  always. Seebach shows it and never writes it back.
+  always. Rochade shows it and never writes it back.

@@ -11,16 +11,16 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from seebach.features.games.claim_result import ClaimResult
-from seebach.features.games.resolve_dispute import ResolveDispute
-from seebach.features.games.set_result import SetResult
-from seebach.features.imports.import_round import ImportRound
-from seebach.features.rounds.export_round import ExportRound, GetExportFile
-from seebach.features.rounds.release_round import ReleaseRound
-from seebach.platform.errors import Conflict, RoundFrozen
-from seebach.shared.enums import GameResult, ResultState, RoundState
-from seebach.shared.models import Game, Round, Tournament
-from seebach.trf import Dialect, parse, serialize
+from rochade.features.games.claim_result import ClaimResult
+from rochade.features.games.resolve_dispute import ResolveDispute
+from rochade.features.games.set_result import SetResult
+from rochade.features.imports.import_round import ImportRound
+from rochade.features.rounds.export_round import ExportRound, GetExportFile
+from rochade.features.rounds.release_round import ReleaseRound
+from rochade.platform.errors import Conflict, RoundFrozen
+from rochade.shared.enums import GameResult, ResultState, RoundState
+from rochade.shared.models import Game, Round, Tournament
+from rochade.trf import Dialect, parse, serialize
 from tests.conftest import Send
 from tests.handlers.test_result_flow import device_of
 
@@ -88,7 +88,7 @@ def test_export_touches_only_the_result_and_points_cells(
     after = exported.content.split("\r\n")
     assert len(before) == len(after)
 
-    from seebach.trf import columns
+    from rochade.trf import columns
 
     allowed = set(range(columns.POINTS.start, columns.POINTS.stop))
     allowed.add(columns.result_index(1))
@@ -205,7 +205,7 @@ def test_the_next_round_can_be_imported_after_export(
 
 def _truncate_to_round(text: str, last_round: int) -> str:
     """Cut a TRF back to its first `last_round` rounds."""
-    from seebach.trf import columns
+    from rochade.trf import columns
 
     lines = []
     for line in text.split("\r\n"):

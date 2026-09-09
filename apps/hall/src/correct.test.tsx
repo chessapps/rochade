@@ -37,8 +37,8 @@ vi.mock("./api", () => ({
 
 describe("correcting a sent result", () => {
   beforeEach(() => {
-    localStorage.setItem("seebach.device-token", "t");
-    localStorage.setItem("seebach.tournament-id", TOURNAMENT);
+    localStorage.setItem("rochade.device-token", "t");
+    localStorage.setItem("rochade.tournament-id", TOURNAMENT);
     submitClaim.mockClear();
   });
 

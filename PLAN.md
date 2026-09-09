@@ -1,4 +1,4 @@
-# Seebach — Digital Result Entry for Managed Tournaments
+# Rochade — Digital Result Entry for Managed Tournaments
 
 ## Context
 
@@ -7,7 +7,7 @@ The original plan was a full tournament platform: own the player list, drive pai
 **v1 inverts that.** An existing manager — Vega, Swiss-Manager — stays the tournament manager. We become the digital result-entry layer that plugs into it:
 
 ```
-  manager                       Seebach                       manager
+  manager                       Rochade                       manager
   ───────                       ───────                       ───────
   set up tournament
   pair round N
@@ -59,7 +59,7 @@ which program is on the other end.
 The loop, from the arbiter's chair:
 
 ```
-  manager                              Seebach
+  manager                              Rochade
   ───────                              ───────
   1  set up the tournament, as always
   2  pair round N, as always
@@ -72,7 +72,7 @@ The loop, from the arbiter's chair:
 
 **Friction budget: two file operations per round, and nothing else.** Steps
 1, 2 and 5 are what the arbiter does today without us. Steps 3 and 4 are the
-whole cost of using Seebach. Anything a round needs beyond those two — a
+whole cost of using Rochade. Anything a round needs beyond those two — a
 setting to re-enter, a dialog to acknowledge, a second tournament file to
 switch to — is either a defect to design away or, if the program leaves no
 choice, a fact the adapter declares in `Capabilities` so the admin app can
@@ -143,7 +143,7 @@ If check 3 fails for every format, the arbiter is retyping results and the value
 | File | Purpose |
 |---|---|
 | `inspect_export.py` | Point at any manager export; reports checks 1, 2, 4 and 7 in one pass, including a column ruler for TRF16/26 drift. Reads *through the real adapter*, so a pass is evidence about the shipped code. |
-| `fill_results.py` | Take an export, fill round N with results, emit TRF16. Uses `seebach.trf` deliberately — that library is what is under test. |
+| `fill_results.py` | Take an export, fill round N with results, emit TRF16. Uses `rochade.trf` deliberately — that library is what is under test. |
 | `compare_exports.py` | Diff two manager exports for check 5 — players added/removed, which boards moved. |
 | `README.md` | The recipe below, plus a checklist with a column per program to fill in. |
 
@@ -172,7 +172,7 @@ Nine players, so there is always a bye. Declare five rounds, play two, pair the 
                                      │
               ┌──────────────────────┼──────────────────────┐
               ▼                      ▼                      ▼
-        vega.py                swiss_manager.py         seebach.py  (v2)
+        vega.py                swiss_manager.py         rochade.py  (v2)
      TRF16 in / TRF16 out   TRF16 in / M0 decides out   no files at all —
      merges (unverified)    (PGN? XML? TRF?)            pairs in process
 ```
@@ -187,14 +187,14 @@ That split is what lets "our own implementation" be an adapter rather than a spe
 ### Shape
 
 ```
-src/seebach/
+src/rochade/
   interchange/
     document.py     RoundDocument, PairingRow, ManagerFile — format-neutral
     port.py         the Manager protocol + Capabilities + a registry
     vega.py         adapter
     swiss_manager.py adapter
     formats/
-      trf.py        thin wrapper over the existing seebach.trf
+      trf.py        thin wrapper over the existing rochade.trf
       pgn.py        headers-only PGN results, only if M0 asks for it
   trf/              unchanged, still pure
 ```
@@ -218,17 +218,17 @@ So: build the port and the Vega adapter now, and let M0 fill in the Swiss-Manage
 1. **Extract the port** with `vega.py` as its only adapter. Refactor only, no behaviour change; the existing tests must pass untouched.
 2. **Run M0** (below). It decides the Swiss-Manager adapter's inbound format and fills in its `Capabilities`.
 3. **Write `swiss_manager.py`** against what M0 found.
-4. **`seebach.py`** stays v2, but the port is shaped so it fits without redesign.
+4. **`rochade.py`** stays v2, but the port is shaped so it fits without redesign.
 
 ### Files this touches
 
-- New: `src/seebach/interchange/` as above.
-- `src/seebach/features/imports/import_round.py` — `build_plan` calls `manager.read_round()` instead of `parse()`. The `_Existing`/`ImportPlan` diffing is format-neutral already and does not move.
-- `src/seebach/features/rounds/export_round.py` — calls `manager.write_results()`; `ExportRound.dialect` widens into the adapter's choice.
-- `src/seebach/shared/models.py` + a migration — `Section.manager` records which adapter owns it, since a tournament may hold sections from different programs.
+- New: `src/rochade/interchange/` as above.
+- `src/rochade/features/imports/import_round.py` — `build_plan` calls `manager.read_round()` instead of `parse()`. The `_Existing`/`ImportPlan` diffing is format-neutral already and does not move.
+- `src/rochade/features/rounds/export_round.py` — calls `manager.write_results()`; `ExportRound.dialect` widens into the adapter's choice.
+- `src/rochade/shared/models.py` + a migration — `Section.manager` records which adapter owns it, since a tournament may hold sections from different programs.
 - `apps/admin` — a manager picker on import, and surface `Capabilities` warnings in the existing import-diff panel (`src/plan.ts` already splits notes into blocking / acknowledge / informational; a lossy export is an `acknowledge`).
 - Four user-facing strings name Vega and need generalising: `features/locking.py`, `features/rounds/release_round.py`, `features/imports/import_round.py`, and the API summary in `app.py`. Everything else is docstrings.
-- `src/seebach/trf/dialect.py` — drop TRF06 if Vega does not need it, add TRF26 if M0 check 7 shows column drift.
+- `src/rochade/trf/dialect.py` — drop TRF06 if Vega does not need it, add TRF26 if M0 check 7 shows column drift.
 
 ### Verification
 
@@ -281,7 +281,7 @@ Single deployable, `docker compose`: `postgres`, `api`, `zitadel`, `caddy`.
 same shape, so a route and the file that serves it are found the same way.
 
 ```
-src/seebach/
+src/rochade/
   shared/
     models.py               ALL SQLAlchemy models — Tournament, Section, Round,
                             Game, GameEvent, Device, TournamentMember.
@@ -455,7 +455,7 @@ TanStack Query owns reads, writes, invalidation and polling; react-router serves
 | **M4** | Arbiter queue, dispute resolution, `release_round`, `export_round` with freeze. **Loop closes — full round-trip working.** | done, against our own files |
 | **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | **unblocked for Swiss-Manager clubs**; Vega clubs wait on the Vega leg of M0 |
 
-Zitadel is in the stack (2026-09-08): two containers sharing the stack's Postgres, a setup step that registers the arbiter app and hands its client id to the API, and the admin app signing in with an authorization-code flow against it. Any account in the Zitadel organisation is an arbiter; per-tournament roles are unchanged. The bootstrap mode where the bearer token *is* the subject still exists behind `SEEBACH_DEV_AUTH_ENABLED`, off by default, and beside Zitadel it only takes bearers that are not JWTs — it is how the smoke and browser scripts sign in locally. `deploy/README.md` has the deployment side.
+Zitadel is in the stack (2026-09-08): two containers sharing the stack's Postgres, a setup step that registers the arbiter app and hands its client id to the API, and the admin app signing in with an authorization-code flow against it. Any account in the Zitadel organisation is an arbiter; per-tournament roles are unchanged. The bootstrap mode where the bearer token *is* the subject still exists behind `ROCHADE_DEV_AUTH_ENABLED`, off by default, and beside Zitadel it only takes bearers that are not JWTs — it is how the smoke and browser scripts sign in locally. `deploy/README.md` has the deployment side.
 
 ### What "done" means here, and what it does not
 

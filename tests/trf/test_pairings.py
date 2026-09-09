@@ -1,6 +1,6 @@
 import pathlib
 
-from seebach.trf import parse
+from rochade.trf import parse
 
 SM = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "swiss_manager"
 
