@@ -56,9 +56,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             role={toast.tone === "error" ? "alert" : "status"}
             className={cx(
-              "pointer-events-auto max-w-lg animate-pop rounded-xl px-4 py-3 text-sm shadow-lg",
-              toast.tone === "success" && "bg-emerald-700 text-white",
-              toast.tone === "error" && "bg-rose-700 text-white",
+              "pointer-events-auto max-w-lg animate-pop rounded px-4 py-3 text-sm font-medium shadow-dock",
+              toast.tone === "success" && "bg-emerald-600 text-white",
+              toast.tone === "error" && "bg-rose-600 text-white",
               toast.tone === "info" && "bg-ink text-white",
             )}
             onClick={() => setToasts((current) => current.filter((t) => t.id !== toast.id))}

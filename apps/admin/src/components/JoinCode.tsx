@@ -58,7 +58,7 @@ export function JoinCode({
           <>
             <div className="flex flex-wrap items-center gap-3">
               <p
-                className="rounded-xl bg-slate-900 px-5 py-3 font-mono text-3xl tracking-[0.35em] text-white"
+                className="rounded bg-ink px-5 py-3 text-label-lg tracking-[0.35em] text-white"
                 aria-label={`Join code ${code.split("").join(" ")}`}
               >
                 {code}
@@ -73,7 +73,7 @@ export function JoinCode({
                 </Button>
               </div>
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-body-sm text-ink-2">
               Players type this on the hall app's opening screen instead of scanning. Each
               phone that uses it gets its own entry in the list below, so one can be revoked
               without disturbing the rest. Turn it off when the round is under way.
@@ -86,7 +86,7 @@ export function JoinCode({
                 Open joining with a code
               </Button>
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-body-sm text-ink-2">
               Six characters a player can type instead of scanning — useful when the camera
               will not focus, or when testing from a phone that cannot reach the QR link.
             </p>

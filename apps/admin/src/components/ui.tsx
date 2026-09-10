@@ -1,24 +1,51 @@
 /**
- * The small vocabulary every screen is built from. Buttons come in three
+ * The small vocabulary every screen is built from. Buttons come in a few
  * weights and nothing else; a card is a card. Keeping this short is what keeps
  * the screens looking like one app.
+ *
+ * The look is design/admin/DESIGN.md: hairline borders instead of shadows,
+ * 4px controls in 8px containers, cobalt for the one thing to press.
  */
 
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+} from "react";
+import { Link } from "react-router";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-type Tone = "primary" | "secondary" | "danger" | "ghost" | "success";
+export type Tone = "primary" | "dark" | "secondary" | "danger" | "ghost" | "success";
 
 const BUTTON: Record<Tone, string> = {
-  primary: "bg-ink text-white hover:bg-slate-700 disabled:bg-slate-400",
-  success: "bg-emerald-700 text-white hover:bg-emerald-600 disabled:bg-emerald-300",
-  danger: "bg-rose-700 text-white hover:bg-rose-600 disabled:bg-rose-300",
+  primary: "bg-accent text-white hover:bg-accent-strong disabled:bg-slate-400",
+  dark: "bg-ink text-white hover:bg-slate-700 disabled:bg-slate-400",
+  success: "bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-300",
+  danger: "bg-rose-600 text-white hover:bg-rose-700 disabled:bg-rose-300",
   secondary:
-    "border border-slate-300 bg-white text-ink hover:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-white",
-  ghost: "text-slate-600 hover:bg-slate-100 disabled:text-slate-400",
+    "border border-line bg-card text-ink hover:border-line-strong hover:bg-subtle disabled:text-ink-3 disabled:hover:bg-card",
+  ghost: "text-ink-2 hover:bg-subtle hover:text-ink disabled:text-ink-3",
+};
+
+const SIZE = {
+  sm: "min-h-9 px-3 text-xs lg:min-h-8",
+  md: "min-h-11 px-4 text-sm lg:min-h-9",
+  lg: "min-h-12 px-5 text-sm",
+} as const;
+
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  tone?: Tone;
+  size?: keyof typeof SIZE;
+  busy?: boolean;
+  /** A 16px Lucide glyph before the label. */
+  icon?: ReactNode;
+  /** Render as a router link instead of a button. */
+  to?: string;
+  state?: unknown;
 };
 
 export function Button({
@@ -26,29 +53,35 @@ export function Button({
   size = "md",
   className,
   busy,
+  icon,
   children,
+  to,
+  state,
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  tone?: Tone;
-  size?: "sm" | "md" | "lg";
-  busy?: boolean;
-}) {
+}: ButtonProps) {
+  const classes = cx(
+    "inline-flex items-center justify-center gap-1.5 rounded font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed [&>svg]:size-4 [&>svg]:shrink-0",
+    SIZE[size],
+    BUTTON[tone],
+    className,
+  );
+  if (to !== undefined) {
+    return (
+      <Link to={to} state={state} className={classes} onClick={rest.onClick as never}>
+        {icon}
+        {children}
+      </Link>
+    );
+  }
   return (
     <button
       type="button"
       {...rest}
       disabled={rest.disabled || busy}
       aria-busy={busy || undefined}
-      className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed",
-        size === "sm" && "min-h-9 px-3 text-sm",
-        size === "md" && "min-h-11 px-4 text-sm",
-        size === "lg" && "min-h-12 px-5 text-base",
-        BUTTON[tone],
-        className,
-      )}
+      className={classes}
     >
-      {busy && <Spinner />}
+      {busy ? <Spinner /> : icon}
       {children}
     </button>
   );
@@ -75,11 +108,7 @@ export function Card({
   className?: string;
   as?: "section" | "div" | "article";
 }) {
-  return (
-    <Tag className={cx("rounded-xl border border-slate-200 bg-white shadow-sm", className)}>
-      {children}
-    </Tag>
-  );
+  return <Tag className={cx("rounded-lg border border-line bg-card", className)}>{children}</Tag>;
 }
 
 export function CardHeader({
@@ -92,9 +121,9 @@ export function CardHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-slate-100 px-4 py-3 sm:px-5">
-      <h2 className="text-base font-semibold">{title}</h2>
-      {aside && <p className="text-sm text-slate-500">{aside}</p>}
+    <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-3 sm:px-5">
+      <h2 className="text-headline-sm">{title}</h2>
+      {aside && <p className="text-body-sm text-ink-2">{aside}</p>}
       {children}
     </header>
   );
@@ -113,15 +142,15 @@ export function Field({
 }) {
   return (
     <label className={cx("flex flex-col gap-1 text-sm", className)}>
-      <span className="font-medium text-slate-700">{label}</span>
+      <span className="font-medium text-ink-2">{label}</span>
       {children}
-      {hint && <span className="text-xs text-slate-500">{hint}</span>}
+      {hint && <span className="text-body-sm text-ink-3">{hint}</span>}
     </label>
   );
 }
 
 const CONTROL =
-  "min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-base text-ink placeholder:text-slate-400 disabled:bg-slate-50";
+  "min-h-11 rounded border border-line bg-card px-3 text-base text-ink placeholder:text-ink-3 transition-colors hover:border-line-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:bg-subtle lg:min-h-9 lg:text-sm";
 
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...rest} className={cx(CONTROL, className)} />;
@@ -131,12 +160,21 @@ export function Select({ className, ...rest }: SelectHTMLAttributes<HTMLSelectEl
   return <select {...rest} className={cx(CONTROL, className)} />;
 }
 
+/** A keycap, for the hotkey hints. */
+export function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="rounded-sm border border-line bg-card px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink">
+      {children}
+    </kbd>
+  );
+}
+
 /** Placeholder rows for the first load only. A background refetch never shows one. */
 export function Skeleton({ rows = 3, className }: { rows?: number; className?: string }) {
   return (
     <div role="status" aria-label="loading" className={cx("flex flex-col gap-2 p-4", className)}>
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="h-10 animate-pulse rounded-lg bg-slate-100" />
+        <div key={i} className="h-10 animate-pulse rounded bg-subtle" />
       ))}
     </div>
   );
@@ -152,9 +190,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-      <p className="font-medium">{title}</p>
-      {children && <p className="max-w-md text-sm text-slate-500">{children}</p>}
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-line-strong p-8 text-center">
+      <p className="font-semibold">{title}</p>
+      {children && <p className="max-w-md text-body-sm text-ink-2">{children}</p>}
       {action}
     </div>
   );
@@ -170,13 +208,16 @@ export function Banner({
   className?: string;
 }) {
   const style = {
-    info: "border-slate-200 bg-slate-50 text-slate-700",
-    warn: "border-amber-300 bg-amber-50 text-amber-900",
-    error: "border-rose-300 bg-rose-50 text-rose-900",
-    success: "border-emerald-300 bg-emerald-50 text-emerald-950",
+    info: "border-line bg-subtle text-ink-2",
+    warn: "border-amber-200 bg-amber-50 text-amber-900",
+    error: "border-rose-200 bg-rose-50 text-rose-900",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-950",
   }[tone];
   return (
-    <div role={tone === "error" ? "alert" : undefined} className={cx("rounded-lg border px-4 py-3 text-sm [overflow-wrap:anywhere]", style, className)}>
+    <div
+      role={tone === "error" ? "alert" : undefined}
+      className={cx("rounded-lg border px-4 py-3 text-sm [overflow-wrap:anywhere]", style, className)}
+    >
       {children}
     </div>
   );
@@ -188,7 +229,7 @@ export function SuccessCheck({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cx(
-        "inline-flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-emerald-600 text-white",
+        "inline-flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-state-confirmed text-white",
         className,
       )}
     >
