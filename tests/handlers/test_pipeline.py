@@ -24,7 +24,7 @@ def test_every_message_is_logged_at_info(send: Send, caplog: pytest.LogCaptureFi
     turns it on explicitly instead of trusting the default level.
     """
     with caplog.at_level(logging.INFO, logger="rochade.mediator"):
-        send(CreateTournament(name="Logged"))
+        send(CreateTournament(name="Logged", manager="vega"))
 
     record = next(r for r in caplog.records if r.name == "rochade.mediator")
     assert record.rochade_message == "CreateTournament"  # type: ignore[attr-defined]
@@ -52,7 +52,7 @@ def test_a_failed_command_leaves_nothing_behind(send: Send, session: Session) ->
     from rochade.features.imports.import_round import ImportRound
     from rochade.platform.errors import ValidationFailed
 
-    created = send(CreateTournament(name="Rollback"))
+    created = send(CreateTournament(name="Rollback", manager="vega"))
     with pytest.raises(ValidationFailed):
         send(ImportRound(tournament_id=created.id, section_name="A", content="012 Nothing\r\n"))
 
@@ -64,13 +64,13 @@ def test_a_failed_command_leaves_nothing_behind(send: Send, session: Session) ->
 
 
 def test_reusing_a_key_for_a_different_request_is_a_conflict(send: Send) -> None:
-    send(CreateTournament(name="First"), idempotency_key="shared")
+    send(CreateTournament(name="First", manager="vega"), idempotency_key="shared")
     with pytest.raises(IdempotencyConflict):
-        send(CreateTournament(name="Second"), idempotency_key="shared")
+        send(CreateTournament(name="Second", manager="vega"), idempotency_key="shared")
 
 
 def test_the_dedupe_record_commits_with_the_command(send: Send, session: Session) -> None:
-    send(CreateTournament(name="Together"), idempotency_key="k")
+    send(CreateTournament(name="Together", manager="vega"), idempotency_key="k")
     record = session.get(IdempotencyRecord, "k")
     assert record is not None
     assert record.command == "CreateTournament"
@@ -78,7 +78,7 @@ def test_the_dedupe_record_commits_with_the_command(send: Send, session: Session
 
 
 def test_a_replay_returns_the_same_type_not_a_dict(send: Send) -> None:
-    first = send(CreateTournament(name="Typed"), idempotency_key="typed")
-    replay = send(CreateTournament(name="Typed"), idempotency_key="typed")
+    first = send(CreateTournament(name="Typed", manager="vega"), idempotency_key="typed")
+    replay = send(CreateTournament(name="Typed", manager="vega"), idempotency_key="typed")
     assert type(replay) is type(first)
     assert replay.id == first.id

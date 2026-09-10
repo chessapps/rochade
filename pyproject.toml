@@ -55,7 +55,10 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-markers = ["db: requires a postgres container"]
+markers = [
+    "db: requires a postgres container",
+    "manager(key): which pairing program the `tournament` fixture runs on",
+]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.ruff.lint.per-file-ignores]

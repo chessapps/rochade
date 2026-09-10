@@ -56,6 +56,10 @@ class Tournament(Base):
     federation: Mapped[str] = mapped_column(String(8), default="")
     start_date: Mapped[date | None] = mapped_column(Date(), default=None)
     end_date: Mapped[date | None] = mapped_column(Date(), default=None)
+    #: Which pairing program runs this tournament, chosen when it is created.
+    #: Every section imports from and exports to this one program; the import
+    #: never asks again. Key into `rochade.interchange`.
+    manager: Mapped[str] = mapped_column(String(32), default="vega", server_default="vega")
     #: Six characters a phone can type instead of scanning the QR. None means
     #: joining that way is closed; see `features/devices/join_code.py`.
     join_code: Mapped[str | None] = mapped_column(String(12), unique=True, default=None)

@@ -584,6 +584,8 @@ export interface components {
         CreateTournament: {
             /** Name */
             name: string;
+            /** Manager */
+            manager: string;
             /**
              * City
              * @default
@@ -798,11 +800,6 @@ export interface components {
              */
             filename: string;
             /**
-             * Manager
-             * @default vega
-             */
-            manager: string;
-            /**
              * Force
              * @default false
              */
@@ -966,11 +963,6 @@ export interface components {
             section_name: string;
             /** Content */
             content: string;
-            /**
-             * Manager
-             * @default vega
-             */
-            manager: string;
             /**
              * Force
              * @default false
@@ -1344,6 +1336,10 @@ export interface components {
             start_date: string | null;
             /** End Date */
             end_date: string | null;
+            /** Manager */
+            manager: string;
+            /** Manager Label */
+            manager_label: string;
             /** Join Code */
             join_code?: string | null;
             /** Sections */
@@ -1376,6 +1372,10 @@ export interface components {
             start_date: string | null;
             /** End Date */
             end_date: string | null;
+            /** Manager */
+            manager: string;
+            /** Manager Label */
+            manager_label: string;
             role: components["schemas"]["Role"];
         };
         /** ValidationError */

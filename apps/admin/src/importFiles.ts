@@ -44,8 +44,20 @@ export function withFile(files: PickedFile[], picked: PickedFile): PickedFile[] 
   return [...kept, picked];
 }
 
-export function isReady(files: PickedFile[], rosterHeld = false): boolean {
-  return missing(files, rosterHeld) === null;
+export function isReady(files: PickedFile[], rosterHeld = false, manager?: string): boolean {
+  return missing(files, rosterHeld, manager) === null;
+}
+
+/** What the tournament's program hands over, for the drop zone's hint. */
+export function dropHint(manager: string | undefined): string {
+  switch (manager) {
+    case "swiss_manager":
+      return "or click to choose them — Spielerdaten and Spielerauslosung, from Extras → Daten Import/Export";
+    case "vega":
+      return "or click to choose it — the TRF16 export of the paired round";
+    default:
+      return "or click to choose them";
+  }
 }
 
 /**
@@ -54,9 +66,18 @@ export function isReady(files: PickedFile[], rosterHeld = false): boolean {
  * section already holds a roster from an earlier round, when the pairings
  * alone will do.
  */
-export function missing(files: PickedFile[], rosterHeld = false): string | null {
+export function missing(
+  files: PickedFile[],
+  rosterHeld = false,
+  manager?: string,
+): string | null {
   if (files.length === 0) return "Nothing chosen yet.";
   const kinds = new Set(files.map((file) => file.kind));
+  // A Vega tournament takes one TRF and nothing else. Swiss-Manager reads a
+  // TRF too, so the text files are the only thing that has one home.
+  if (manager === "vega" && (kinds.has("players") || kinds.has("pairings"))) {
+    return "These are Swiss-Manager's text exports, and this tournament runs on Vega. Export the round from Vega as TRF16 instead.";
+  }
   if (kinds.has("trf")) return null;
   if (kinds.has("players") && kinds.has("pairings")) return null;
   if (kinds.has("pairings")) {

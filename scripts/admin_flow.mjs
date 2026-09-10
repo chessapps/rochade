@@ -52,6 +52,10 @@ page.on("pageerror", (e) => check("no page error", false, e.message));
 // 1. Create a tournament in the UI.
 await page.goto(BASE + "/admin/", { waitUntil: "networkidle" });
 await page.getByRole("button", { name: "New tournament" }).first().click();
+check("custom program is announced, not offered", await page.getByRole("radio", { name: /Custom/ }).isDisabled());
+// The radio itself is screen-reader only; the card around it is what one clicks.
+await page.getByText("Swiss-Manager", { exact: true }).first().click();
+await page.getByRole("button", { name: "Continue" }).click();
 await page.getByRole("textbox", { name: "Name" }).fill("Flow Open");
 await page.getByRole("button", { name: "Create", exact: true }).click();
 await page.waitForURL(/\/admin\/t\/[0-9a-f-]+$/);
@@ -138,7 +142,7 @@ check("no more result buttons on a frozen round", (await page.getByRole("group",
 // 6. Import round 4 from the hand-off link; the home shows the loop advanced.
 await page.getByRole("link", { name: "Import round 4" }).click();
 await page.waitForURL(/\/import\?section=A/);
-check("section prefilled and manager locked", (await page.getByLabel("Section").inputValue()) === "A" && (await page.getByLabel("Tournament manager").isDisabled()));
+check("section prefilled and the program is the tournament's", (await page.getByLabel("Section").inputValue()) === "A" && (await page.getByText("Files from").isVisible()) && !(await page.getByLabel("Tournament manager").count()));
 await page.setInputFiles('input[type="file"]', { name: "FIDE_Export_r4.TXT", mimeType: "text/plain", buffer: Buffer.from(readFileSync(FIX + "round4_paired.trf")) });
 await page.getByRole("button", { name: "Preview the changes" }).click();
 await page.waitForSelector("text=What round 4 changes");

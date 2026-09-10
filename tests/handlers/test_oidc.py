@@ -118,7 +118,9 @@ def test_the_browser_is_told_where_to_sign_in(client: TestClient) -> None:
 
 def test_a_token_from_the_issuer_is_a_staff_account(client: TestClient, signer: Signer) -> None:
     created = client.post(
-        "/api/tournaments", json={"name": "OIDC Open"}, headers=bearer(signer.token())
+        "/api/tournaments",
+        json={"name": "OIDC Open", "manager": "vega"},
+        headers=bearer(signer.token()),
     )
     assert created.status_code == 201, created.text
     listed = client.get("/api/tournaments", headers=bearer(signer.token())).json()

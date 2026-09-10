@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from rochade.interchange import UnknownManager, manager_for
+from rochade.interchange import label_of
 from rochade.platform.bus import bus
 from rochade.platform.errors import NotFound
 from rochade.platform.http import get_context
@@ -64,17 +64,13 @@ class TournamentDetail(BaseModel):
     federation: str
     start_date: date | None
     end_date: date | None
+    #: The pairing program every section imports from and exports to.
+    manager: str
+    manager_label: str
     #: The code a phone may type instead of scanning; None when that is closed.
     #: Staff-only, like everything else on this query.
     join_code: str | None = None
     sections: list[SectionSummary]
-
-
-def _label(manager_key: str) -> str:
-    try:
-        return manager_for(manager_key).label
-    except UnknownManager:  # pragma: no cover - an adapter was removed after import
-        return manager_key
 
 
 class GetTournament(Query):
@@ -105,7 +101,7 @@ def handle(query: GetTournament, ctx: Context) -> TournamentDetail:
             id=section.id,
             name=section.name,
             manager=section.manager,
-            manager_label=_label(section.manager),
+            manager_label=label_of(section.manager),
             players=player_counts.get(section.id, 0),
             declared_rounds=section.declared_rounds,
             rounds=[
@@ -129,6 +125,8 @@ def handle(query: GetTournament, ctx: Context) -> TournamentDetail:
         name=tournament.name,
         city=tournament.city,
         federation=tournament.federation,
+        manager=tournament.manager,
+        manager_label=label_of(tournament.manager),
         join_code=tournament.join_code,
         start_date=tournament.start_date,
         end_date=tournament.end_date,

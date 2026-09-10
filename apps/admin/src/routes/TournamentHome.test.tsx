@@ -33,6 +33,8 @@ function tournament(): TournamentDetail {
     federation: "SUI",
     start_date: "2026-09-02",
     end_date: "2026-09-04",
+    manager: "swiss_manager",
+    manager_label: "Swiss-Manager",
     sections: [
       {
         id: "sA",
@@ -94,7 +96,7 @@ function mount(role: "owner" | "arbiter" = "owner") {
       "/api/rounds/r2/events": [],
       // Last: a bare prefix would otherwise answer every tournament route.
       "/api/tournaments": [
-        { id: T, name: "Test Open", city: "Zürich", federation: "SUI", start_date: null, end_date: null, role },
+        { id: T, name: "Test Open", city: "Zürich", federation: "SUI", start_date: null, end_date: null, manager: "swiss_manager", manager_label: "Swiss-Manager", role },
       ],
     },
   });

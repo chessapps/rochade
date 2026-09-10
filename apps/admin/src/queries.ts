@@ -214,7 +214,6 @@ export interface ImportVars {
   section_name: string;
   content: string;
   filename: string;
-  manager: string;
   force: boolean;
 }
 

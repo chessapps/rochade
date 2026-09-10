@@ -19,7 +19,6 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from rochade.features.imports.import_round import ImportPlan, build_plan, resolve_manager
-from rochade.interchange import DEFAULT_MANAGER
 from rochade.platform.bus import bus
 from rochade.platform.errors import NotFound
 from rochade.platform.http import get_context
@@ -35,7 +34,6 @@ class PreviewImport(Query):
     tournament_id: uuid.UUID
     section_name: str
     content: str
-    manager: str = DEFAULT_MANAGER
     force: bool = False
 
 
@@ -50,7 +48,7 @@ def handle(query: PreviewImport, ctx: Context) -> ImportPlan:
         tournament=tournament,
         section_name=query.section_name,
         content=query.content,
-        manager=resolve_manager(query.manager),
+        manager=resolve_manager(tournament.manager),
         force=query.force,
     )
     return plan
@@ -59,7 +57,6 @@ def handle(query: PreviewImport, ctx: Context) -> ImportPlan:
 class PreviewBody(BaseModel):
     section_name: str
     content: str
-    manager: str = DEFAULT_MANAGER
     force: bool = False
 
 
