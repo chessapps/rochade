@@ -30,11 +30,11 @@ export function Metric({
     <section
       className={cx(
         "flex flex-col justify-between gap-3 rounded-lg border p-4 sm:p-5",
-        danger ? "border-rose-200 bg-rose-50/50" : "border-line bg-card",
+        danger ? "border-rose-line bg-rose-soft/70" : "border-line bg-card",
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 className={cx("text-label-sm", danger ? "text-rose-700" : "text-ink-2")}>{label}</h2>
+        <h2 className={cx("text-label-sm", danger ? "text-rose-text" : "text-ink-2")}>{label}</h2>
         {badge}
       </div>
       <div>
@@ -42,19 +42,19 @@ export function Metric({
           <span
             className={cx(
               "font-mono text-2xl font-bold tracking-tight",
-              danger ? "text-rose-600" : "text-ink",
+              danger ? "text-rose-text" : "text-ink",
             )}
           >
             {value}
           </span>
           {unit && (
-            <span className={cx("text-body-sm", danger ? "font-semibold text-rose-800" : "text-ink-2")}>
+            <span className={cx("text-body-sm", danger ? "font-semibold text-rose-text" : "text-ink-2")}>
               {unit}
             </span>
           )}
         </div>
         {caption && (
-          <p className={cx("mt-1 text-body-sm", danger ? "text-rose-600" : "text-ink-2")}>{caption}</p>
+          <p className={cx("mt-1 text-body-sm", danger ? "text-rose-text" : "text-ink-2")}>{caption}</p>
         )}
         {children}
       </div>

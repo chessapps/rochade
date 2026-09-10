@@ -69,7 +69,7 @@ export function Dialog({
         if (event.target === event.currentTarget && !busy) onClose();
       }}
       className={cx(
-        "m-auto w-[calc(100vw-2rem)] rounded-lg border border-line bg-card p-0 text-ink shadow-xl backdrop:bg-slate-900/60 backdrop:backdrop-blur-[2px]",
+        "m-auto w-[calc(100vw-2rem)] rounded-lg border border-line bg-card p-0 text-ink shadow-xl backdrop:backdrop-blur-[2px]",
         wide ? "max-w-2xl" : "max-w-md",
       )}
     >
@@ -81,7 +81,7 @@ export function Dialog({
                 aria-hidden
                 className={cx(
                   "flex size-8 shrink-0 items-center justify-center rounded [&>svg]:size-4",
-                  tone === "danger" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700",
+                  tone === "danger" ? "bg-rose-soft text-rose-text" : "bg-emerald-soft text-emerald-text",
                 )}
               >
                 {tone === "danger" ? <Gavel /> : <CircleAlert />}

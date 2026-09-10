@@ -298,7 +298,7 @@ function ImportStandingsCard({
           hint={!file && "Spielerdaten (Text-File)"}
         >
           {file && kind !== "players" && (
-            <span className="text-body-sm text-rose-700">
+            <span className="text-body-sm text-rose-text">
               This is not the player list. Standings come with Spielerdaten.
             </span>
           )}

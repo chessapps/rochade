@@ -12,9 +12,9 @@ export type BoardNumberTone = "neutral" | "claimed" | "disputed" | "dark" | "mut
 
 const TONE: Record<BoardNumberTone, string> = {
   neutral: "border-line bg-subtle text-ink",
-  claimed: "border-amber-200 bg-amber-100 text-amber-900",
-  disputed: "border-rose-600 bg-rose-600 text-white",
-  dark: "border-ink bg-ink text-white",
+  claimed: "border-amber-line bg-amber-soft text-amber-text",
+  disputed: "border-state-disputed bg-state-disputed text-white",
+  dark: "border-ink bg-ink text-on-ink",
   muted: "border-line bg-card text-ink-3",
 };
 

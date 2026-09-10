@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8fafc" />
     <title>Rochade · Arbiter desk</title>
+    <script>
+      // Before the first paint, so a dark desk never flashes white. The same
+      // key and rule as src/theme.ts.
+      (function () {
+        var choice = null;
+        try { choice = localStorage.getItem("rochade.theme"); } catch (e) {}
+        var dark = choice === "dark" || (choice !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        var root = document.documentElement;
+        root.dataset.theme = dark ? "dark" : "light";
+        root.style.colorScheme = dark ? "dark" : "light";
+        if (dark) document.querySelector('meta[name="theme-color"]').content = "#0b0f17";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

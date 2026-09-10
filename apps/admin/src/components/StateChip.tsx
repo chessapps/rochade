@@ -25,11 +25,11 @@ export function Chip({
 }) {
   const style = {
     neutral: "border-line bg-subtle text-ink-2",
-    amber: "border-amber-200 bg-amber-50 text-amber-800",
-    rose: "border-rose-200 bg-rose-50 text-rose-700",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
-    dark: "border-ink bg-ink text-white",
+    amber: "border-amber-line bg-amber-soft text-amber-text",
+    rose: "border-rose-line bg-rose-soft text-rose-text",
+    emerald: "border-emerald-line bg-emerald-soft text-emerald-text",
+    blue: "border-blue-line bg-blue-soft text-blue-text",
+    dark: "border-ink bg-ink text-on-ink",
   }[tone];
   return (
     <span
@@ -58,7 +58,7 @@ const STATE: Record<ResultState, { tone: "neutral" | "amber" | "rose" | "emerald
 
 /** Bar segments and the same hues on a swatch. */
 export const STATE_BAR: Record<ResultState, string> = {
-  empty: "bg-slate-200",
+  empty: "bg-line-strong",
   claimed: "bg-state-claimed",
   disputed: "bg-state-disputed",
   confirmed: "bg-state-confirmed",
@@ -66,9 +66,9 @@ export const STATE_BAR: Record<ResultState, string> = {
 
 export const STATE_TEXT: Record<ResultState, string> = {
   empty: "text-ink-2",
-  claimed: "text-amber-600",
-  disputed: "text-rose-600",
-  confirmed: "text-emerald-600",
+  claimed: "text-state-claimed",
+  disputed: "text-rose-text",
+  confirmed: "text-state-confirmed",
 };
 
 export function StateChip({ state, className }: { state: ResultState; className?: string }) {

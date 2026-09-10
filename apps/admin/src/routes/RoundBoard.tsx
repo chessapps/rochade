@@ -203,7 +203,7 @@ export function RoundBoard() {
                 className={cx(
                   "font-mono text-[11px]",
                   round.isFetching ? "text-accent" : "text-ink-3",
-                  round.failureCount > 0 && "text-amber-700",
+                  round.failureCount > 0 && "text-amber-text",
                 )}
                 aria-live="polite"
               >
@@ -486,16 +486,16 @@ function Dock({
   const percent = round.boards > 0 ? Math.round((round.confirmed / round.boards) * 1000) / 10 : 0;
   return (
     <div className="no-print pointer-events-none fixed inset-x-0 bottom-4 z-10 px-4 sm:px-6">
-      <div className="pointer-events-auto mx-auto flex max-w-[1160px] flex-col items-center justify-between gap-3 rounded-lg border border-slate-800 bg-ink p-3 text-white shadow-dock sm:flex-row sm:px-5 sm:py-3.5">
+      <div className="pointer-events-auto mx-auto flex max-w-[1160px] flex-col items-center justify-between gap-3 rounded-lg border border-on-ink-subtle bg-ink p-3 text-on-ink shadow-dock sm:flex-row sm:px-5 sm:py-3.5">
         <div className="flex w-full items-center gap-3 sm:w-auto">
           <span aria-hidden className="relative flex size-2.5 shrink-0">
             {!ready && round.state === "open" && (
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-500" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-soft0" />
             )}
             <span
               className={cx(
                 "relative inline-flex size-2.5 rounded-full",
-                round.state !== "open" ? "bg-round-released" : ready ? "bg-state-confirmed" : "bg-rose-500",
+                round.state !== "open" ? "bg-round-released" : ready ? "bg-state-confirmed" : "bg-rose-soft0",
               )}
             />
           </span>
@@ -506,19 +506,19 @@ function Dock({
                   <span>Every board has a result. Release the round to confirm them.</span>
                 ) : (
                   <span>
-                    <span className="text-rose-300">{plural(open, "board")}</span> still{" "}
+                    <span className="text-on-ink-rose">{plural(open, "board")}</span> still{" "}
                     {open === 1 ? "needs" : "need"} you before release.
                   </span>
                 )
               ) : (
                 <span>Released. Export the results for {managerLabel} to close the round.</span>
               )}
-              <span className="rounded-sm bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] text-slate-300">
+              <span className="rounded-sm bg-on-ink-subtle px-1.5 py-0.5 font-mono text-[11px] text-on-ink-2">
                 {round.confirmed} of {round.boards} · {percent}%
               </span>
             </p>
             {round.state === "open" && disputedBoards.length > 0 && (
-              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-rose-300">
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-on-ink-rose">
                 {disputedBoards.length === 1 ? "A dispute on board" : "Disputes on boards"}{" "}
                 {disputedBoards.join(", ")} must be resolved before release.
               </p>
@@ -536,7 +536,7 @@ function Dock({
               tone={ready ? "primary" : "ghost"}
               size="md"
               onClick={onRelease}
-              className={cx(!ready && "text-slate-300 hover:bg-slate-800 hover:text-white")}
+              className={cx(!ready && "text-on-ink-2 hover:bg-on-ink-subtle hover:text-on-ink")}
             >
               {ready ? `Release round ${round.number}` : "Release anyway…"}
             </Button>
@@ -573,7 +573,7 @@ function Handoff({
 }) {
   const file = useExportFile(roundId, true);
   return (
-    <Card className="border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 sm:p-5">
+    <Card className="border-emerald-line bg-emerald-soft p-4 text-sm text-emerald-text sm:p-5">
       <div className="flex items-start gap-3">
         {justExported && <SuccessCheck />}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -592,9 +592,9 @@ function Handoff({
               <span className="font-semibold">Now in {managerLabel}:</span> {file.data.next_step}
             </p>
           ) : file.isError ? (
-            <p className="text-rose-800">{errorMessage(file.error)}</p>
+            <p className="text-rose-text">{errorMessage(file.error)}</p>
           ) : (
-            <p className="text-emerald-800">Fetching the file…</p>
+            <p className="text-emerald-text">Fetching the file…</p>
           )}
           {file.data && (file.data.boards_left_blank ?? []).length > 0 && (
             <p>
@@ -608,7 +608,7 @@ function Handoff({
             </Button>
             <Button
               to={`/t/${tournamentId}/import?section=${encodeURIComponent(sectionName)}`}
-              className="border-emerald-300 hover:bg-emerald-100"
+              className="border-emerald-line hover:bg-emerald-soft/70"
             >
               Import round {roundNumber + 1}
             </Button>

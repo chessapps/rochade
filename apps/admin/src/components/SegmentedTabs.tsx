@@ -43,10 +43,10 @@ export function SegmentedTabs<K extends string>({
               "inline-flex min-h-10 items-center gap-1.5 rounded border px-3 text-xs font-semibold whitespace-nowrap transition-colors lg:min-h-8",
               active
                 ? alert
-                  ? "border-rose-600 bg-rose-600 text-white"
-                  : "border-ink bg-ink text-white"
+                  ? "border-state-disputed bg-state-disputed text-white"
+                  : "border-ink bg-ink text-on-ink"
                 : alert
-                  ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                  ? "border-rose-line bg-rose-soft text-rose-text hover:bg-rose-soft/80"
                   : "border-transparent text-ink-2 hover:border-line hover:bg-card hover:text-ink",
             )}
           >
@@ -55,9 +55,9 @@ export function SegmentedTabs<K extends string>({
               className={cx(
                 "rounded-full px-1.5 font-mono text-[10px] font-bold",
                 active
-                  ? "bg-white/20"
+                  ? "bg-on-ink/20"
                   : alert
-                    ? "bg-rose-600 text-white"
+                    ? "bg-state-disputed text-white"
                     : "text-ink-3",
               )}
             >

@@ -125,9 +125,9 @@ export function BoardRow({
         ROW_GRID,
         changed && "animate-row-pulse",
         board.state === "disputed"
-          ? "border-l-rose-500 bg-rose-50/60"
+          ? "border-l-state-disputed bg-rose-soft/70"
           : board.state === "claimed"
-            ? "border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70"
+            ? "border-l-state-claimed bg-amber-soft/40 hover:bg-amber-soft/60 dark:bg-amber-soft/25 dark:hover:bg-amber-soft/40"
             : "border-l-transparent hover:bg-subtle/60",
         board.is_bye && "text-ink-3",
       )}
@@ -141,10 +141,10 @@ export function BoardRow({
       <span className="col-start-3 row-span-2 flex flex-col items-end gap-1 lg:col-start-3 lg:row-span-1 lg:items-center">
         {board.state === "disputed" ? (
           <>
-            <span className="rounded-sm border border-rose-200 bg-rose-100/90 px-2 py-0.5 font-mono text-xs font-bold text-rose-700">
+            <span className="rounded-sm border border-rose-line bg-rose-soft px-2 py-0.5 font-mono text-xs font-bold text-rose-text">
               DISPUTED
             </span>
-            <span className="font-mono text-[10px] font-medium text-rose-600">
+            <span className="font-mono text-[10px] font-medium text-rose-text">
               {resultLabel(board.white_result, board.black_result)} vs{" "}
               {resultLabel(board.disputed_white_result ?? " ", mirror(board.disputed_white_result ?? " "))}
             </span>
@@ -154,7 +154,7 @@ export function BoardRow({
             className={cx(
               "font-mono text-base font-bold whitespace-nowrap",
               score === "" ? "text-ink-3" : board.is_bye ? "text-ink-2" : "text-ink",
-              board.state === "claimed" && "rounded-sm border border-amber-200 bg-amber-100 px-2 text-amber-900",
+              board.state === "claimed" && "rounded-sm border border-amber-line bg-amber-soft px-2 text-amber-text",
             )}
           >
             {score === "" ? "— : —" : score}
@@ -435,7 +435,7 @@ function Choice({
       className={cx(
         "min-h-11 min-w-14 rounded border px-3 font-mono text-sm font-bold whitespace-nowrap transition-colors disabled:opacity-40 lg:min-h-8 lg:min-w-12 lg:text-xs",
         active
-          ? "border-ink bg-ink text-white"
+          ? "border-ink bg-ink text-on-ink"
           : "border-line bg-card text-ink hover:border-line-strong hover:bg-subtle",
         className,
       )}
@@ -469,7 +469,7 @@ function Claims({
   return (
     <p
       className={cx(
-        "flex items-start gap-2 rounded-lg border border-rose-200 bg-card px-3 py-2 text-body-sm text-rose-800 [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-rose-600",
+        "flex items-start gap-2 rounded-lg border border-rose-line bg-card px-3 py-2 text-body-sm text-rose-text [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-rose-text",
         className,
       )}
     >

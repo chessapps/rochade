@@ -38,7 +38,7 @@ export function ProgressBar({
                 key={state}
                 className={cx(
                   "flex items-center gap-1.5",
-                  state === "disputed" ? "font-bold text-rose-700" : "text-ink-2",
+                  state === "disputed" ? "font-bold text-rose-text" : "text-ink-2",
                   state === "empty" && "text-ink-3",
                 )}
               >

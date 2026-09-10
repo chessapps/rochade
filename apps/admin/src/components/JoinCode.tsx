@@ -58,7 +58,7 @@ export function JoinCode({
           <>
             <div className="flex flex-wrap items-center gap-3">
               <p
-                className="rounded bg-ink px-5 py-3 text-label-lg tracking-[0.35em] text-white"
+                className="rounded bg-ink px-5 py-3 text-label-lg tracking-[0.35em] text-on-ink"
                 aria-label={`Join code ${code.split("").join(" ")}`}
               >
                 {code}

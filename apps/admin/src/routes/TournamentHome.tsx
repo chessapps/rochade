@@ -102,12 +102,10 @@ export function TournamentHome() {
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
             {detail.federation && <Chip tone="neutral">{detail.federation}</Chip>}
-            {sections[0]?.manager_label && (
-              <Chip tone="emerald">
-                <RefreshCw />
-                {sections[0].manager_label}
-              </Chip>
-            )}
+            <Chip tone="emerald">
+              <RefreshCw />
+              {detail.manager_label}
+            </Chip>
           </div>
           <h1 className="text-headline-lg">{detail.name}</h1>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-ink-2 [&_svg]:size-3.5 [&_svg]:text-ink-3">
@@ -145,7 +143,7 @@ export function TournamentHome() {
               tone="ghost"
               onClick={() => setDeleting(true)}
               icon={<Trash2 />}
-              className="text-ink-3 hover:text-rose-700"
+              className="text-ink-3 hover:text-rose-text"
               title="Delete this tournament"
             >
               Delete…
@@ -169,7 +167,7 @@ export function TournamentHome() {
             value={entered}
             unit={`/ ${plural(boards, "board")}`}
             badge={
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700">
+              <span className="rounded-full border border-emerald-line bg-emerald-soft px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-text">
                 {percent}%
               </span>
             }
@@ -196,8 +194,8 @@ export function TournamentHome() {
             badge={
               disputed > 0 ? (
                 <span aria-hidden className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-rose-600" />
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-state-disputed opacity-75" />
+                  <span className="relative inline-flex size-2 rounded-full bg-state-disputed" />
                 </span>
               ) : undefined
             }
@@ -269,7 +267,12 @@ export function TournamentHome() {
               tournamentId={tournamentId}
               now={now}
             />
-            <RoundFileSync tournamentId={tournamentId} sections={sections} />
+            <RoundFileSync
+              tournamentId={tournamentId}
+              sections={sections}
+              manager={detail.manager}
+              managerLabel={detail.manager_label}
+            />
           </div>
         </div>
       )}
@@ -348,8 +351,8 @@ function SectionCard({
       </header>
 
       {round && round.disputed > 0 && (
-        <div className="mx-4 mt-4 flex flex-col justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50/80 p-3.5 text-xs sm:mx-6 sm:mt-6 sm:flex-row sm:items-center">
-          <p className="flex items-center gap-2.5 font-medium text-rose-900 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-rose-600">
+        <div className="mx-4 mt-4 flex flex-col justify-between gap-3 rounded-lg border border-rose-line bg-rose-soft p-3.5 text-xs sm:mx-6 sm:mt-6 sm:flex-row sm:items-center">
+          <p className="flex items-center gap-2.5 font-medium text-rose-text [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-rose-text">
             <TriangleAlert />
             <span>
               <strong>{plural(round.disputed, "board")}:</strong> two phones disagree — desk review
@@ -359,7 +362,7 @@ function SectionCard({
           <Button
             size="sm"
             to={`${roundUrl}?filter=attention`}
-            className="shrink-0 border-rose-200 text-rose-700 hover:bg-rose-100/50 hover:text-rose-900"
+            className="shrink-0 border-rose-line text-rose-text hover:bg-rose-soft hover:text-rose-text"
           >
             Resolve
             <ArrowRight />
@@ -550,7 +553,7 @@ function LiveFeed({
       <div className="flex items-center justify-between border-b border-line pb-3">
         <h2 className="flex items-center gap-2 text-sm font-bold">
           <span aria-hidden className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-state-confirmed opacity-75" />
             <span className="relative inline-flex size-2 rounded-full bg-state-confirmed" />
           </span>
           Live hall feed
@@ -571,13 +574,13 @@ function LiveFeed({
                 key={event.id}
                 className={cx(
                   "flex flex-col gap-1 py-3",
-                  disputed && "-mx-3 my-1 rounded-lg border border-rose-100 bg-rose-50/50 px-3",
+                  disputed && "-mx-3 my-1 rounded-lg border border-rose-line bg-rose-soft/70 px-3",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     {disputed ? (
-                      <span className="rounded-sm bg-rose-600 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">
+                      <span className="rounded-sm bg-state-disputed px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">
                         DISPUTE
                       </span>
                     ) : (
@@ -588,7 +591,7 @@ function LiveFeed({
                       {section && ` (Sec ${section.name})`}
                     </span>
                   </span>
-                  <span className={cx("font-mono text-[11px]", disputed ? "font-medium text-rose-600" : "text-ink-3")}>
+                  <span className={cx("font-mono text-[11px]", disputed ? "font-medium text-rose-text" : "text-ink-3")}>
                     {relativeTime(event.at, now)}
                   </span>
                 </div>
@@ -596,7 +599,7 @@ function LiveFeed({
                 {disputed && (
                   <Link
                     to={`/t/${tournamentId}/rounds/${event.round_id}?filter=attention`}
-                    className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-rose-700 hover:text-rose-900 [&>svg]:size-3.5"
+                    className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-rose-text hover:text-rose-text [&>svg]:size-3.5"
                   >
                     Open the board
                     <ArrowRight />
@@ -612,7 +615,17 @@ function LiveFeed({
 }
 
 /** Drop the next round's files here and land in the import wizard with them. */
-function RoundFileSync({ tournamentId, sections }: { tournamentId: string; sections: SectionSummary[] }) {
+function RoundFileSync({
+  tournamentId,
+  sections,
+  manager,
+  managerLabel,
+}: {
+  tournamentId: string;
+  sections: SectionSummary[];
+  manager: string;
+  managerLabel: string;
+}) {
   const navigate = useNavigate();
   const next = sections
     .map((section) => nextAction(section))
@@ -634,7 +647,7 @@ function RoundFileSync({ tournamentId, sections }: { tournamentId: string; secti
     <Card className="flex flex-col gap-4 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">Round file sync</h2>
-        <Chip tone="neutral">TRF16 · Swiss-Manager</Chip>
+        <Chip tone="neutral">{manager === "vega" ? "TRF16" : "Text export"} · {managerLabel}</Chip>
       </div>
       <DropZone
         compact
@@ -643,10 +656,15 @@ function RoundFileSync({ tournamentId, sections }: { tournamentId: string; secti
         inputLabel="round files"
         onFiles={onFiles}
         title={
-          <>
-            Drop Swiss-Manager <span className="font-mono text-accent">.txt</span> or Vega{" "}
-            <span className="font-mono text-accent">.trf</span>
-          </>
+          manager === "vega" ? (
+            <>
+              Drop the Vega <span className="font-mono text-accent">.trf</span> here
+            </>
+          ) : (
+            <>
+              Drop the {managerLabel} <span className="font-mono text-accent">.txt</span> files here
+            </>
+          )
         }
         hint={next ? `Drag files here to prepare round ${next.round_number}` : "The preview shows what the file changes"}
       />

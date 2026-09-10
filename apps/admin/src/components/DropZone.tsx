@@ -50,7 +50,7 @@ export function DropZone({
         over
           ? "border-accent bg-accent-soft/40"
           : ready
-            ? "border-emerald-400 bg-emerald-50"
+            ? "border-emerald-line bg-emerald-soft"
             : "border-line-strong bg-subtle/50 hover:border-accent hover:bg-accent-soft/20",
         className,
       )}
@@ -66,8 +66,8 @@ export function DropZone({
         className={cx(
           "flex size-10 items-center justify-center rounded-full border bg-card transition-colors [&>svg]:size-5",
           ready
-            ? "border-emerald-300 text-emerald-600"
-            : "border-line text-ink-2 group-hover:border-blue-300 group-hover:text-accent",
+            ? "border-emerald-line text-state-confirmed"
+            : "border-line text-ink-2 group-hover:border-accent group-hover:text-accent",
         )}
       >
         <Upload />

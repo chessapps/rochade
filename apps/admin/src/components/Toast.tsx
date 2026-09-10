@@ -58,8 +58,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={cx(
               "pointer-events-auto max-w-lg animate-pop rounded px-4 py-3 text-sm font-medium shadow-dock",
               toast.tone === "success" && "bg-emerald-600 text-white",
-              toast.tone === "error" && "bg-rose-600 text-white",
-              toast.tone === "info" && "bg-ink text-white",
+              toast.tone === "error" && "bg-state-disputed text-white",
+              toast.tone === "info" && "bg-ink text-on-ink",
             )}
             onClick={() => setToasts((current) => current.filter((t) => t.id !== toast.id))}
           >

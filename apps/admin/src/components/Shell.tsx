@@ -11,6 +11,7 @@ import { Link, NavLink, useNavigate, useParams } from "react-router";
 import type { Account } from "../auth";
 import { pollInterval, useRound, useTournament, useTournaments } from "../queries";
 import { Castle, LogOut } from "./icons";
+import { ThemeSwitch } from "./ThemeSwitch";
 import { Select, cx } from "./ui";
 
 export function Shell({
@@ -31,7 +32,7 @@ export function Shell({
       <header className="no-print sticky top-0 z-20 border-b border-line bg-card/95 backdrop-blur">
         <div className="mx-auto flex min-h-14 max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
           <Link to="/?all" className="group flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-ink text-white transition-colors group-hover:bg-accent [&>svg]:size-4">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-ink text-on-ink transition-colors group-hover:bg-accent [&>svg]:size-4">
               <Castle />
             </span>
             <span className="flex items-baseline gap-1.5">
@@ -70,7 +71,7 @@ export function Shell({
               <span className="flex items-center gap-2" title={account.name}>
                 <span
                   aria-hidden
-                  className="flex size-7 items-center justify-center rounded-full bg-slate-800 font-mono text-[11px] font-semibold text-white"
+                  className="flex size-7 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-on-ink"
                 >
                   {initials(account.name)}
                 </span>
@@ -79,6 +80,7 @@ export function Shell({
                 </span>
               </span>
             )}
+            <ThemeSwitch className="hidden sm:inline-flex" />
             <button
               type="button"
               onClick={onSignOut}
@@ -127,7 +129,7 @@ function LivePill({ roundId }: { roundId: string | undefined }) {
     <span className="hidden items-center gap-1.5 rounded-full border border-line bg-subtle px-2.5 py-1 font-mono text-[11px] font-medium text-ink-2 sm:flex">
       <span aria-hidden className="relative flex size-2">
         {fetching && (
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-state-confirmed opacity-75" />
         )}
         <span
           className={cx(
@@ -150,7 +152,7 @@ function Tab({ to, end, children }: { to: string; end?: boolean; children: React
         cx(
           "inline-flex min-h-9 items-center rounded-md border px-3 text-xs transition-colors lg:min-h-8",
           isActive
-            ? "border-blue-200 bg-blue-50 font-semibold text-blue-700"
+            ? "border-blue-line bg-blue-soft font-semibold text-blue-text"
             : "border-transparent font-medium text-ink-2 hover:bg-subtle hover:text-ink",
         )
       }

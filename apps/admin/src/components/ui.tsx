@@ -23,10 +23,10 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
 export type Tone = "primary" | "dark" | "secondary" | "danger" | "ghost" | "success";
 
 const BUTTON: Record<Tone, string> = {
-  primary: "bg-accent text-white hover:bg-accent-strong disabled:bg-slate-400",
-  dark: "bg-ink text-white hover:bg-slate-700 disabled:bg-slate-400",
+  primary: "bg-accent text-white hover:bg-accent-strong disabled:bg-ink-3",
+  dark: "bg-ink text-on-ink hover:bg-ink/85 disabled:bg-ink-3",
   success: "bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-300",
-  danger: "bg-rose-600 text-white hover:bg-rose-700 disabled:bg-rose-300",
+  danger: "bg-state-disputed text-white hover:bg-rose-700 disabled:bg-rose-300",
   secondary:
     "border border-line bg-card text-ink hover:border-line-strong hover:bg-subtle disabled:text-ink-3 disabled:hover:bg-card",
   ghost: "text-ink-2 hover:bg-subtle hover:text-ink disabled:text-ink-3",
@@ -212,9 +212,9 @@ export function Banner({
 }) {
   const style = {
     info: "border-line bg-subtle text-ink-2",
-    warn: "border-amber-200 bg-amber-50 text-amber-900",
-    error: "border-rose-200 bg-rose-50 text-rose-900",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-950",
+    warn: "border-amber-line bg-amber-soft text-amber-text",
+    error: "border-rose-line bg-rose-soft text-rose-text",
+    success: "border-emerald-line bg-emerald-soft text-emerald-text",
   }[tone];
   return (
     <div

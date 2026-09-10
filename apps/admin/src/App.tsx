@@ -69,7 +69,7 @@ export function App() {
   if (state.status === "failed") {
     return (
       <Splash>
-        <p className="text-red-700">Could not reach the API: {state.message}</p>
+        <p className="text-rose-text">Could not reach the API: {state.message}</p>
         <Button tone="primary" onClick={() => window.location.reload()}>
           Try again
         </Button>
@@ -126,7 +126,7 @@ export function App() {
 
 function Splash({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto mt-24 flex max-w-sm flex-col gap-3 p-6 text-sm text-slate-500">
+    <div className="mx-auto mt-24 flex max-w-sm flex-col gap-3 p-6 text-sm text-ink-2">
       {children}
     </div>
   );
@@ -159,7 +159,7 @@ function Callback({
   if (problem) {
     return (
       <Splash>
-        <p className="text-red-700">Sign-in failed: {problem}</p>
+        <p className="text-rose-text">Sign-in failed: {problem}</p>
         <Button tone="primary" onClick={() => navigate("/", { replace: true })}>
           Back to sign in
         </Button>
@@ -198,10 +198,10 @@ function SignIn({
   return (
     <form onSubmit={submit} className="mx-auto mt-24 flex max-w-sm flex-col gap-3 p-6">
       <h1 className="text-xl font-semibold">Rochade — arbiter</h1>
-      {notice && <p className="text-sm text-amber-700">{notice}</p>}
+      {notice && <p className="text-sm text-amber-text">{notice}</p>}
       {manager && (
         <>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-2">
             Sign in with your arbiter account. A passkey or your password, at the identity
             provider.
           </p>
@@ -212,7 +212,7 @@ function SignIn({
       )}
       {config.dev_auth && (
         <>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-2">
             {manager ? "Or, for development, a" : "Sign in with your"} staff token.
             {manager ? "" : " Passkeys arrive with the identity provider."}
           </p>
@@ -229,7 +229,7 @@ function SignIn({
         </>
       )}
       {!manager && !config.dev_auth && (
-        <p className="text-sm text-red-700">
+        <p className="text-sm text-rose-text">
           Staff sign-in is not configured on this API. Set ROCHADE_OIDC_ISSUER, or
           ROCHADE_DEV_AUTH_ENABLED for development.
         </p>

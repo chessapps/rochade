@@ -35,7 +35,7 @@ export function Poster() {
   }
 
   return (
-    <div className="flex min-h-full flex-col items-center bg-white">
+    <div data-theme="light" className="flex min-h-full flex-col items-center bg-white text-ink">
       <div className="no-print flex w-full max-w-3xl items-center gap-2 p-4">
         <Button to={`/t/${tournamentId}/devices`} tone="ghost" size="sm" icon={<ArrowLeft />}>
           Phones
