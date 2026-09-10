@@ -5,6 +5,8 @@ import { BrowserRouter } from "react-router";
 
 import { App } from "./App";
 import { ToastProvider } from "./components/Toast";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 import "./index.css";
 
 const client = new QueryClient({

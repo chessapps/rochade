@@ -11,8 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
     "@rochade/api-client": "workspace:*",
     "@tanstack/react-query": "^5.102.8",
+    "lucide-react": "1.44.0",
     "oidc-client-ts": "^3.5.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
