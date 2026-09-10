@@ -1,17 +1,21 @@
 /**
  * One board of a round: who plays, what stands, and the buttons to change it.
  *
- * The same row serves the laptop (a wide grid, everything on one line) and a
- * phone in the hall (stacked, thumb-sized buttons). The common case is three
- * buttons; the rest of the TRF palette -- forfeits, unrated games, any pair of
- * codes -- is one tap further away so it cannot be hit by accident. A bye
- * carries one code and offers the bye codes instead.
+ * The same row serves the desk (five columns on one line: board, White,
+ * result, Black, what to do) and a phone in the hall (stacked, thumb-sized
+ * buttons). The common case is three buttons; the rest of the TRF palette --
+ * forfeits, unrated games, any pair of codes -- is one tap further away so it
+ * cannot be hit by accident. A bye carries one code and offers the bye codes
+ * instead.
  */
 
 import { useId, useState, type ButtonHTMLAttributes } from "react";
 
 import type { BoardDetail, GameResult, RoundEvent } from "../api";
 import { clockTime, resultLabel } from "../format";
+import { BoardNumber, type BoardNumberTone } from "./BoardNumber";
+import { Disc } from "./Disc";
+import { TriangleAlert } from "./icons";
 import { StateChip } from "./StateChip";
 import { Button, cx } from "./ui";
 
@@ -69,6 +73,22 @@ export interface BoardActions {
   onResolve: (board: BoardDetail, result: GameResult) => void;
 }
 
+/** The desk grid: board · White · result · Black · action. */
+export const ROW_GRID = "lg:grid-cols-[3rem_minmax(0,1fr)_9rem_minmax(0,1fr)_auto]";
+
+function toneOf(board: BoardDetail): BoardNumberTone {
+  if (board.is_bye) return "muted";
+  if (board.state === "disputed") return "disputed";
+  if (board.state === "claimed") return "claimed";
+  return "neutral";
+}
+
+/** "1 : 0" on the row, the way a pairing list prints it. */
+function scoreOf(board: BoardDetail): string {
+  const label = resultLabel(board.white_result, board.black_result, board.is_bye);
+  return board.is_bye ? label : label.replace(":", " : ");
+}
+
 export function BoardRow({
   board,
   editable,
@@ -93,6 +113,7 @@ export function BoardRow({
       e.action === "result_corrected" ||
       e.action === "result_disputed",
   );
+  const score = scoreOf(board);
 
   return (
     <li
@@ -100,28 +121,45 @@ export function BoardRow({
       data-game-id={board.game_id}
       aria-label={`board ${board.board}, ${board.white_name} against ${board.black_name ?? "bye"}`}
       className={cx(
-        "grid gap-x-3 gap-y-2 border-t border-slate-100 px-3 py-3 outline-offset-[-2px] sm:px-4",
-        "grid-cols-[2.5rem_minmax(0,1fr)_auto] lg:grid-cols-[3rem_minmax(0,1fr)_10rem_auto] lg:items-center",
+        "grid grid-cols-[2.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-2 border-t border-line border-l-4 px-3 py-3 outline-offset-[-2px] transition-colors lg:items-center lg:px-4 lg:py-2.5",
+        ROW_GRID,
         changed && "animate-row-pulse",
-        board.state === "disputed" && "bg-rose-50/60",
-        board.is_bye && "text-slate-400",
+        board.state === "disputed"
+          ? "border-l-rose-500 bg-rose-50/60"
+          : board.state === "claimed"
+            ? "border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70"
+            : "border-l-transparent hover:bg-subtle/60",
+        board.is_bye && "text-ink-3",
       )}
     >
-      <span className="pt-0.5 text-lg font-semibold text-slate-500 tabular-nums lg:text-xl">
-        {board.board}
+      <span className="row-span-2 flex justify-center lg:row-span-1">
+        <BoardNumber tone={toneOf(board)}>{String(board.board).padStart(2, "0")}</BoardNumber>
       </span>
 
-      <span className="min-w-0">
-        <span className="block truncate text-base">{board.white_name}</span>
-        <span className="block truncate text-base text-slate-500">
-          {board.black_name ?? "bye"}
-        </span>
-      </span>
+      <Player side="white" name={board.white_name} rank={board.white_rank} muted={board.is_bye} />
 
-      <span className="flex flex-col items-end gap-1 lg:items-start">
-        <span className="text-lg font-semibold tabular-nums">
-          {resultLabel(board.white_result, board.black_result, board.is_bye)}
-        </span>
+      <span className="col-start-3 row-span-2 flex flex-col items-end gap-1 lg:col-start-3 lg:row-span-1 lg:items-center">
+        {board.state === "disputed" ? (
+          <>
+            <span className="rounded-sm border border-rose-200 bg-rose-100/90 px-2 py-0.5 font-mono text-xs font-bold text-rose-700">
+              DISPUTED
+            </span>
+            <span className="font-mono text-[10px] font-medium text-rose-600">
+              {resultLabel(board.white_result, board.black_result)} vs{" "}
+              {resultLabel(board.disputed_white_result ?? " ", mirror(board.disputed_white_result ?? " "))}
+            </span>
+          </>
+        ) : (
+          <span
+            className={cx(
+              "font-mono text-base font-bold whitespace-nowrap",
+              score === "" ? "text-ink-3" : board.is_bye ? "text-ink-2" : "text-ink",
+              board.state === "claimed" && "rounded-sm border border-amber-200 bg-amber-100 px-2 text-amber-900",
+            )}
+          >
+            {score === "" ? "— : —" : score}
+          </span>
+        )}
         {!board.is_bye && (
           <span className="flex items-center gap-2">
             <StateChip state={board.state} />
@@ -131,7 +169,7 @@ export function BoardRow({
                 onClick={() => setHistory((v) => !v)}
                 aria-expanded={history}
                 aria-controls={historyId}
-                className="text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline"
+                className="text-[11px] text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline"
               >
                 {history ? "hide" : "history"}
               </button>
@@ -140,8 +178,16 @@ export function BoardRow({
         )}
       </span>
 
+      <span className="col-start-2 lg:col-start-4">
+        {board.black_name ? (
+          <Player side="black" name={board.black_name} rank={board.black_rank} muted={board.is_bye} />
+        ) : (
+          <span className="text-body-md text-ink-3">bye</span>
+        )}
+      </span>
+
       {editable && (
-        <div className="col-span-3 lg:col-span-1 lg:justify-self-end">
+        <div className="col-span-3 lg:col-span-1 lg:col-start-5 lg:justify-self-end">
           {board.is_bye ? (
             <ByeControls board={board} busy={busy} actions={actions} />
           ) : (
@@ -155,12 +201,34 @@ export function BoardRow({
           claims={claims}
           standing={board.white_result}
           other={board.disputed_white_result}
-          className="col-span-3 lg:col-span-4"
+          className="col-span-3 lg:col-span-5"
         />
       )}
 
-      {history && <History id={historyId} events={own} className="col-span-3 lg:col-span-4" />}
+      {history && <History id={historyId} events={own} className="col-span-3 lg:col-span-5" />}
     </li>
+  );
+}
+
+function Player({
+  side,
+  name,
+  rank,
+  muted,
+}: {
+  side: "white" | "black";
+  name: string;
+  rank: number | null;
+  muted: boolean;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-2.5">
+      <Disc side={side} />
+      <span className={cx("truncate text-body-md font-semibold", muted ? "text-ink-3" : "text-ink")}>
+        {name}
+      </span>
+      {rank !== null && <span className="shrink-0 font-mono text-xs text-ink-3">#{rank}</span>}
+    </span>
   );
 }
 
@@ -212,7 +280,7 @@ function Controls({
             onClick={() => setMore((v) => !v)}
             disabled={busy}
             aria-expanded={more}
-            className="min-h-11 rounded-lg px-2 text-sm text-slate-500 hover:bg-slate-100 lg:min-h-9"
+            className="min-h-11 rounded px-2 text-xs text-ink-2 hover:bg-subtle hover:text-ink lg:min-h-8"
             title="forfeits, unrated games and every other code"
           >
             {more ? "less" : "more…"}
@@ -222,7 +290,7 @@ function Controls({
           <button
             type="button"
             onClick={() => setChanging(false)}
-            className="min-h-11 px-2 text-sm text-slate-500 lg:min-h-9"
+            className="min-h-11 px-2 text-xs text-ink-2 hover:text-ink lg:min-h-8"
           >
             keep
           </button>
@@ -252,10 +320,10 @@ function Palette({
     { name: "Unrated", options: UNRATED },
   ];
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm">
+    <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-subtle p-2 text-sm">
       {groups.map((group) => (
         <div key={group.name} className="flex flex-wrap items-center gap-1.5">
-          <span className="w-16 text-xs text-slate-500">{group.name}</span>
+          <span className="w-16 text-label-sm text-ink-3">{group.name}</span>
           {group.options.map((option) => (
             <Choice
               key={option.label}
@@ -270,9 +338,9 @@ function Palette({
         </div>
       ))}
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="w-16 text-xs text-slate-500">Any pair</span>
+        <span className="w-16 text-label-sm text-ink-3">Any pair</span>
         <SideSelect label="white code" value={white} onChange={setWhite} />
-        <span className="text-slate-400">:</span>
+        <span className="text-ink-3">:</span>
         <SideSelect label="black code" value={black} onChange={setBlack} />
         <Button size="sm" disabled={busy} onClick={() => onPick(white, black)}>
           Set
@@ -296,7 +364,7 @@ function SideSelect({
       aria-label={label}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="min-h-9 rounded-lg border border-slate-300 bg-white px-2 font-mono text-sm"
+      className="min-h-9 rounded border border-line bg-card px-2 font-mono text-sm lg:min-h-8"
     >
       {SIDE_CODES.map((side) => (
         <option key={side.code} value={side.code}>
@@ -345,7 +413,7 @@ function ByeControls({
       <button
         type="button"
         onClick={() => setChanging(false)}
-        className="min-h-11 px-2 text-sm text-slate-500 lg:min-h-9"
+        className="min-h-11 px-2 text-xs text-ink-2 hover:text-ink lg:min-h-8"
       >
         keep
       </button>
@@ -365,10 +433,10 @@ function Choice({
       {...rest}
       aria-pressed={active}
       className={cx(
-        "min-h-11 min-w-14 rounded-lg border px-3 text-base font-semibold tabular-nums transition-colors disabled:opacity-40 lg:min-h-9 lg:min-w-12 lg:text-sm",
+        "min-h-11 min-w-14 rounded border px-3 font-mono text-sm font-bold whitespace-nowrap transition-colors disabled:opacity-40 lg:min-h-8 lg:min-w-12 lg:text-xs",
         active
           ? "border-ink bg-ink text-white"
-          : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50",
+          : "border-line bg-card text-ink hover:border-line-strong hover:bg-subtle",
         className,
       )}
     >
@@ -399,19 +467,27 @@ function Claims({
   );
   const second = claims.find((c) => c.action === "result_disputed");
   return (
-    <p className={cx("text-sm text-rose-800", className)}>
-      <span className="font-medium">Two phones disagree.</span>{" "}
-      {first && second ? (
-        <>
-          First {said(first)}; then {said(second)}.
-        </>
-      ) : (
-        <>
-          First “{resultLabel(standing, mirror(standing))}”, then “
-          {resultLabel(other ?? " ", mirror(other ?? " "))}”.
-        </>
-      )}{" "}
-      Pick the right one, or set it from the scoresheet.
+    <p
+      className={cx(
+        "flex items-start gap-2 rounded-lg border border-rose-200 bg-card px-3 py-2 text-body-sm text-rose-800 [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-rose-600",
+        className,
+      )}
+    >
+      <TriangleAlert />
+      <span>
+        <span className="font-semibold">Two phones disagree.</span>{" "}
+        {first && second ? (
+          <>
+            First {said(first)}; then {said(second)}.
+          </>
+        ) : (
+          <>
+            First “{resultLabel(standing, mirror(standing))}”, then “
+            {resultLabel(other ?? " ", mirror(other ?? " "))}”.
+          </>
+        )}{" "}
+        Pick the right one, or set it from the scoresheet.
+      </span>
     </p>
   );
 }
@@ -439,9 +515,9 @@ function History({
   className?: string;
 }) {
   return (
-    <ol id={id} className={cx("flex flex-col gap-0.5 text-xs text-slate-500", className)}>
+    <ol id={id} className={cx("flex flex-col gap-0.5 font-mono text-[11px] text-ink-2", className)}>
       {events.map((event) => (
-        <li key={event.id} className="tabular-nums">
+        <li key={event.id}>
           {clockTime(event.at)} · {ACTION_LABEL[event.action] ?? event.action}
           {"claimed" in event.payload && ` ${CLAIM_LABEL[String(event.payload.claimed)] ?? ""}`}
           {"white_result" in event.payload &&

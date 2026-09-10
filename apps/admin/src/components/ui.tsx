@@ -7,11 +7,12 @@
  * 4px controls in 8px containers, cobalt for the one thing to press.
  */
 
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
 } from "react";
 import { Link } from "react-router";
 
@@ -152,9 +153,11 @@ export function Field({
 const CONTROL =
   "min-h-11 rounded border border-line bg-card px-3 text-base text-ink placeholder:text-ink-3 transition-colors hover:border-line-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:bg-subtle lg:min-h-9 lg:text-sm";
 
-export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...rest} className={cx(CONTROL, className)} />;
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, ...rest }, ref) {
+    return <input ref={ref} {...rest} className={cx(CONTROL, className)} />;
+  },
+);
 
 export function Select({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...rest} className={cx(CONTROL, className)} />;
