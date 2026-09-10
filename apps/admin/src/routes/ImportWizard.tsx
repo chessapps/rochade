@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { errorMessage, type ImportPlan, type ManagerSummary } from "../api";
 import { currentRound } from "../boards";
@@ -37,6 +37,8 @@ export function ImportWizard() {
   const { tournamentId = "" } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  // Files dropped on the tournament home arrive here through router state.
+  const handed = (useLocation().state as { files?: PickedFile[] } | null)?.files ?? [];
   const toast = useToast();
   const tournament = useTournament(tournamentId);
   const managers = useManagers();
@@ -46,7 +48,7 @@ export function ImportWizard() {
 
   const [section, setSection] = useState(params.get("section") ?? "");
   const [manager, setManager] = useState("");
-  const [files, setFiles] = useState<PickedFile[]>([]);
+  const [files, setFiles] = useState<PickedFile[]>(handed);
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [forcing, setForcing] = useState(false);

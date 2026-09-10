@@ -8,6 +8,7 @@
 
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseMutationOptions,
@@ -18,6 +19,7 @@ import {
   ApiError,
   type CreateTournamentBody,
   type GameResult,
+  type RoundEvent,
   type RoundState,
 } from "./api";
 
@@ -95,6 +97,32 @@ export function useRoundEvents(id: string | undefined, state: RoundState | undef
     // The board's own poll refetches this the moment a board moves; this is
     // only the slow backstop, and a frozen round has no more to say.
     refetchInterval: pollInterval(state) === false ? false : 30_000,
+  });
+}
+
+/**
+ * Every section's current round, in one stream for the tournament home: the
+ * newest first. Shares the per-round cache with useRoundEvents, so opening a
+ * round shows the same log this page already had.
+ */
+export type FeedEvent = RoundEvent & { round_id: string };
+
+export function useLiveFeed(rounds: { id: string; state: RoundState }[]) {
+  return useQueries({
+    queries: rounds.map((round) => ({
+      queryKey: keys.events(round.id),
+      queryFn: () =>
+        unwrap(api.GET("/api/rounds/{round_id}/events", { params: { path: { round_id: round.id } } })),
+      refetchInterval: pollInterval(round.state) === false ? false : 10_000,
+    })),
+    combine: (results) => ({
+      events: results
+        .flatMap((result, index) =>
+          (result.data ?? []).map((event): FeedEvent => ({ ...event, round_id: rounds[index]!.id })),
+        )
+        .sort((a, b) => b.at.localeCompare(a.at)),
+      isPending: results.some((result) => result.isPending),
+    }),
   });
 }
 
