@@ -4,15 +4,16 @@
  */
 
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 import { errorMessage, type DeviceSummary, type IssuedDevice } from "../api";
 import { JoinCode } from "../components/JoinCode";
 import { ConfirmDialog, Dialog } from "../components/Dialog";
+import { PageHeader } from "../components/PageHeader";
 import { QrCode } from "../components/QrCode";
 import { DeviceChip } from "../components/StateChip";
 import { useToast } from "../components/Toast";
-import { Banner, Button, Card, CardHeader, EmptyState, Input, Skeleton } from "../components/ui";
+import { Banner, Button, Card, CardHeader, EmptyState, Field, Input, Skeleton } from "../components/ui";
 import { plural, relativeTime } from "../format";
 import {
   useDevices,
@@ -68,29 +69,22 @@ export function Devices() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header>
-        <Link to={`/t/${tournamentId}`} className="text-sm text-slate-500 hover:underline">
-          ← {tournament.data?.name ?? "Tournament"}
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold">Phones in the hall</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-500">
-          A QR code admits phones to this tournament until you revoke it. Print it as a poster
-          for the hall, or hand it to a helper. Revoking is immediate, and every result the
-          phone entered stays in the log; a revoked phone can then be removed from the list.
-        </p>
-      </header>
+      <PageHeader
+        back={{ to: `/t/${tournamentId}`, label: tournament.data?.name ?? "Tournament" }}
+        title="Phones in the hall"
+        lead="A QR code admits phones to this tournament until you revoke it. Print it as a poster for the hall, or hand it to a helper. Revoking is immediate, and every result the phone entered stays in the log; a revoked phone can then be removed from the list."
+      />
 
       <Card className="p-4 sm:p-5">
         <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label className="flex flex-1 flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Label</span>
+          <Field label="Label" className="flex-1">
             <Input
               value={label}
               onChange={(event) => setLabel(event.target.value)}
               placeholder="e.g. poster by the door, or Anna's phone"
             />
-          </label>
-          <Button type="submit" tone="primary" size="lg" busy={issue.isPending}>
+          </Field>
+          <Button type="submit" tone="primary" size="md" busy={issue.isPending}>
             Issue a QR code
           </Button>
         </form>
@@ -131,12 +125,12 @@ export function Devices() {
             {list.map((device) => (
               <li
                 key={device.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 px-4 py-3 text-sm sm:px-5"
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-sm hover:bg-subtle/60 sm:px-5"
               >
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {device.label || "unlabelled"}
                 </span>
-                <span className="text-slate-500 tabular-nums">
+                <span className="font-mono text-[11px] text-ink-2">
                   {device.last_seen_at
                     ? `last entry ${relativeTime(device.last_seen_at, now)}`
                     : "not used yet"}
@@ -220,7 +214,7 @@ function IssuedDialog({
           </Banner>
           <button
             type="button"
-            className="text-xs text-slate-500 underline-offset-2 hover:underline"
+            className="text-body-sm text-ink-2 underline-offset-2 hover:text-ink hover:underline"
             onClick={() =>
               void navigator.clipboard
                 .writeText(issued.qr_payload)

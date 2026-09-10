@@ -4,8 +4,9 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { errorMessage, type TournamentSummary } from "../api";
 import { Dialog } from "../components/Dialog";
 import { useToast } from "../components/Toast";
+import { Calendar, MapPin } from "../components/icons";
 import { Banner, Button, EmptyState, Field, Input, Skeleton } from "../components/ui";
-import { dateRange, joinNonEmpty } from "../format";
+import { dateRange } from "../format";
 import { useCreateTournament, useTournaments } from "../queries";
 
 export function TournamentList() {
@@ -30,7 +31,7 @@ export function TournamentList() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Tournaments</h1>
+        <h1 className="text-headline-md">Tournaments</h1>
         <Button tone="primary" onClick={() => setCreating(true)}>
           New tournament
         </Button>
@@ -64,18 +65,29 @@ export function TournamentList() {
 }
 
 function TournamentCard({ tournament }: { tournament: TournamentSummary }) {
-  const meta = joinNonEmpty([
-    tournament.city,
-    dateRange(tournament.start_date, tournament.end_date),
-  ]);
+  const when = dateRange(tournament.start_date, tournament.end_date);
   return (
     <Link
       to={`/t/${tournament.id}`}
-      className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
+      className="flex h-full flex-col gap-3 rounded-lg border border-line bg-card p-4 transition-colors hover:border-line-strong hover:bg-subtle/40"
     >
-      <p className="font-semibold">{tournament.name}</p>
-      <p className="mt-1 text-sm text-slate-500">{meta || " "}</p>
-      <p className="mt-3 text-xs text-slate-400">you are {tournament.role}</p>
+      <p className="text-headline-sm">{tournament.name}</p>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-ink-2 [&_svg]:size-3.5 [&_svg]:text-ink-3">
+        {tournament.city && (
+          <span className="flex items-center gap-1">
+            <MapPin />
+            {tournament.city}
+          </span>
+        )}
+        {when && (
+          <span className="flex items-center gap-1">
+            <Calendar />
+            {when}
+          </span>
+        )}
+        {!tournament.city && !when && <span>&nbsp;</span>}
+      </p>
+      <p className="mt-auto text-label-sm text-ink-3">you are {tournament.role}</p>
     </Link>
   );
 }
@@ -155,7 +167,7 @@ function CreateTournamentDialog({ open, onClose }: { open: boolean; onClose: () 
             <Input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
           </Field>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-body-sm text-ink-2">
           Only the name matters here. Players, pairings and rounds come from your tournament
           manager, one export per round.
         </p>

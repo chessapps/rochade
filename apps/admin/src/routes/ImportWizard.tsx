@@ -8,11 +8,13 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { errorMessage, type ImportPlan, type ManagerSummary } from "../api";
 import { currentRound } from "../boards";
 import { ConfirmDialog } from "../components/Dialog";
+import { DropZone as Zone } from "../components/DropZone";
+import { PageHeader } from "../components/PageHeader";
 import { useToast } from "../components/Toast";
 import { Banner, Button, Card, Field, Input, Select, Skeleton, cx } from "../components/ui";
 import { plural } from "../format";
@@ -135,14 +137,10 @@ export function ImportWizard() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <header>
-        <Link to={`/t/${tournamentId}`} className="text-sm text-slate-500 hover:underline">
-          ← {tournament.data?.name ?? "Tournament"}
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold">
-          {plan ? `What round ${plan.file_round} changes` : "Import the paired round"}
-        </h1>
-      </header>
+      <PageHeader
+        back={{ to: `/t/${tournamentId}`, label: tournament.data?.name ?? "Tournament" }}
+        title={plan ? `What round ${plan.file_round} changes` : "Import the paired round"}
+      />
 
       {!plan ? (
         <Card className="flex flex-col gap-4 p-4 sm:p-5">
@@ -259,7 +257,7 @@ function ManagerNotice({ manager }: { manager: ManagerSummary }) {
         </p>
       )}
       {(manager.notes ?? []).map((note) => (
-        <p key={note} className="mt-1 text-slate-500">
+        <p key={note} className="mt-1 text-ink-3">
           {note}
         </p>
       ))}
@@ -282,8 +280,6 @@ function DropZone({
   onFile: (file: PickedFile) => void;
   onClear: () => void;
 }) {
-  const [over, setOver] = useState(false);
-
   const take = (picked: FileList | null) => {
     for (const one of Array.from(picked ?? [])) {
       void readText(one).then((content) => onFile({ name: one.name, content, kind: sniff(content) }));
@@ -294,45 +290,24 @@ function DropZone({
 
   return (
     <div className="space-y-2">
-      <label
-        onDragOver={(event) => {
-          event.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setOver(false);
-          take(event.dataTransfer.files);
-        }}
-        className={cx(
-          "flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
-          over ? "border-accent bg-accent-soft/40" : "border-slate-300 hover:border-slate-400",
-          files.length > 0 && note === null && "border-emerald-400 bg-emerald-50",
-        )}
-      >
-        <input
-          type="file"
-          multiple
-          accept=".trf,.txt,text/plain"
-          className="sr-only"
-          onChange={(event) => take(event.target.files)}
-        />
-        <p className="font-medium">Drop the exported files here</p>
-        <p className="text-sm text-slate-500">
-          or click to choose them — Swiss-Manager writes two, Vega one
-        </p>
-      </label>
+      <Zone
+        multiple
+        accept=".trf,.txt,text/plain"
+        onFiles={take}
+        ready={files.length > 0 && note === null}
+        title="Drop the exported files here"
+        hint="or click to choose them — Swiss-Manager writes two, Vega one"
+      />
 
       {files.length > 0 && (
         <ul className="space-y-1">
           {files.map((file) => (
             <li
               key={file.kind + file.name}
-              className="flex flex-wrap items-baseline justify-between gap-x-3 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+              className="flex flex-wrap items-baseline justify-between gap-x-3 rounded border border-line bg-subtle px-3 py-2 text-sm"
             >
-              <span className="font-medium [overflow-wrap:anywhere]">{file.name}</span>
-              <span className="text-slate-500">
+              <span className="font-mono text-xs font-medium [overflow-wrap:anywhere]">{file.name}</span>
+              <span className="text-body-sm text-ink-2">
                 {KIND_LABEL[file.kind]} ·{" "}
                 {plural(countLines(file.content), "line")}
               </span>
@@ -347,7 +322,7 @@ function DropZone({
         <button
           type="button"
           onClick={onClear}
-          className="text-xs text-slate-500 underline underline-offset-2 hover:text-ink"
+          className="text-body-sm text-ink-2 underline underline-offset-2 hover:text-ink"
         >
           Start the file choice again
         </button>
@@ -357,9 +332,9 @@ function DropZone({
 }
 
 const SEVERITY_STYLE: Record<Severity, string> = {
-  blocking: "border-rose-300 bg-rose-50 text-rose-900",
-  acknowledge: "border-amber-300 bg-amber-50 text-amber-900",
-  informational: "border-slate-200 bg-white text-slate-600",
+  blocking: "border-rose-200 bg-rose-50 text-rose-900",
+  acknowledge: "border-amber-200 bg-amber-50 text-amber-900",
+  informational: "border-line bg-card text-ink-2",
 };
 
 function PlanReview({
@@ -392,8 +367,8 @@ function PlanReview({
   return (
     <Card className="flex flex-col gap-4 p-4 sm:p-5">
       <div>
-        <p className="text-lg font-medium">{headline(plan)}</p>
-        <p className="text-sm text-slate-500">
+        <p className="text-headline-sm">{headline(plan)}</p>
+        <p className="text-body-sm text-ink-2">
           {plan.section_exists
             ? `Replaces what we hold for section ${plan.section_name}.`
             : `Creates section ${plan.section_name}.`}
@@ -412,7 +387,7 @@ function PlanReview({
           <button
             type="button"
             onClick={() => setShowInfo((v) => !v)}
-            className="text-sm text-slate-600 underline-offset-2 hover:underline"
+            className="text-sm text-ink-2 underline-offset-2 hover:text-ink hover:underline"
             aria-expanded={showInfo}
           >
             {showInfo ? "Hide" : "Show"} {plural(groups.informational.length, "detail")} — players
@@ -473,7 +448,7 @@ function NoteList({
         {notes.map((note, index) => (
           <li
             key={index}
-            className={cx("rounded-lg border px-3 py-2 text-sm", SEVERITY_STYLE[note.severity])}
+            className={cx("rounded border px-3 py-2 text-sm", SEVERITY_STYLE[note.severity])}
           >
             {note.text}
           </li>
