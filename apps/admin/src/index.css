@@ -35,11 +35,17 @@
   --ink-2: #475569;
   --ink-3: #94a3b8;
 
-  /* What sits on an ink surface: the dock, the wordmark, the dark chip. */
+  /* What sits on an ink surface: the wordmark, the dark chip, the dark button. */
   --on-ink: #ffffff;
-  --on-ink-2: #cbd5e1;
-  --on-ink-subtle: #1e293b;
-  --on-ink-rose: #fda4af;
+
+  /* The floating arbiter dock is dark in both themes: obsidian on the light
+     desk, one surface step up (DESIGN_DARK level 2) on the dark one. */
+  --dock: #0f172a;
+  --dock-line: #1e293b;
+  --on-dock: #f8fafc;
+  --on-dock-2: #cbd5e1;
+  --on-dock-subtle: #1e293b;
+  --on-dock-rose: #fda4af;
 
   /* The one accent: cobalt, for the single-path CTA and focus. */
   --accent: #2563eb;
@@ -78,9 +84,13 @@
   --ink-3: #64748b;
 
   --on-ink: #0b0f17;
-  --on-ink-2: #475569;
-  --on-ink-subtle: #cbd5e1;
-  --on-ink-rose: #be123c;
+
+  --dock: #1e293b;
+  --dock-line: #334155;
+  --on-dock: #f8fafc;
+  --on-dock-2: #cbd5e1;
+  --on-dock-subtle: #334155;
+  --on-dock-rose: #fda4af;
 
   --accent: #2563eb;
   --accent-strong: #3b82f6;
@@ -115,9 +125,12 @@
   --color-ink-3: var(--ink-3);
 
   --color-on-ink: var(--on-ink);
-  --color-on-ink-2: var(--on-ink-2);
-  --color-on-ink-subtle: var(--on-ink-subtle);
-  --color-on-ink-rose: var(--on-ink-rose);
+  --color-dock: var(--dock);
+  --color-dock-line: var(--dock-line);
+  --color-on-dock: var(--on-dock);
+  --color-on-dock-2: var(--on-dock-2);
+  --color-on-dock-subtle: var(--on-dock-subtle);
+  --color-on-dock-rose: var(--on-dock-rose);
 
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);

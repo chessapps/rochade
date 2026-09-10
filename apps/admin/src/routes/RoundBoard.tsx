@@ -486,7 +486,7 @@ function Dock({
   const percent = round.boards > 0 ? Math.round((round.confirmed / round.boards) * 1000) / 10 : 0;
   return (
     <div className="no-print pointer-events-none fixed inset-x-0 bottom-4 z-10 px-4 sm:px-6">
-      <div className="pointer-events-auto mx-auto flex max-w-[1160px] flex-col items-center justify-between gap-3 rounded-lg border border-on-ink-subtle bg-ink p-3 text-on-ink shadow-dock sm:flex-row sm:px-5 sm:py-3.5">
+      <div className="pointer-events-auto mx-auto flex max-w-[1160px] flex-col items-center justify-between gap-3 rounded-lg border border-dock-line bg-dock p-3 text-on-dock shadow-dock sm:flex-row sm:px-5 sm:py-3.5">
         <div className="flex w-full items-center gap-3 sm:w-auto">
           <span aria-hidden className="relative flex size-2.5 shrink-0">
             {!ready && round.state === "open" && (
@@ -506,19 +506,19 @@ function Dock({
                   <span>Every board has a result. Release the round to confirm them.</span>
                 ) : (
                   <span>
-                    <span className="text-on-ink-rose">{plural(open, "board")}</span> still{" "}
+                    <span className="text-on-dock-rose">{plural(open, "board")}</span> still{" "}
                     {open === 1 ? "needs" : "need"} you before release.
                   </span>
                 )
               ) : (
                 <span>Released. Export the results for {managerLabel} to close the round.</span>
               )}
-              <span className="rounded-sm bg-on-ink-subtle px-1.5 py-0.5 font-mono text-[11px] text-on-ink-2">
+              <span className="rounded-sm bg-on-dock-subtle px-1.5 py-0.5 font-mono text-[11px] text-on-dock-2">
                 {round.confirmed} of {round.boards} · {percent}%
               </span>
             </p>
             {round.state === "open" && disputedBoards.length > 0 && (
-              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-on-ink-rose">
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-on-dock-rose">
                 {disputedBoards.length === 1 ? "A dispute on board" : "Disputes on boards"}{" "}
                 {disputedBoards.join(", ")} must be resolved before release.
               </p>
@@ -536,7 +536,7 @@ function Dock({
               tone={ready ? "primary" : "ghost"}
               size="md"
               onClick={onRelease}
-              className={cx(!ready && "text-on-ink-2 hover:bg-on-ink-subtle hover:text-on-ink")}
+              className={cx(!ready && "text-on-dock-2 hover:bg-on-dock-subtle hover:text-on-dock")}
             >
               {ready ? `Release round ${round.number}` : "Release anyway…"}
             </Button>
