@@ -8,11 +8,13 @@
  */
 
 import { useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import { errorMessage, type SectionStandings } from "../api";
+import { DropZone } from "../components/DropZone";
+import { PageHeader } from "../components/PageHeader";
 import { useToast } from "../components/Toast";
-import { Banner, Button, Card, CardHeader, EmptyState, Input, Skeleton, cx } from "../components/ui";
+import { Banner, Button, Card, CardHeader, EmptyState, Input, Select, Skeleton } from "../components/ui";
 import { plural } from "../format";
 import { readText, sniff } from "../importFiles";
 import { useImportStandings, useNameTiebreaks, useStandings, useTournament } from "../queries";
@@ -32,16 +34,11 @@ export function Standings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header>
-        <Link to={`/t/${tournamentId}`} className="text-sm text-slate-500 hover:underline">
-          ← {tournament.data?.name ?? "Tournament"}
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold">Standings</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-500">
-          As the tournament manager computes them. They arrive with its player list: import a
-          round with both files, or drop the player list here on its own after the last round.
-        </p>
-      </header>
+      <PageHeader
+        back={{ to: `/t/${tournamentId}`, label: tournament.data?.name ?? "Tournament" }}
+        title="Standings"
+        lead="As the tournament manager computes them. They arrive with its player list: import a round with both files, or drop the player list here on its own after the last round."
+      />
 
       {sections.length === 0 ? (
         <EmptyState title="No standings yet">
@@ -87,7 +84,7 @@ function SectionTable({
         }
       >
         {inPlay && (
-          <span className="text-xs text-slate-500">
+          <span className="text-body-sm text-ink-3">
             round {section.rounds_held} {section.stale ? "played, standings not yet updated" : "in play"}
           </span>
         )}
@@ -101,7 +98,7 @@ function SectionTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
+            <tr className="border-b border-line bg-subtle/90 text-left text-label-sm text-ink-2">
               <th className="w-10 px-3 py-2 text-right sm:px-4">#</th>
               <th className="px-2 py-2">Name</th>
               <th className="hidden px-2 py-2 sm:table-cell">Fed</th>
@@ -116,21 +113,21 @@ function SectionTable({
           </thead>
           <tbody>
             {section.rows.map((row) => (
-              <tr key={row.start_rank} className="border-b border-slate-100 tabular-nums">
-                <td className="px-3 py-1.5 text-right font-semibold text-slate-500 sm:px-4">
+              <tr key={row.start_rank} className="border-b border-line hover:bg-subtle/60">
+                <td className="px-3 py-1.5 text-right font-mono font-semibold text-ink-2 sm:px-4">
                   {row.rank}
                 </td>
                 <td className="px-2 py-1.5">
-                  {row.title && <span className="mr-1 text-xs text-slate-500">{row.title}</span>}
+                  {row.title && <span className="mr-1.5 rounded-sm bg-subtle px-1 font-mono text-[11px] font-semibold text-ink-2">{row.title}</span>}
                   {row.name}
                 </td>
-                <td className="hidden px-2 py-1.5 text-slate-500 sm:table-cell">{row.federation}</td>
-                <td className="hidden px-2 py-1.5 text-right text-slate-500 sm:table-cell">
+                <td className="hidden px-2 py-1.5 text-ink-2 sm:table-cell">{row.federation}</td>
+                <td className="hidden px-2 py-1.5 text-right font-mono text-ink-2 sm:table-cell">
                   {row.rating ?? ""}
                 </td>
-                <td className="px-2 py-1.5 text-right font-semibold">{score(row.points)}</td>
+                <td className="px-2 py-1.5 text-right font-mono font-bold">{score(row.points)}</td>
                 {names.map((name, i) => (
-                  <td key={name} className="px-2 py-1.5 text-right text-slate-600">
+                  <td key={name} className="px-2 py-1.5 text-right font-mono text-ink-2">
                     {score(row.tiebreaks[i])}
                   </td>
                 ))}
@@ -187,7 +184,7 @@ function TiebreakNames({
 
   if (!editing) {
     return (
-      <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500 sm:px-5">
+      <div className="border-t border-line px-4 py-2 text-body-sm text-ink-2 sm:px-5">
         The file numbers the tiebreak columns and does not say which system each is.{" "}
         <button
           type="button"
@@ -204,10 +201,10 @@ function TiebreakNames({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-wrap items-end gap-2 border-t border-slate-100 px-4 py-3 sm:px-5"
+      className="flex flex-wrap items-end gap-2 border-t border-line px-4 py-3 sm:px-5"
     >
       {names.map((name, i) => (
-        <label key={i} className="flex flex-col gap-1 text-xs text-slate-500">
+        <label key={i} className="flex flex-col gap-1 text-label-sm text-ink-3">
           TB{i + 1}
           <Input
             value={name}
@@ -241,7 +238,6 @@ function ImportStandingsCard({
 }) {
   const [section, setSection] = useState(initial);
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
-  const [over, setOver] = useState(false);
   const importStandings = useImportStandings();
   const toast = useToast();
 
@@ -275,62 +271,38 @@ function ImportStandingsCard({
     <Card>
       <CardHeader title="Import standings on their own" />
       <div className="flex flex-col gap-3 p-4 sm:p-5">
-        <p className="text-sm text-slate-500">
+        <p className="text-body-sm text-ink-2">
           For the table after the last round, or a refresh before the next pairing: Extras →
           Daten Import/Export → <strong>Spielerdaten (Text-File)</strong>, and drop that file here.
           Only points, tiebreaks and ranks change; the players stay as the round import left them.
         </p>
         {sections.length > 1 && (
           <label className="flex items-center gap-2 text-sm">
-            <span className="text-slate-600">Section</span>
-            <select
-              value={section}
-              onChange={(event) => setSection(event.target.value)}
-              className="min-h-9 rounded-lg border border-slate-300 bg-white px-2"
-            >
+            <span className="text-ink-2">Section</span>
+            <Select value={section} onChange={(event) => setSection(event.target.value)} className="min-h-9 py-0">
               {sections.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         )}
-        <label
-          onDragOver={(event) => {
-            event.preventDefault();
-            setOver(true);
-          }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setOver(false);
-            take(event.dataTransfer.files);
-          }}
-          className={cx(
-            "flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center text-sm transition-colors",
-            over ? "border-accent bg-accent-soft/40" : "border-slate-300 hover:border-slate-400",
-            ready && "border-emerald-400 bg-emerald-50",
-          )}
+        <DropZone
+          compact
+          accept=".txt,text/plain"
+          inputLabel="player list file"
+          onFiles={take}
+          ready={ready}
+          title={file ? file.name : "Drop the player list here, or click to choose it"}
+          hint={!file && "Spielerdaten (Text-File)"}
         >
-          <input
-            type="file"
-            accept=".txt,text/plain"
-            className="sr-only"
-            aria-label="player list file"
-            onChange={(event) => take(event.target.files)}
-          />
-          {file ? (
-            <span className="font-medium">{file.name}</span>
-          ) : (
-            <span className="font-medium">Drop the player list here, or click to choose it</span>
-          )}
           {file && kind !== "players" && (
-            <span className="text-rose-700">
+            <span className="text-body-sm text-rose-text">
               This is not the player list. Standings come with Spielerdaten.
             </span>
           )}
-        </label>
+        </DropZone>
         <div className="flex justify-end">
           <Button tone="primary" onClick={run} disabled={!ready} busy={importStandings.isPending}>
             Import standings

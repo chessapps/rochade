@@ -43,6 +43,8 @@ const tournament: TournamentDetail = {
   federation: "",
   start_date: null,
   end_date: null,
+  manager: "swiss_manager",
+  manager_label: "Swiss-Manager",
   sections: [],
 };
 
@@ -116,9 +118,10 @@ async function chooseFile() {
 }
 
 describe("ImportWizard", () => {
-  it("defaults to the verified manager and previews before writing anything", async () => {
+  it("names the tournament's program and previews before writing anything", async () => {
     const calls = mount(plan());
-    expect(await screen.findByLabelText("Tournament manager")).toHaveValue("swiss_manager");
+    expect(await screen.findByText("Swiss-Manager")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Tournament manager")).toBeNull();
     expect(screen.getByText(/Extras → FIDE-Daten-Export/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preview the changes" })).toBeDisabled();
     await chooseFile();
@@ -144,7 +147,7 @@ describe("ImportWizard", () => {
         players_added: [{ start_rank: 9, name: "New,Player", rating: null }],
       }),
     );
-    await screen.findByLabelText("Tournament manager");
+    await screen.findByText("Swiss-Manager");
     await chooseFile();
     await userEvent.click(screen.getByRole("button", { name: "Preview the changes" }));
     await screen.findByText("Read before importing");
@@ -163,7 +166,6 @@ describe("ImportWizard", () => {
     );
     expect(calls.find((c) => c.path === `/api/tournaments/${T}/imports`)!.body).toMatchObject({
       section_name: "A",
-      manager: "swiss_manager",
       filename: "r1.trf",
       force: false,
     });
@@ -173,7 +175,7 @@ describe("ImportWizard", () => {
 
   it("a blocked plan asks again before importing over the block", async () => {
     const calls = mount(plan({ blocked_by: ["round 1 is already exported"] }));
-    await screen.findByLabelText("Tournament manager");
+    await screen.findByText("Swiss-Manager");
     await chooseFile();
     await userEvent.click(screen.getByRole("button", { name: "Preview the changes" }));
     await screen.findByText("Why this should not be imported");
@@ -193,11 +195,11 @@ describe("ImportWizard", () => {
 describe("the two files Swiss-Manager writes", () => {
   it("holds the import until both are there, and says which is missing", async () => {
     mount(plan());
-    await screen.findByLabelText("Tournament manager");
+    await screen.findByText("Swiss-Manager");
 
     await upload("pairings.txt", PAIRINGS);
     expect(screen.getByRole("button", { name: "Preview the changes" })).toBeDisabled();
-    expect(screen.getByText(/Spielerdaten/)).toBeInTheDocument();
+    expect(screen.getByText(/Add the players file/)).toBeInTheDocument();
 
     await upload("players.txt", PLAYERS);
     await waitFor(() =>
@@ -207,7 +209,7 @@ describe("the two files Swiss-Manager writes", () => {
 
   it("sends both as one body, players first", async () => {
     const calls = mount(plan());
-    await screen.findByLabelText("Tournament manager");
+    await screen.findByText("Swiss-Manager");
     await upload("players.txt", PLAYERS);
     await upload("pairings.txt", PAIRINGS);
     await userEvent.click(screen.getByRole("button", { name: "Preview the changes" }));
@@ -223,5 +225,22 @@ describe("the two files Swiss-Manager writes", () => {
     await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(2));
     const imported = calls.filter((c) => c.method === "POST")[1]!.body as { filename: string };
     expect(imported.filename).toBe("pairings.txt");
+  });
+});
+
+describe("a tournament on Vega", () => {
+  it("refuses Swiss-Manager's text files and asks for the TRF", async () => {
+    stubApi({
+      GET: {
+        "/api/managers": managers,
+        [`/api/tournaments/${T}`]: { ...tournament, manager: "vega", manager_label: "Vega" },
+      },
+    });
+    renderAt(`/t/${T}/import`, "/t/:tournamentId/import", <ImportWizard />);
+    await screen.findByText("Vega");
+    await upload("players.txt", PLAYERS);
+    await upload("pairings.txt", PAIRINGS);
+    expect(screen.getByText(/this tournament runs on Vega/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview the changes" })).toBeDisabled();
   });
 });

@@ -34,6 +34,7 @@ from rochade.features.standings import get_standings, import_standings, name_tie
 from rochade.features.tournaments import (
     add_member,
     create_tournament,
+    delete_tournament,
     get_tournament,
     list_tournaments,
 )
@@ -49,6 +50,7 @@ MODULES = (
     list_tournaments,
     get_tournament,
     add_member,
+    delete_tournament,
     # /api/tournaments/{id}/imports
     preview_import,
     import_round,

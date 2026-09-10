@@ -1,64 +1,118 @@
+/**
+ * The compact state tokens of DESIGN.md: a dot or glyph and one word in
+ * label-sm. Colour never carries the meaning alone; the word and the shape do
+ * too. slate: nothing yet · amber: entered · rose: disputed · emerald:
+ * confirmed. Same as the hall app.
+ */
+
+import type { ReactNode } from "react";
+
 import type { ResultState, RoundState } from "../api";
-import { RESULT_STATE_LABEL, ROUND_STATE_LABEL } from "../format";
+import { ROUND_STATE_LABEL } from "../format";
+import { Check, TriangleAlert } from "./icons";
 import { cx } from "./ui";
 
-/** slate: nothing yet · amber: entered · rose: disputed · emerald: confirmed. Same as the hall app. */
-export const STATE_STYLE: Record<ResultState, string> = {
-  empty: "bg-slate-100 text-slate-600",
-  claimed: "bg-amber-100 text-amber-900",
-  disputed: "bg-rose-100 text-rose-800",
-  confirmed: "bg-emerald-100 text-emerald-800",
-};
-
-export const STATE_BAR: Record<ResultState, string> = {
-  empty: "bg-slate-200",
-  claimed: "bg-amber-400",
-  disputed: "bg-rose-500",
-  confirmed: "bg-emerald-500",
-};
-
-export function StateChip({ state, className }: { state: ResultState; className?: string }) {
+export function Chip({
+  tone,
+  children,
+  className,
+  title,
+}: {
+  tone: "neutral" | "amber" | "rose" | "emerald" | "blue" | "dark";
+  children: ReactNode;
+  className?: string;
+  title?: string;
+}) {
+  const style = {
+    neutral: "border-line bg-subtle text-ink-2",
+    amber: "border-amber-line bg-amber-soft text-amber-text",
+    rose: "border-rose-line bg-rose-soft text-rose-text",
+    emerald: "border-emerald-line bg-emerald-soft text-emerald-text",
+    blue: "border-blue-line bg-blue-soft text-blue-text",
+    dark: "border-ink bg-ink text-on-ink",
+  }[tone];
   return (
     <span
+      title={title}
       className={cx(
-        "inline-block rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        STATE_STYLE[state],
+        "inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-label-sm whitespace-nowrap [&>svg]:size-3",
+        style,
         className,
       )}
     >
-      {RESULT_STATE_LABEL[state]}
+      {children}
     </span>
   );
 }
 
-const ROUND_STYLE: Record<RoundState, string> = {
-  open: "bg-accent-soft text-blue-900",
-  confirmed: "bg-amber-100 text-amber-900",
-  exported: "bg-slate-100 text-slate-600",
+function Dot({ className }: { className: string }) {
+  return <span aria-hidden className={cx("inline-block size-1.5 rounded-full", className)} />;
+}
+
+const STATE: Record<ResultState, { tone: "neutral" | "amber" | "rose" | "emerald"; word: string; mark: ReactNode }> = {
+  empty: { tone: "neutral", word: "Awaiting", mark: <Dot className="bg-state-empty" /> },
+  claimed: { tone: "amber", word: "Entered", mark: <Dot className="animate-pulse bg-state-claimed" /> },
+  disputed: { tone: "rose", word: "Dispute", mark: <TriangleAlert /> },
+  confirmed: { tone: "emerald", word: "Confirmed", mark: <Check /> },
 };
 
-export function RoundChip({ state, className }: { state: RoundState; className?: string }) {
+/** Bar segments and the same hues on a swatch. */
+export const STATE_BAR: Record<ResultState, string> = {
+  empty: "bg-line-strong",
+  claimed: "bg-state-claimed",
+  disputed: "bg-state-disputed",
+  confirmed: "bg-state-confirmed",
+};
+
+export const STATE_TEXT: Record<ResultState, string> = {
+  empty: "text-ink-2",
+  claimed: "text-state-claimed",
+  disputed: "text-rose-text",
+  confirmed: "text-state-confirmed",
+};
+
+export function StateChip({ state, className }: { state: ResultState; className?: string }) {
+  const spec = STATE[state];
   return (
-    <span
-      className={cx(
-        "inline-block rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        ROUND_STYLE[state],
-        className,
-      )}
-    >
+    <Chip tone={spec.tone} className={className}>
+      {spec.mark}
+      {spec.word}
+    </Chip>
+  );
+}
+
+const ROUND: Record<RoundState, { tone: "blue" | "amber" | "neutral"; dot: string }> = {
+  open: { tone: "blue", dot: "animate-pulse bg-round-open" },
+  confirmed: { tone: "amber", dot: "bg-round-released" },
+  exported: { tone: "neutral", dot: "bg-round-exported" },
+};
+
+/** Where a round is: cobalt while open for entry, amber once released, slate when frozen. */
+export function RoundChip({
+  state,
+  className,
+  children,
+}: {
+  state: RoundState;
+  className?: string;
+  /** Anything to say after the state, e.g. how often it polls. */
+  children?: ReactNode;
+}) {
+  const spec = ROUND[state];
+  return (
+    <Chip tone={spec.tone} className={className}>
+      <Dot className={spec.dot} />
       {ROUND_STATE_LABEL[state]}
-    </span>
+      {children}
+    </Chip>
   );
 }
 
 export function DeviceChip({ state }: { state: "active" | "revoked" }) {
-  const style = {
-    active: "bg-emerald-100 text-emerald-800",
-    revoked: "bg-rose-100 text-rose-800",
-  }[state];
   return (
-    <span className={cx("inline-block rounded-md px-2 py-0.5 text-xs font-medium", style)}>
+    <Chip tone={state === "active" ? "emerald" : "rose"}>
+      <Dot className={state === "active" ? "bg-state-confirmed" : "bg-state-disputed"} />
       {state}
-    </span>
+    </Chip>
   );
 }

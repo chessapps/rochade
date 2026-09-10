@@ -52,6 +52,10 @@ page.on("pageerror", (e) => check("no page error", false, e.message));
 // 1. Create a tournament in the UI.
 await page.goto(BASE + "/admin/", { waitUntil: "networkidle" });
 await page.getByRole("button", { name: "New tournament" }).first().click();
+check("custom program is announced, not offered", await page.getByRole("radio", { name: /Custom/ }).isDisabled());
+// The radio itself is screen-reader only; the card around it is what one clicks.
+await page.getByText("Swiss-Manager", { exact: true }).first().click();
+await page.getByRole("button", { name: "Continue" }).click();
 await page.getByRole("textbox", { name: "Name" }).fill("Flow Open");
 await page.getByRole("button", { name: "Create", exact: true }).click();
 await page.waitForURL(/\/admin\/t\/[0-9a-f-]+$/);
@@ -86,6 +90,7 @@ check("a dispute arrives by polling", true);
 check("the pulse class was applied", (await page.locator("li.animate-row-pulse").count()) > 0);
 await page.waitForFunction(() => /“poster”/.test(document.body.innerText) && /“Anna”/.test(document.body.innerText), null, { timeout: 8000 });
 check("the claims name the phones", true);
+await page.screenshot({ path: path.join(SHOTS, "round.png"), fullPage: true });
 
 // 4. Resolve the dispute with a button, set the empty board with the keyboard.
 const disputed = page.locator(`li[data-game-id="${boards[2].game_id}"]`);
@@ -97,7 +102,7 @@ await empty.focus();
 await page.keyboard.press("1");
 await page.waitForFunction((id) => !document.querySelector(`li[data-game-id="${id}"]`), boards[3].game_id, { timeout: 8000 });
 await page.getByRole("tab", { name: /Confirmed/ }).click();
-await page.waitForFunction((id) => document.querySelector(`li[data-game-id="${id}"]`)?.innerText.includes("1:0"), boards[3].game_id, { timeout: 8000 });
+await page.waitForFunction((id) => document.querySelector(`li[data-game-id="${id}"]`)?.innerText.includes("1 : 0"), boards[3].game_id, { timeout: 8000 });
 check("keyboard sets a result", true);
 await page.getByRole("tab", { name: /Attention/ }).click();
 await page.waitForFunction(() => document.body.innerText.includes("Nothing needs you"), null, { timeout: 8000 });
@@ -137,7 +142,7 @@ check("no more result buttons on a frozen round", (await page.getByRole("group",
 // 6. Import round 4 from the hand-off link; the home shows the loop advanced.
 await page.getByRole("link", { name: "Import round 4" }).click();
 await page.waitForURL(/\/import\?section=A/);
-check("section prefilled and manager locked", (await page.getByLabel("Section").inputValue()) === "A" && (await page.getByLabel("Tournament manager").isDisabled()));
+check("section prefilled and the program is the tournament's", (await page.getByLabel("Section").inputValue()) === "A" && (await page.getByText("Files from").isVisible()) && !(await page.getByLabel("Tournament manager").count()));
 await page.setInputFiles('input[type="file"]', { name: "FIDE_Export_r4.TXT", mimeType: "text/plain", buffer: Buffer.from(readFileSync(FIX + "round4_paired.trf")) });
 await page.getByRole("button", { name: "Preview the changes" }).click();
 await page.waitForSelector("text=What round 4 changes");
@@ -148,7 +153,7 @@ await page.waitForURL(/\/rounds\//);
 await page.waitForSelector("text=Section A · Round 4");
 check("round 4 is open on its board", true);
 await page.goto(BASE + `/admin/t/${tournamentId}`, { waitUntil: "networkidle" });
-await page.waitForSelector("text=Earlier:");
+await page.waitForSelector("text=Earlier rounds");
 check("home shows round 4 with earlier rounds", await page.getByRole("link", { name: "Round 4" }).isVisible());
 await page.screenshot({ path: path.join(SHOTS, "home.png"), fullPage: true });
 

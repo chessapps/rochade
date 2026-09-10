@@ -1,7 +1,7 @@
 /**
  * The round, board by board. This is where the arbiter lives while a round is
  * open: results arrive from the phones every few seconds, the ones that need a
- * hand are one filter away, and the release is at the bottom of the page.
+ * hand are one filter away, and the release is in the dock at the bottom.
  */
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,16 +26,19 @@ import {
   type Counts,
   type Filter,
 } from "../boards";
-import { BoardRow, PLAYED } from "../components/BoardRow";
+import { BoardRow, PLAYED, ROW_GRID } from "../components/BoardRow";
 import { ConfirmDialog } from "../components/Dialog";
+import { Gavel, Keyboard, QrCode, Search } from "../components/icons";
 import { ProgressBar } from "../components/ProgressBar";
 import { download, ExportDialog, ReleaseDialog } from "../components/RoundDialogs";
-import { RoundChip } from "../components/StateChip";
+import { SegmentedTabs } from "../components/SegmentedTabs";
+import { RoundChip, STATE_TEXT } from "../components/StateChip";
 import { useToast } from "../components/Toast";
-import { Banner, Button, Card, EmptyState, Input, Skeleton, SuccessCheck, cx } from "../components/ui";
+import { Banner, Button, Card, EmptyState, Input, Kbd, Skeleton, SuccessCheck, cx } from "../components/ui";
 import { plural, relativeTime, resultLabel } from "../format";
 import {
   keys,
+  pollInterval,
   useConfirmBoards,
   useExportFile,
   useResolveDispute,
@@ -73,6 +76,7 @@ export function RoundBoard() {
   const filter: Filter = isFilter(requested) ? requested : defaultFilter(state ?? "open");
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<"release" | "export" | "confirm" | null>(null);
+  const search = useRef<HTMLInputElement>(null);
 
   // Rows that moved since the previous poll light up for a moment, and a board
   // that moved has a new line in the log: fetch it now, not at the log's own
@@ -95,6 +99,18 @@ export function RoundBoard() {
     }
   }, [state, requested, setParams]);
 
+  // "/" jumps to the search from anywhere on the page but a text field.
+  useEffect(() => {
+    const onSlash = (event: globalThis.KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (event.key !== "/" || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      event.preventDefault();
+      search.current?.focus();
+    };
+    window.addEventListener("keydown", onSlash);
+    return () => window.removeEventListener("keydown", onSlash);
+  }, []);
+
   if (round.isPending) return <Skeleton rows={8} />;
   if (round.isError) {
     return <Banner tone="error">Could not load the round: {errorMessage(round.error)}</Banner>;
@@ -112,6 +128,7 @@ export function RoundBoard() {
   const busy = setResult.isPending || resolve.isPending || confirmBoards.isPending;
   // Confirm what is on screen: the whole Entered list, or the part a search left.
   const entered = shown.filter((b) => b.state === "claimed");
+  const disputedBoards = detail.boards.filter((b) => b.state === "disputed").map((b) => b.board);
 
   const fail = (error: unknown) => toast.error(errorMessage(error));
   const actions = {
@@ -152,36 +169,79 @@ export function RoundBoard() {
     : round.dataUpdatedAt
       ? `updated ${relativeTime(new Date(round.dataUpdatedAt).toISOString(), now)}`
       : "";
+  const every = pollInterval(detail.state);
+  const done = counts.confirmed + counts.claimed;
+  const percent = counts.boards > 0 ? Math.round((done / counts.boards) * 1000) / 10 : 0;
 
   return (
-    <div className="flex flex-col gap-4 pb-24">
-      <header className="flex flex-col gap-2">
-        <Link to={`/t/${tournamentId}`} className="text-sm text-slate-500 hover:underline">
-          ← {tournament.data?.name ?? "Tournament"}
-        </Link>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="text-xl font-semibold">
-            Section {detail.section_name} · Round {detail.number}
-          </h1>
-          <RoundChip state={detail.state} />
-          <span className="flex-1" />
-          <span
-            className={cx(
-              "text-xs tabular-nums",
-              round.isFetching ? "text-accent" : "text-slate-400",
-              round.failureCount > 0 && "text-amber-700",
-            )}
-            aria-live="polite"
-          >
-            {round.failureCount > 0 ? "not updating — check the network" : freshness}
-          </span>
+    <div className="flex flex-col gap-4 pb-32">
+      {/* Round control bar */}
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="flex items-center gap-1.5 text-body-sm font-medium text-ink-2">
+              <Link to={`/t/${tournamentId}`} className="hover:text-ink">
+                {tournament.data?.name ?? "Tournament"}
+              </Link>
+              <span className="text-line-strong">/</span>
+              <span>Section {detail.section_name}</span>
+              {detail.source_filename && (
+                <>
+                  <span className="text-line-strong">/</span>
+                  <code className="font-mono text-xs text-ink-3">{detail.source_filename}</code>
+                </>
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <h1 className="text-headline-md">
+                Section {detail.section_name} · Round {detail.number}
+              </h1>
+              <RoundChip state={detail.state}>
+                {every && <span className="normal-case tracking-normal">· polling {every / 1000}s</span>}
+              </RoundChip>
+              <span
+                className={cx(
+                  "font-mono text-[11px]",
+                  round.isFetching ? "text-accent" : "text-ink-3",
+                  round.failureCount > 0 && "text-amber-text",
+                )}
+                aria-live="polite"
+              >
+                {round.failureCount > 0 ? "not updating — check the network" : freshness}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" to={`/t/${tournamentId}/devices`} icon={<QrCode />}>
+              Hall QR code
+            </Button>
+          </div>
         </div>
-        <p className="text-sm text-slate-500">
-          {detail.source_filename && <>from <code>{detail.source_filename}</code> · </>}
-          {plural(counts.boards, "board")}
-          {counts.byes > 0 && `, ${plural(counts.byes, "bye")}`}
-        </p>
-      </header>
+
+        {/* Pipeline strip */}
+        <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3.5 text-xs md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-semibold text-ink">
+              {plural(counts.boards, "board")}
+              {counts.byes > 0 && <span className="font-normal text-ink-2">, {plural(counts.byes, "bye")}</span>}
+            </span>
+            <span className="text-line-strong">•</span>
+            <span className="flex items-center gap-2 font-mono text-[11px]">
+              <span className={cx("font-semibold", STATE_TEXT.confirmed)}>{counts.confirmed} Confirmed</span>
+              <span className="text-line-strong">/</span>
+              <span className={cx("font-semibold", STATE_TEXT.claimed)}>{counts.claimed} Entered</span>
+              <span className="text-line-strong">/</span>
+              <span className={cx("font-semibold", STATE_TEXT.disputed)}>{counts.disputed} Dispute</span>
+              <span className="text-line-strong">/</span>
+              <span className="text-ink-2">{counts.empty} Awaiting</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5 md:w-72">
+            <ProgressBar counts={counts} size="sm" caption={false} className="flex-1" />
+            <span className="font-mono text-[11px] font-semibold text-ink-2">{percent}%</span>
+          </div>
+        </div>
+      </Card>
 
       {tournament.isError && (
         <Banner tone="error">
@@ -201,58 +261,89 @@ export function RoundBoard() {
         />
       )}
 
-      <Card className="p-4 sm:p-5">
-        <ProgressBar counts={counts} />
-      </Card>
-
-      <Card>
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-3 sm:flex-row sm:items-center sm:p-4">
-          <div role="tablist" aria-label="show" className="flex gap-1 overflow-x-auto">
-            {(Object.keys(FILTER_LABEL) as Filter[]).map((option) => {
-              const count = filterCount(detail.boards, option);
-              const active = filter === option;
-              return (
-                <button
-                  key={option}
-                  role="tab"
-                  aria-selected={active}
-                  type="button"
-                  onClick={() => setParams(option === defaultFilter(detail.state) ? {} : { filter: option })}
-                  className={cx(
-                    "min-h-10 rounded-lg px-3 text-sm font-medium whitespace-nowrap tabular-nums transition-colors",
-                    active ? "bg-ink text-white" : "text-slate-600 hover:bg-slate-100",
-                    option === "attention" && !active && count > 0 && "text-rose-700",
-                  )}
-                >
-                  {FILTER_LABEL[option]} <span className="opacity-70">{count}</span>
-                </button>
-              );
-            })}
-          </div>
-          {editable && filter === "entered" && entered.length > 0 && (
-            <Button
-              tone="success"
-              size="sm"
-              onClick={() => setDialog("confirm")}
-              disabled={busy}
-              className="sm:ml-auto"
-            >
-              Confirm {query ? `these ${entered.length}` : `all ${entered.length}`}
-            </Button>
-          )}
-          <Input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="name or board number"
-            aria-label="search boards"
-            className={cx("min-h-10 sm:w-64", !(editable && filter === "entered" && entered.length > 0) && "sm:ml-auto")}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setQuery("");
-            }}
+      {/* Filter toolbar */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <SegmentedTabs
+            label="show"
+            value={filter}
+            onChange={(option) => setParams(option === defaultFilter(detail.state) ? {} : { filter: option })}
+            segments={(Object.keys(FILTER_LABEL) as Filter[]).map((option) => ({
+              key: option,
+              label: FILTER_LABEL[option],
+              count: filterCount(detail.boards, option),
+              alert: option === "attention",
+            }))}
           />
+          <div className="flex items-center gap-2 md:ml-auto">
+            {editable && filter === "entered" && entered.length > 0 && (
+              <Button tone="success" size="sm" onClick={() => setDialog("confirm")} disabled={busy}>
+                Confirm {query ? `these ${entered.length}` : `all ${entered.length}`}
+              </Button>
+            )}
+            <div className="relative w-full md:w-72">
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" />
+              <Input
+                ref={search}
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="name or board number"
+                aria-label="search boards"
+                className="min-h-10 w-full pr-8 pl-9 text-xs"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setQuery("");
+                }}
+              />
+              <span className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 sm:inline">
+                <Kbd>/</Kbd>
+              </span>
+            </div>
+          </div>
         </div>
 
+        {editable && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-line bg-subtle/80 px-3 py-2 text-[11px] text-ink-2 [&>svg]:size-3.5">
+            <Keyboard className="text-ink-3" />
+            <span className="font-semibold text-ink">Hotkeys</span>
+            <span className="inline-flex items-center gap-1">
+              <Kbd>↑</Kbd>
+              <Kbd>↓</Kbd> move
+            </span>
+            <span className="text-line-strong">•</span>
+            <span className="inline-flex items-center gap-1">
+              <Kbd>1</Kbd> White wins
+            </span>
+            <span className="text-line-strong">•</span>
+            <span className="inline-flex items-center gap-1">
+              <Kbd>=</Kbd> Draw
+            </span>
+            <span className="text-line-strong">•</span>
+            <span className="inline-flex items-center gap-1">
+              <Kbd>0</Kbd> Black wins
+            </span>
+            <span className="text-line-strong">•</span>
+            <span className="inline-flex items-center gap-1">
+              <Kbd>/</Kbd> Search
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Board table */}
+      <Card className="overflow-hidden">
+        <div
+          className={cx(
+            "hidden gap-x-3 border-b border-line bg-subtle/90 px-4 py-2 text-label-sm text-ink-2 lg:grid",
+            ROW_GRID,
+          )}
+        >
+          <span className="text-center">Brd</span>
+          <span>White</span>
+          <span className="text-center">Result</span>
+          <span>Black</span>
+          <span className="text-right">{editable ? "Decision" : "Status"}</span>
+        </div>
         {shown.length === 0 ? (
           <div className="p-4">
             <EmptyState title={emptyTitle(filter, query)}>
@@ -260,7 +351,7 @@ export function RoundBoard() {
             </EmptyState>
           </div>
         ) : (
-          <ul onKeyDown={onKey} className="focus-within:[&_li:focus]:bg-accent-soft/40">
+          <ul onKeyDown={onKey} className="[&>li:first-child]:border-t-0 focus-within:[&_li:focus]:bg-accent-soft/40">
             {shown.map((board) => (
               <BoardRow
                 key={board.game_id}
@@ -276,17 +367,13 @@ export function RoundBoard() {
         )}
       </Card>
 
-      {editable && (
-        <p className="text-xs text-slate-400">
-          Keyboard: ↑ ↓ move between boards, then <kbd>1</kbd> <kbd>=</kbd> <kbd>0</kbd> set the
-          result.
-        </p>
-      )}
-
       {detail.state !== "exported" && (
-        <Footer
+        <Dock
           round={summary}
+          disputedBoards={disputedBoards}
           managerLabel={managerLabel}
+          showingAttention={filter === "attention"}
+          onAttention={() => setParams({ filter: "attention" })}
           onRelease={() => setDialog("release")}
           onExport={() => setDialog("export")}
         />
@@ -327,7 +414,7 @@ export function RoundBoard() {
             tournamentId={tournamentId}
             boards={{
               empty: detail.boards.filter((b) => !b.is_bye && b.state === "empty").map((b) => b.board),
-              disputed: detail.boards.filter((b) => b.state === "disputed").map((b) => b.board),
+              disputed: disputedBoards,
             }}
             open={dialog === "release"}
             onClose={() => setDialog(null)}
@@ -376,48 +463,89 @@ function emptyTitle(filter: Filter, query: string): string {
   }
 }
 
-/** The one action for this round, always in reach. */
-function Footer({
+/** The floating dock: where the round stands and the one action for it, always in reach. */
+function Dock({
   round,
+  disputedBoards,
   managerLabel,
+  showingAttention,
+  onAttention,
   onRelease,
   onExport,
 }: {
   round: RoundSummary;
+  disputedBoards: number[];
   managerLabel: string;
+  showingAttention: boolean;
+  onAttention: () => void;
   onRelease: () => void;
   onExport: () => void;
 }) {
   const ready = readyToRelease(round);
+  const open = round.empty + round.disputed;
+  const percent = round.boards > 0 ? Math.round((round.confirmed / round.boards) * 1000) / 10 : 0;
   return (
-    <div className="no-print fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        <p className="text-sm text-slate-600">
-          {round.state === "open" ? (
-            ready ? (
-              <>Every board has a result. Release the round to confirm them.</>
-            ) : (
-              <>
-                <span className="font-medium text-rose-700">
-                  {plural(round.empty + round.disputed, "board")}
-                </span>{" "}
-                still {round.empty + round.disputed === 1 ? "needs" : "need"} you before release.
-              </>
-            )
-          ) : (
-            <>Released. Export the results for {managerLabel} to close the round.</>
+    <div className="no-print pointer-events-none fixed inset-x-0 bottom-4 z-10 px-4 sm:px-6">
+      <div className="pointer-events-auto mx-auto flex max-w-[1160px] flex-col items-center justify-between gap-3 rounded-lg border border-dock-line bg-dock p-3 text-on-dock shadow-dock sm:flex-row sm:px-5 sm:py-3.5">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <span aria-hidden className="relative flex size-2.5 shrink-0">
+            {!ready && round.state === "open" && (
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-soft0" />
+            )}
+            <span
+              className={cx(
+                "relative inline-flex size-2.5 rounded-full",
+                round.state !== "open" ? "bg-round-released" : ready ? "bg-state-confirmed" : "bg-rose-soft0",
+              )}
+            />
+          </span>
+          <div>
+            <p className="flex flex-wrap items-center gap-2 text-xs font-semibold sm:text-sm">
+              {round.state === "open" ? (
+                ready ? (
+                  <span>Every board has a result. Release the round to confirm them.</span>
+                ) : (
+                  <span>
+                    <span className="text-on-dock-rose">{plural(open, "board")}</span> still{" "}
+                    {open === 1 ? "needs" : "need"} you before release.
+                  </span>
+                )
+              ) : (
+                <span>Released. Export the results for {managerLabel} to close the round.</span>
+              )}
+              <span className="rounded-sm bg-on-dock-subtle px-1.5 py-0.5 font-mono text-[11px] text-on-dock-2">
+                {round.confirmed} of {round.boards} · {percent}%
+              </span>
+            </p>
+            {round.state === "open" && disputedBoards.length > 0 && (
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-on-dock-rose">
+                {disputedBoards.length === 1 ? "A dispute on board" : "Disputes on boards"}{" "}
+                {disputedBoards.join(", ")} must be resolved before release.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+          {round.state === "open" && disputedBoards.length > 0 && !showingAttention && (
+            <Button tone="danger" size="md" icon={<Gavel />} onClick={onAttention}>
+              Resolve first
+            </Button>
           )}
-        </p>
-        <span className="flex-1" />
-        {round.state === "open" ? (
-          <Button tone={ready ? "primary" : "secondary"} size="lg" onClick={onRelease}>
-            {ready ? `Release round ${round.number}` : "Release anyway…"}
-          </Button>
-        ) : (
-          <Button tone="success" size="lg" onClick={onExport}>
-            Export for {managerLabel}
-          </Button>
-        )}
+          {round.state === "open" ? (
+            <Button
+              tone={ready ? "primary" : "ghost"}
+              size="md"
+              onClick={onRelease}
+              className={cx(!ready && "text-on-dock-2 hover:bg-on-dock-subtle hover:text-on-dock")}
+            >
+              {ready ? `Release round ${round.number}` : "Release anyway…"}
+            </Button>
+          ) : (
+            <Button tone="success" size="md" onClick={onExport}>
+              Export for {managerLabel}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -445,28 +573,28 @@ function Handoff({
 }) {
   const file = useExportFile(roundId, true);
   return (
-    <Card className="border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950 sm:p-5">
+    <Card className="border-emerald-line bg-emerald-soft p-4 text-sm text-emerald-text sm:p-5">
       <div className="flex items-start gap-3">
         {justExported && <SuccessCheck />}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <p className="text-base font-semibold">
+          <p className="text-headline-sm">
             Round {roundNumber} exported
             {file.data && (
               <>
                 {" "}
-                as <code className="font-mono text-sm">{file.data.filename}</code>
+                as <code className="font-mono text-sm font-medium">{file.data.filename}</code>
               </>
             )}{" "}
             and frozen.
           </p>
           {file.data ? (
             <p>
-              <span className="font-medium">Now in {managerLabel}:</span> {file.data.next_step}
+              <span className="font-semibold">Now in {managerLabel}:</span> {file.data.next_step}
             </p>
           ) : file.isError ? (
-            <p className="text-rose-800">{errorMessage(file.error)}</p>
+            <p className="text-rose-text">{errorMessage(file.error)}</p>
           ) : (
-            <p className="text-emerald-800">Fetching the file…</p>
+            <p className="text-emerald-text">Fetching the file…</p>
           )}
           {file.data && (file.data.boards_left_blank ?? []).length > 0 && (
             <p>
@@ -478,12 +606,12 @@ function Handoff({
             <Button tone="success" onClick={() => file.data && download(file.data)} disabled={!file.data}>
               {justExported ? "Download again" : "Download the file"}
             </Button>
-            <Link
+            <Button
               to={`/t/${tournamentId}/import?section=${encodeURIComponent(sectionName)}`}
-              className="inline-flex min-h-11 items-center rounded-lg border border-emerald-300 bg-white px-4 text-sm font-medium hover:bg-emerald-100"
+              className="border-emerald-line hover:bg-emerald-soft/70"
             >
               Import round {roundNumber + 1}
-            </Link>
+            </Button>
           </div>
         </div>
       </div>

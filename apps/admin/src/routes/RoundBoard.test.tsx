@@ -55,6 +55,8 @@ function tournament(state: RoundDetail["state"] = "open", counts = { empty: 1, c
     federation: "",
     start_date: null,
     end_date: null,
+    manager: "swiss_manager",
+    manager_label: "Swiss-Manager",
     sections: [
       {
         id: "s1",

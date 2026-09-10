@@ -83,7 +83,7 @@ def test_an_unknown_device_token_is_rejected(client: TestClient) -> None:
 def test_the_whole_flow_over_http(client: TestClient, round1_text: str) -> None:
     created = client.post(
         "/api/tournaments",
-        json={"name": "HTTP Open", "city": "Rochade"},
+        json={"name": "HTTP Open", "city": "Rochade", "manager": "vega"},
         headers=staff(OWNER.subject),
     )
     assert created.status_code == 201
@@ -148,7 +148,7 @@ def test_the_whole_flow_over_http(client: TestClient, round1_text: str) -> None:
 
 def test_a_revoked_device_loses_access_immediately(client: TestClient, round1_text: str) -> None:
     tournament_id = client.post(
-        "/api/tournaments", json={"name": "Revocation"}, headers=staff()
+        "/api/tournaments", json={"name": "Revocation", "manager": "vega"}, headers=staff()
     ).json()["id"]
     client.post(
         f"/api/tournaments/{tournament_id}/imports",
@@ -175,7 +175,7 @@ def test_a_revoked_device_loses_access_immediately(client: TestClient, round1_te
 
 def test_a_conflict_becomes_a_409(client: TestClient, round1_text: str) -> None:
     tournament_id = client.post(
-        "/api/tournaments", json={"name": "Conflicts"}, headers=staff()
+        "/api/tournaments", json={"name": "Conflicts", "manager": "vega"}, headers=staff()
     ).json()["id"]
     imported = client.post(
         f"/api/tournaments/{tournament_id}/imports",

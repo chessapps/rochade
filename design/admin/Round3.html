@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rochade Arbiter Desk — Round 3 Live</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'Courier New', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f6fe',
+              100: '#dbeafe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 antialiased min-h-screen flex flex-col selection:bg-blue-100 selection:text-blue-900">
+<!-- TOP NAVIGATION BAR -->
+<header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200/80">
+<div class="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+<!-- Brand & Context -->
+<div class="flex items-center gap-6">
+<a class="flex items-center gap-2.5 group focus:outline-none" href="#">
+<div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-sm group-hover:bg-blue-600 transition-colors">
+<!-- Castling / Rook Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M5 20h14v-2H5v2zm0-4h14v-2H5v2zm2-4h2V9H7v3zm4 0h2V9h-2v3zm4 0h2V9h-2v3zM5 7h14V4H5v3zM3 22h18v-2H3v2zm0-18h2V2H3v2zm16-2v2h2V2h-2zm-6 0h-2v2h2V2z"></path>
+</svg>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-bold text-slate-900 tracking-tight text-base">Rochade</span>
+<span class="text-[10px] font-mono uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Arbiter Desk</span>
+</div>
+</a>
+<!-- Tournament Switcher -->
+<div class="relative hidden md:block">
+<button class="flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent hover:border-slate-200 transition-all">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="truncate max-w-[200px]">47th Zurich Chess Open 2025</span>
+<span class="material-symbols-outlined text-[16px] text-slate-400">unfold_more</span>
+</button>
+</div>
+<!-- Navigation Tabs -->
+<nav class="hidden lg:flex items-center space-x-1 pl-2 border-l border-slate-200">
+<a class="px-3 py-1.5 rounded-md text-xs font-semibold text-blue-700 bg-blue-50/70 border border-blue-200/60 shadow-xs" href="#">Rounds &amp; Pairings</a>
+<a class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" href="#">Standings</a>
+<a class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" href="#">Devices &amp; QR</a>
+<a class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" href="#">Audit Log</a>
+</nav>
+</div>
+<!-- Right Controls -->
+<div class="flex items-center gap-3">
+<!-- Live Sync Pill -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/70 text-[11px] font-mono text-slate-600">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+</span>
+<span class="font-medium text-slate-700">Polling live 3s</span>
+</div>
+<!-- Arbiter Profile -->
+<div class="flex items-center gap-2 pl-2 border-l border-slate-200">
+<button class="flex items-center gap-2 text-left p-1 rounded-lg hover:bg-slate-100 transition-colors">
+<div class="w-7 h-7 rounded-full bg-slate-800 text-white font-mono text-xs flex items-center justify-center font-semibold">
+              MW
+            </div>
+<div class="hidden sm:block text-xs leading-tight">
+<div class="font-semibold text-slate-800">Dr. M. Weber</div>
+<div class="text-[10px] text-slate-500">Chief Arbiter</div>
+</div>
+</button>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN VIEWPORT CONTAINER -->
+<main class="flex-1 max-w-[1280px] w-full mx-auto px-4 sm:px-6 py-6 pb-28">
+<!-- SUBHEADER / ROUND CONTROL BAR -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm mb-5">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<!-- Left: Breadcrumb & Title -->
+<div class="space-y-1">
+<div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+<span class="hover:text-slate-800 cursor-pointer transition-colors">47th Zurich Open</span>
+<span class="text-slate-300">/</span>
+<span class="hover:text-slate-800 cursor-pointer transition-colors">Section A (Masters)</span>
+<span class="text-slate-300">/</span>
+<span class="text-slate-700">Swiss System</span>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Round 3 Live</h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+              Entry Open • Polling 3s
+            </span>
+</div>
+</div>
+<!-- Center: Round Timer Widget -->
+<div class="flex items-center gap-4 py-2 px-3 rounded-lg bg-slate-50 border border-slate-200/80 self-start lg:self-center">
+<div class="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 shadow-xs">
+<span class="material-symbols-outlined text-[20px]">timer</span>
+</div>
+<div>
+<div class="text-[10px] uppercase font-mono tracking-wider font-semibold text-slate-500">Round Elapsed</div>
+<div class="font-mono text-lg font-bold text-slate-900 tracking-tight leading-none">03:42:18</div>
+</div>
+<div class="hidden sm:block pl-3 border-l border-slate-200 text-[11px] text-slate-500">
+<span class="font-semibold text-slate-700">90m + 30s</span>
+<div class="text-slate-400">Standard FIDE</div>
+</div>
+</div>
+<!-- Right: Fast Actions -->
+<div class="flex flex-wrap items-center gap-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-all hover:border-slate-300">
+<span class="material-symbols-outlined text-[16px] text-slate-500">qr_code_2</span>
+<span>Hall QR Code</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-all hover:border-slate-300">
+<span class="material-symbols-outlined text-[16px] text-slate-500">download</span>
+<span>Swiss-Manager Export</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-all" onclick="toggleDisputeModal()">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Arbiter Console</span>
+</button>
+</div>
+</div>
+<!-- Quick Metrics Pipeline Strip -->
+<div class="mt-4 pt-3.5 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+<div class="flex items-center gap-3">
+<span class="font-semibold text-slate-800">32 Boards Active</span>
+<span class="text-slate-300">•</span>
+<div class="flex items-center gap-2 font-mono text-[11px]">
+<span class="text-emerald-600 font-semibold">27 Confirmed</span>
+<span class="text-slate-300">/</span>
+<span class="text-amber-600 font-semibold">1 Claimed</span>
+<span class="text-slate-300">/</span>
+<span class="text-rose-600 font-semibold">1 Disputed</span>
+<span class="text-slate-300">/</span>
+<span class="text-slate-500">3 In Progress</span>
+</div>
+</div>
+<!-- Micro Progress Track -->
+<div class="flex items-center gap-2.5 w-full md:w-72">
+<div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden flex">
+<div class="bg-emerald-500 h-full" style="width: 84.375%;" title="27 Confirmed (84%)"></div>
+<div class="bg-amber-500 h-full" style="width: 3.125%;" title="1 Claimed"></div>
+<div class="bg-rose-500 h-full animate-pulse" style="width: 3.125%;" title="1 Disputed"></div>
+<div class="bg-slate-300 h-full" style="width: 9.375%;" title="3 Playing"></div>
+</div>
+<span class="font-mono text-[11px] font-semibold text-slate-600">84.4%</span>
+</div>
+</div>
+</div>
+<!-- FILTER TOOLBAR, SEARCH & HOTKEY GUIDE -->
+<div class="space-y-3 mb-4">
+<div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+<!-- Segmented Filter Tabs -->
+<div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+<!-- Attention Needed (Rose Pill) -->
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
+<span class="material-symbols-outlined text-[15px] text-rose-600">error</span>
+<span>Attention Needed</span>
+<span class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-rose-600 text-white">2</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white shadow-xs">
+<span>All</span>
+<span class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-700 text-slate-200">32</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all">
+<span>Empty</span>
+<span class="font-mono text-slate-400">3</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all">
+<span>Entered</span>
+<span class="font-mono text-amber-600 font-semibold">1</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all">
+<span>Disputed</span>
+<span class="font-mono text-rose-600 font-semibold">1</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all">
+<span>Confirmed</span>
+<span class="font-mono text-emerald-600 font-semibold">27</span>
+</button>
+</div>
+<!-- Search Input -->
+<div class="relative w-full md:w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+<input class="w-full pl-9 pr-8 py-1.5 text-xs bg-white border border-slate-200 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-xs" id="searchInput" placeholder="Search player, rating, or board #..." type="text"/>
+<kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 font-mono text-[10px] text-slate-400 border border-slate-200 rounded px-1 py-0.5 bg-slate-50">/</kbd>
+</div>
+</div>
+<!-- Hotkeys Hint Strip -->
+<div class="flex flex-wrap items-center justify-between px-3 py-2 bg-slate-100/80 border border-slate-200/80 rounded-lg text-xs text-slate-600">
+<div class="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px]">
+<span class="font-semibold text-slate-700 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-slate-500">keyboard</span>
+            Hotkeys:
+          </span>
+<span class="inline-flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono font-bold text-slate-800 text-[10px] shadow-2xs">1</kbd>
+<span>White Wins</span>
+</span>
+<span class="text-slate-300">•</span>
+<span class="inline-flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono font-bold text-slate-800 text-[10px] shadow-2xs">=</kbd>
+<span>Draw</span>
+</span>
+<span class="text-slate-300">•</span>
+<span class="inline-flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono font-bold text-slate-800 text-[10px] shadow-2xs">0</kbd>
+<span>Black Wins</span>
+</span>
+<span class="text-slate-300">•</span>
+<span class="inline-flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono font-bold text-slate-800 text-[10px] shadow-2xs">Enter</kbd>
+<span>Confirm Row</span>
+</span>
+</div>
+<div class="hidden sm:flex items-center gap-2 text-[11px] text-slate-500">
+<label class="flex items-center gap-1.5 cursor-pointer select-none">
+<input checked="" class="rounded border-slate-300 text-blue-600 focus:ring-0 w-3.5 h-3.5" type="checkbox"/>
+<span>Pin Disputed Rows to Top</span>
+</label>
+</div>
+</div>
+</div>
+<!-- MAIN CHESS BOARD TABLE -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-3 px-4 py-2.5 bg-slate-50/90 border-b border-slate-200 text-[11px] font-mono uppercase tracking-wider font-semibold text-slate-500">
+<div class="col-span-1 text-center">Brd</div>
+<div class="col-span-4">White Player</div>
+<div class="col-span-2 text-center">Result &amp; Action</div>
+<div class="col-span-3">Black Player</div>
+<div class="col-span-2 text-right pr-1">Status &amp; Decision</div>
+</div>
+<!-- Table Body Rows -->
+<div class="divide-y divide-slate-100">
+<!-- 1. DISPUTE ROW: Board 12 (Rapport vs Keymer) -->
+<div class="bg-rose-50/60 border-l-4 border-rose-500 transition-colors">
+<div class="grid grid-cols-12 gap-3 px-4 py-3 items-center">
+<!-- Board Monospace Badge -->
+<div class="col-span-1 flex justify-center">
+<span class="w-8 h-8 rounded-md bg-rose-600 text-white font-mono font-bold text-xs flex items-center justify-center shadow-xs">
+                12
+              </span>
+</div>
+<!-- White Player -->
+<div class="col-span-4 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-white border-2 border-slate-400 shadow-2xs flex-shrink-0" title="White"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Rapport, Richard</span>
+<span class="font-mono text-xs text-slate-500">(2745)</span>
+</div>
+<div class="text-[11px] text-emerald-700 font-medium flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">smartphone</span>
+<span>Claimed: 1 : 0 (14:41)</span>
+</div>
+</div>
+</div>
+<!-- Score & Resolve Action -->
+<div class="col-span-2 flex flex-col items-center justify-center">
+<span class="font-mono font-bold text-sm text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded border border-rose-200">
+                DISPUTED
+              </span>
+<span class="text-[10px] text-rose-600 font-medium mt-0.5">1 : 0 vs ½ : ½</span>
+</div>
+<!-- Black Player -->
+<div class="col-span-3 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700 shadow-2xs flex-shrink-0" title="Black"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Keymer, Vincent</span>
+<span class="font-mono text-xs text-slate-500">(2730)</span>
+</div>
+<div class="text-[11px] text-rose-700 font-medium flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">smartphone</span>
+<span>Claimed: ½ : ½ (14:42)</span>
+</div>
+</div>
+</div>
+<!-- Status & Action Button -->
+<div class="col-span-2 flex items-center justify-end gap-2">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all" onclick="toggleDisputeModal()">
+<span class="material-symbols-outlined text-[15px]">gavel</span>
+<span>Resolve</span>
+</button>
+</div>
+</div>
+<!-- Dispute In-line Context Callout -->
+<div class="mx-4 mb-3 px-3 py-2 rounded-lg bg-white border border-rose-200 text-xs flex items-center justify-between gap-2 shadow-2xs">
+<div class="flex items-center gap-2 text-rose-800 font-medium">
+<span class="material-symbols-outlined text-rose-600 text-[18px]">warning</span>
+<span><strong>Conflicting Claims:</strong> White claimed resignation win (1:0) at 14:41; Black claimed 3-fold repetition draw (½:½) at 14:42.</span>
+</div>
+<span class="text-[11px] font-mono text-slate-500 hidden md:inline">Chief Arbiter override required</span>
+</div>
+</div>
+<!-- 2. ENTERED ROW: Board 04 (MVL vs Giri) -->
+<div class="bg-amber-50/40 border-l-4 border-amber-400 hover:bg-amber-50/70 transition-colors">
+<div class="grid grid-cols-12 gap-3 px-4 py-3 items-center">
+<div class="col-span-1 flex justify-center">
+<span class="w-8 h-8 rounded-md bg-amber-100 text-amber-900 font-mono font-bold text-xs flex items-center justify-center border border-amber-200">
+                04
+              </span>
+</div>
+<!-- White Player -->
+<div class="col-span-4 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-white border-2 border-slate-400 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Vachier-Lagrave, Maxime</span>
+<span class="font-mono text-xs text-slate-500">(2760)</span>
+</div>
+<div class="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">phone_iphone</span>
+<span>Submitted by White</span>
+</div>
+</div>
+</div>
+<!-- Result Display -->
+<div class="col-span-2 flex flex-col items-center justify-center">
+<span class="font-mono font-bold text-base text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded border border-amber-200">
+                ½ – ½
+              </span>
+</div>
+<!-- Black Player -->
+<div class="col-span-3 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Giri, Anish</span>
+<span class="font-mono text-xs text-slate-500">(2768)</span>
+</div>
+<div class="text-[11px] text-slate-400 mt-0.5">Awaiting QR / App counter-sign</div>
+</div>
+</div>
+<!-- Status & Quick Action -->
+<div class="col-span-2 flex items-center justify-end gap-1.5">
+<span class="text-[11px] font-semibold text-amber-800 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded">
+                Claimed
+              </span>
+<button class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors" title="Quick Confirm Result">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors" title="Manual Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 3. IN PROGRESS ROW: Board 01 (Carlsen vs Caruana) -->
+<div class="hover:bg-slate-50/80 transition-colors">
+<div class="grid grid-cols-12 gap-3 px-4 py-3 items-center">
+<div class="col-span-1 flex justify-center">
+<span class="w-8 h-8 rounded-md bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200">
+                01
+              </span>
+</div>
+<!-- White Player -->
+<div class="col-span-4 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-white border-2 border-slate-400 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Carlsen, Magnus</span>
+<span class="font-mono text-xs text-slate-500">(2832)</span>
+</div>
+<div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></span>
+<span>Move 44 • 12m left</span>
+</div>
+</div>
+</div>
+<!-- In-Play Result -->
+<div class="col-span-2 flex flex-col items-center justify-center">
+<span class="font-mono font-medium text-slate-400 text-sm tracking-widest">
+                — : —
+              </span>
+<span class="text-[10px] text-slate-400">Live Hall Sensor</span>
+</div>
+<!-- Black Player -->
+<div class="col-span-3 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Caruana, Fabiano</span>
+<span class="font-mono text-xs text-slate-500">(2805)</span>
+</div>
+<div class="text-[11px] text-slate-500 mt-0.5">Move 44 • 8m left</div>
+</div>
+</div>
+<!-- Status & Action -->
+<div class="col-span-2 flex items-center justify-end gap-2">
+<span class="text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                In Progress
+              </span>
+<button class="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-all shadow-2xs">
+                Score
+              </button>
+</div>
+</div>
+</div>
+<!-- 4. CONFIRMED ROW: Board 02 (Nakamura vs Praggnanandhaa) -->
+<div class="hover:bg-slate-50/80 transition-colors">
+<div class="grid grid-cols-12 gap-3 px-4 py-3 items-center">
+<div class="col-span-1 flex justify-center">
+<span class="w-8 h-8 rounded-md bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200">
+                02
+              </span>
+</div>
+<!-- White Player -->
+<div class="col-span-4 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-white border-2 border-slate-400 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Nakamura, Hikaru</span>
+<span class="font-mono text-xs text-slate-500">(2802)</span>
+</div>
+<div class="text-[11px] text-slate-400 mt-0.5">Signed via Hall App Terminal</div>
+</div>
+</div>
+<!-- Result -->
+<div class="col-span-2 flex flex-col items-center justify-center">
+<span class="font-mono font-bold text-base text-slate-900">
+                1 : 0
+              </span>
+</div>
+<!-- Black Player -->
+<div class="col-span-3 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Praggnanandhaa R</span>
+<span class="font-mono text-xs text-slate-500">(2747)</span>
+</div>
+<div class="text-[11px] text-slate-400 mt-0.5">Electronic sheet verified</div>
+</div>
+</div>
+<!-- Status -->
+<div class="col-span-2 flex items-center justify-end gap-1.5">
+<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[13px] text-emerald-600">check_circle</span>
+<span>Confirmed</span>
+</span>
+<span class="font-mono text-[11px] text-slate-400">14:38</span>
+</div>
+</div>
+</div>
+<!-- 5. CONFIRMED ROW: Board 03 (Firouzja vs Gukesh D) -->
+<div class="hover:bg-slate-50/80 transition-colors">
+<div class="grid grid-cols-12 gap-3 px-4 py-3 items-center">
+<div class="col-span-1 flex justify-center">
+<span class="w-8 h-8 rounded-md bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200">
+                03
+              </span>
+</div>
+<!-- White Player -->
+<div class="col-span-4 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-white border-2 border-slate-400 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Firouzja, Alireza</span>
+<span class="font-mono text-xs text-slate-500">(2785)</span>
+</div>
+<div class="text-[11px] text-slate-400 mt-0.5">Hall Terminal 03 QR Scan</div>
+</div>
+</div>
+<!-- Result -->
+<div class="col-span-2 flex flex-col items-center justify-center">
+<span class="font-mono font-bold text-base text-slate-900">
+                ½ : ½
+              </span>
+</div>
+<!-- Black Player -->
+<div class="col-span-3 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Gukesh D</span>
+<span class="font-mono text-xs text-slate-500">(2794)</span>
+</div>
+<div class="text-[11px] text-slate-400 mt-0.5">Hall Terminal 03 QR Scan</div>
+</div>
+</div>
+<!-- Status -->
+<div class="col-span-2 flex items-center justify-end gap-1.5">
+<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[13px] text-emerald-600">check_circle</span>
+<span>Confirmed</span>
+</span>
+<span class="font-mono text-[11px] text-slate-400">14:15</span>
+</div>
+</div>
+</div>
+<!-- 6. LIVE INCOMING ROW: Board 05 (So vs Erigaisi) -->
+<div class="bg-blue-50/30 hover:bg-blue-50/50 transition-colors">
+<div class="grid grid-cols-12 gap-3 px-4 py-3 items-center">
+<div class="col-span-1 flex justify-center">
+<span class="w-8 h-8 rounded-md bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200">
+                05
+              </span>
+</div>
+<!-- White Player -->
+<div class="col-span-4 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-white border-2 border-slate-400 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">So, Wesley</span>
+<span class="font-mono text-xs text-slate-500">(2757)</span>
+</div>
+<div class="text-[11px] text-blue-600 font-medium flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+<span>Just claimed by White</span>
+</div>
+</div>
+</div>
+<!-- Result -->
+<div class="col-span-2 flex flex-col items-center justify-center">
+<span class="font-mono font-bold text-base text-slate-900">
+                0 : 1
+              </span>
+</div>
+<!-- Black Player -->
+<div class="col-span-3 min-w-0 flex items-center gap-2.5">
+<span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700 shadow-2xs flex-shrink-0"></span>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-mono text-[11px] font-semibold text-slate-500 bg-slate-100 px-1 rounded">GM</span>
+<span class="text-sm font-semibold text-slate-900 truncate">Erigaisi, Arjun</span>
+<span class="font-mono text-xs text-slate-500">(2797)</span>
+</div>
+<div class="text-[11px] text-slate-400 mt-0.5">Awaiting second confirmation</div>
+</div>
+</div>
+<!-- Status & Action -->
+<div class="col-span-2 flex items-center justify-end gap-1.5">
+<span class="text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                Claimed
+              </span>
+<button class="px-2 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all shadow-2xs">
+                Verify
+              </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 3-COLUMN DESK DIAGNOSTICS & SYSTEM STATUS -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- FIDE Swiss System Integrity -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+<div class="flex items-center gap-2 text-slate-900 mb-2">
+<span class="material-symbols-outlined text-emerald-600 text-[20px]">verified</span>
+<h3 class="font-semibold text-sm">FIDE Swiss Integrity</h3>
+</div>
+<p class="text-xs text-slate-600 mb-3 leading-relaxed">
+          Dutch Algorithm verification complete. 0 color allocation penalties detected. Round 4 pairing calculations queued.
+        </p>
+<div class="flex items-center justify-between text-[11px] font-mono bg-slate-50 px-2.5 py-1.5 rounded border border-slate-100 text-slate-600">
+<span>Engine: BBPairings v4.2</span>
+<span class="text-emerald-600 font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Valid
+          </span>
+</div>
+</div>
+<!-- Hall Player Terminals -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+<div class="flex items-center gap-2 text-slate-900 mb-2">
+<span class="material-symbols-outlined text-blue-600 text-[20px]">tablet_mac</span>
+<h3 class="font-semibold text-sm">Hall Player Terminals</h3>
+</div>
+<div class="space-y-1.5 text-xs">
+<div class="flex items-center justify-between py-0.5">
+<span class="text-slate-600">Entrance Kiosk #1</span>
+<span class="font-mono text-[11px] text-emerald-600 font-medium">Online • 42 scans</span>
+</div>
+<div class="flex items-center justify-between py-0.5">
+<span class="text-slate-600">North Balcony Kiosk #2</span>
+<span class="font-mono text-[11px] text-emerald-600 font-medium">Online • 29 scans</span>
+</div>
+<div class="flex items-center justify-between py-0.5">
+<span class="text-slate-600">South Hall Scanner #3</span>
+<span class="font-mono text-[11px] text-emerald-600 font-medium">Online • 35 scans</span>
+</div>
+</div>
+</div>
+<!-- Quick Arbiter Shortcuts -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+<div class="flex items-center gap-2 text-slate-900 mb-2">
+<span class="material-symbols-outlined text-slate-700 text-[20px]">bolt</span>
+<h3 class="font-semibold text-sm">Keyboard Workflow</h3>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs">
+<div class="flex items-center justify-between bg-slate-50 p-1.5 rounded border border-slate-100">
+<span class="text-slate-600">Dispute</span>
+<kbd class="font-mono font-semibold bg-white border border-slate-200 px-1 rounded text-[10px]">J</kbd>
+</div>
+<div class="flex items-center justify-between bg-slate-50 p-1.5 rounded border border-slate-100">
+<span class="text-slate-600">Filter</span>
+<kbd class="font-mono font-semibold bg-white border border-slate-200 px-1 rounded text-[10px]">/</kbd>
+</div>
+<div class="flex items-center justify-between bg-slate-50 p-1.5 rounded border border-slate-100">
+<span class="text-slate-600">Approve</span>
+<kbd class="font-mono font-semibold bg-white border border-slate-200 px-1 rounded text-[10px]">↵</kbd>
+</div>
+<div class="flex items-center justify-between bg-slate-50 p-1.5 rounded border border-slate-100">
+<span class="text-slate-600">Export</span>
+<kbd class="font-mono font-semibold bg-white border border-slate-200 px-1 rounded text-[10px]">E</kbd>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- STICKY FLOATING BOTTOM ARBITER ACTION DOCK -->
+<div class="fixed bottom-4 left-0 right-0 z-30 px-4 sm:px-6 pointer-events-none">
+<div class="max-w-[1160px] mx-auto pointer-events-auto bg-slate-900 text-white rounded-xl shadow-xl border border-slate-800 p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+<!-- Progress Indicator & Warning -->
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<div class="relative flex-shrink-0 flex items-center justify-center">
+<span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping absolute"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-rose-500 relative"></span>
+</div>
+<div>
+<div class="text-xs sm:text-sm font-semibold flex items-center gap-2">
+<span>28 of 32 boards verified and locked</span>
+<span class="text-[11px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">87.5%</span>
+</div>
+<div class="text-[11px] text-rose-300 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">info</span>
+<span>1 dispute on Board 12 must be resolved prior to official release</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+<button class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+          Release Anyway...
+        </button>
+<button class="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-sm transition-colors" onclick="toggleDisputeModal()">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Resolve Dispute First</span>
+</button>
+<button class="opacity-50 cursor-not-allowed px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white flex items-center gap-1.5 shadow-sm" disabled="">
+<span class="material-symbols-outlined text-[16px]">publish</span>
+<span>Finalize &amp; Release Round 3</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ARBITER DISPUTE RESOLUTION MODAL -->
+<div class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" id="disputeModal">
+<div class="bg-white max-w-lg w-full rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-150">
+<!-- Modal Header -->
+<div class="p-5 border-b border-slate-100 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-slate-900">Arbiter Ruling: Board 12</h3>
+<p class="text-[11px] text-slate-500">GM Richard Rapport vs GM Vincent Keymer</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100" onclick="toggleDisputeModal()">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-5 space-y-4">
+<div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs space-y-1.5">
+<div class="font-semibold text-rose-900">Conflicting Score Submissions:</div>
+<div class="flex justify-between text-slate-700">
+<span>⚪ White (Rapport): <strong>1 : 0</strong> (Black Resigned)</span>
+<span class="font-mono text-[10px] text-slate-400">14:41:02</span>
+</div>
+<div class="flex justify-between text-slate-700">
+<span>⚫ Black (Keymer): <strong>½ : ½</strong> (Agreed Draw / Repetition)</span>
+<span class="font-mono text-[10px] text-slate-400">14:42:19</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-semibold uppercase font-mono tracking-wider text-slate-500">
+            Select Official Ruling
+          </label>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:border-blue-600 hover:bg-blue-50/50 transition-all text-center group" onclick="resolveDispute('1 : 0')">
+<span class="font-mono font-bold text-base text-slate-900 group-hover:text-blue-700">1 : 0</span>
+<span class="text-[11px] text-slate-500 group-hover:text-blue-600">White Win</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:border-blue-600 hover:bg-blue-50/50 transition-all text-center group" onclick="resolveDispute('½ : ½')">
+<span class="font-mono font-bold text-base text-slate-900 group-hover:text-blue-700">½ : ½</span>
+<span class="text-[11px] text-slate-500 group-hover:text-blue-600">Agreed Draw</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:border-blue-600 hover:bg-blue-50/50 transition-all text-center group" onclick="resolveDispute('0 : 1')">
+<span class="font-mono font-bold text-base text-slate-900 group-hover:text-blue-700">0 : 1</span>
+<span class="text-[11px] text-slate-500 group-hover:text-blue-600">Black Win</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-600 mb-1">Arbiter Incident Log Note</label>
+<input class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="e.g. Arbiter reviewed electronic scoresheet moves 38-42." type="text"/>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+<button class="text-xs text-rose-600 hover:underline font-medium">Impose Double Forfeit (0-0)</button>
+<button class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-lg" onclick="toggleDisputeModal()">
+          Cancel
+        </button>
+</div>
+</div>
+</div>
+<script>
+    function toggleDisputeModal() {
+      const modal = document.getElementById('disputeModal');
+      if (modal) {
+        modal.classList.toggle('hidden');
+      }
+    }
+
+    function resolveDispute(result) {
+      alert(`Decision recorded: ${result}. Board 12 dispute resolved and locked into FIDE report.`);
+      toggleDisputeModal();
+    }
+
+    // Keyboard Hotkey Helper
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.focus();
+      }
+      if (e.key === 'j' || e.key === 'J') {
+        if (document.activeElement.tagName !== 'INPUT') {
+          toggleDisputeModal();
+        }
+      }
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('disputeModal');
+        if (modal && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      }
+    });
+  </script>
+</body></html>

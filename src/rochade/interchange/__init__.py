@@ -28,6 +28,15 @@ from rochade.interchange.port import (
 
 DEFAULT_MANAGER = "vega"
 
+
+def label_of(key: str) -> str:
+    """The manager's display name, or the key when the adapter is gone."""
+    try:
+        return manager_for(key).label
+    except UnknownManager:  # pragma: no cover - an adapter was removed after use
+        return key
+
+
 __all__ = [
     "DEFAULT_MANAGER",
     "Capabilities",
@@ -42,6 +51,7 @@ __all__ = [
     "Support",
     "UnknownManager",
     "available",
+    "label_of",
     "manager_for",
     "register",
 ]

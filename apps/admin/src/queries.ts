@@ -8,6 +8,7 @@
 
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseMutationOptions,
@@ -18,6 +19,7 @@ import {
   ApiError,
   type CreateTournamentBody,
   type GameResult,
+  type RoundEvent,
   type RoundState,
 } from "./api";
 
@@ -98,6 +100,32 @@ export function useRoundEvents(id: string | undefined, state: RoundState | undef
   });
 }
 
+/**
+ * Every section's current round, in one stream for the tournament home: the
+ * newest first. Shares the per-round cache with useRoundEvents, so opening a
+ * round shows the same log this page already had.
+ */
+export type FeedEvent = RoundEvent & { round_id: string };
+
+export function useLiveFeed(rounds: { id: string; state: RoundState }[]) {
+  return useQueries({
+    queries: rounds.map((round) => ({
+      queryKey: keys.events(round.id),
+      queryFn: () =>
+        unwrap(api.GET("/api/rounds/{round_id}/events", { params: { path: { round_id: round.id } } })),
+      refetchInterval: pollInterval(round.state) === false ? false : 10_000,
+    })),
+    combine: (results) => ({
+      events: results
+        .flatMap((result, index) =>
+          (result.data ?? []).map((event): FeedEvent => ({ ...event, round_id: rounds[index]!.id })),
+        )
+        .sort((a, b) => b.at.localeCompare(a.at)),
+      isPending: results.some((result) => result.isPending),
+    }),
+  });
+}
+
 export function useExportFile(roundId: string | undefined, enabled: boolean) {
   return useQuery({
     queryKey: keys.roundFile(roundId ?? ""),
@@ -159,12 +187,33 @@ export function useCreateTournament(opts?: Opts<{ id: string; name: string }, Cr
   });
 }
 
+/**
+ * The one irreversible action: the tournament and everything under it. The
+ * server wants the name typed back, so a wrong id can never take an event.
+ */
+export function useDeleteTournament(opts?: Opts<{ id: string; name: string }, { tournamentId: string; confirmName: string }>) {
+  const client = useQueryClient();
+  return useMutation({
+    ...opts,
+    mutationFn: ({ tournamentId, confirmName }) =>
+      unwrap(
+        api.DELETE("/api/tournaments/{tournament_id}", {
+          params: { path: { tournament_id: tournamentId }, query: { confirm_name: confirmName } },
+        }),
+      ),
+    onSuccess: (data, vars, ctx, mutation) => {
+      client.removeQueries({ queryKey: keys.tournament(vars.tournamentId) });
+      void client.invalidateQueries({ queryKey: keys.tournaments });
+      opts?.onSuccess?.(data, vars, ctx, mutation);
+    },
+  });
+}
+
 export interface ImportVars {
   tournamentId: string;
   section_name: string;
   content: string;
   filename: string;
-  manager: string;
   force: boolean;
 }
 

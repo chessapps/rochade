@@ -21,7 +21,11 @@ from rochade.shared.enums import PrincipalKind
 from rochade.shared.models import Round, Section, Tournament
 from tests.conftest import Send
 
-pytestmark = pytest.mark.db
+pytestmark = [
+    pytest.mark.db,
+    # Every tournament here runs on Swiss-Manager.
+    pytest.mark.manager("swiss_manager"),
+]
 
 SM = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "swiss_manager"
 
@@ -41,7 +45,6 @@ def import_round_one(send: Send, tournament: Tournament) -> None:
             tournament_id=tournament.id,
             section_name="A",
             content=read("players_round1.txt") + "\n" + read("pairings_round1_played.txt"),
-            manager="swiss_manager",
         )
     )
 
@@ -157,13 +160,12 @@ def test_the_arbiter_names_the_tiebreak_columns(send: Send, tournament: Tourname
 
 
 def test_a_section_without_standings_is_not_listed(send: Send, tournament: Tournament) -> None:
-    """A TRF from Vega names players but says nothing about ranks."""
+    """A TRF names players but says nothing about ranks, whoever wrote it."""
     send(
         ImportRound(
             tournament_id=tournament.id,
             section_name="V",
             content=read("round3_paired.trf"),
-            manager="vega",
         )
     )
 

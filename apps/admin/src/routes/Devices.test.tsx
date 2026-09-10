@@ -71,7 +71,7 @@ describe("Devices", () => {
 describe("TournamentList", () => {
   it("goes straight to the only tournament", async () => {
     stubApi({
-      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, role: "owner" }] },
+      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, manager: "vega", manager_label: "Vega", role: "owner" }] },
     });
     renderAt("/", "/", <TournamentList />);
     expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
@@ -79,21 +79,34 @@ describe("TournamentList", () => {
 
   it("shows the list when asked for it, even with one tournament", async () => {
     stubApi({
-      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, role: "owner" }] },
+      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, manager: "vega", manager_label: "Vega", role: "owner" }] },
     });
     renderAt("/?all", "/", <TournamentList />);
     expect(await screen.findByText("Only Open")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New tournament" })).toBeInTheDocument();
   });
 
-  it("creates a tournament from the empty state and moves to it", async () => {
+  it("asks which program pairs it, then creates the tournament and moves to it", async () => {
     const calls = stubApi({
-      GET: { "/api/tournaments": [] },
+      GET: {
+        "/api/tournaments": [],
+        "/api/managers": [
+          { key: "vega", label: "Vega", verified: false },
+          { key: "swiss_manager", label: "Swiss-Manager", verified: true },
+        ],
+      },
       POST: { "/api/tournaments": { id: "new", name: "Club Open" } },
     });
     renderAt("/", "/", <TournamentList />);
     await userEvent.click(await screen.findByRole("button", { name: "Create the first one" }));
     const dialog = screen.getByRole("dialog");
+    // Nothing chosen yet: no way forward. Custom is announced but not offered.
+    const next = within(dialog).getByRole("button", { name: "Continue" });
+    expect(next).toBeDisabled();
+    expect(await within(dialog).findByRole("radio", { name: /Custom/ })).toBeDisabled();
+    await userEvent.click(within(dialog).getByRole("radio", { name: /Swiss-Manager/ }));
+    await userEvent.click(next);
+
     expect(within(dialog).getByRole("button", { name: "Create" })).toBeDisabled();
     await userEvent.type(within(dialog).getByLabelText("Name"), "Club Open");
     await userEvent.type(within(dialog).getByLabelText("Federation"), "sui");
@@ -101,6 +114,7 @@ describe("TournamentList", () => {
     await waitFor(() => expect(calls.some((c) => c.method === "POST")).toBe(true));
     expect(calls.find((c) => c.method === "POST")!.body).toEqual({
       name: "Club Open",
+      manager: "swiss_manager",
       city: "",
       federation: "SUI",
       start_date: null,

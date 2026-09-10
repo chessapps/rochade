@@ -10,12 +10,17 @@
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
 
+import { CircleAlert, Gavel, X } from "./icons";
 import { Button, cx } from "./ui";
+
+export type DialogTone = "default" | "danger" | "success";
 
 export function Dialog({
   open,
   onClose,
   title,
+  subtitle,
+  tone = "default",
   children,
   footer,
   wide,
@@ -24,6 +29,9 @@ export function Dialog({
   open: boolean;
   onClose: () => void;
   title: ReactNode;
+  /** One line under the title, e.g. who is on the board. */
+  subtitle?: ReactNode;
+  tone?: DialogTone;
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
@@ -61,20 +69,43 @@ export function Dialog({
         if (event.target === event.currentTarget && !busy) onClose();
       }}
       className={cx(
-        "m-auto w-[calc(100vw-2rem)] rounded-2xl bg-white p-0 text-ink shadow-xl backdrop:bg-slate-900/45",
+        "m-auto w-[calc(100vw-2rem)] rounded-lg border border-line bg-card p-0 text-ink shadow-xl backdrop:backdrop-blur-[2px]",
         wide ? "max-w-2xl" : "max-w-md",
       )}
     >
       {open && (
         <div className="flex max-h-[85vh] flex-col">
-          <h2 id={titleId} className="px-5 pt-5 text-lg font-semibold">
-            {title}
-          </h2>
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-sm text-slate-700">
-            {children}
+          <div className="flex items-start gap-3 border-b border-line px-5 py-4">
+            {tone !== "default" && (
+              <span
+                aria-hidden
+                className={cx(
+                  "flex size-8 shrink-0 items-center justify-center rounded [&>svg]:size-4",
+                  tone === "danger" ? "bg-rose-soft text-rose-text" : "bg-emerald-soft text-emerald-text",
+                )}
+              >
+                {tone === "danger" ? <Gavel /> : <CircleAlert />}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <h2 id={titleId} className="text-headline-sm">
+                {title}
+              </h2>
+              {subtitle && <p className="text-body-sm text-ink-2">{subtitle}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy}
+              aria-label="Close"
+              className="-mr-1 rounded p-1 text-ink-3 hover:bg-subtle hover:text-ink-2 disabled:opacity-40 [&>svg]:size-4"
+            >
+              <X />
+            </button>
           </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-sm text-ink-2">{children}</div>
           {footer && (
-            <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 px-5 py-4">
+            <div className="flex flex-wrap justify-end gap-2 border-t border-line bg-subtle px-5 py-3">
               {footer}
             </div>
           )}
@@ -93,6 +124,7 @@ export function ConfirmDialog({
   onClose,
   onConfirm,
   title,
+  subtitle,
   confirmLabel,
   tone = "primary",
   busy = false,
@@ -103,6 +135,7 @@ export function ConfirmDialog({
   onClose: () => void;
   onConfirm: () => void;
   title: ReactNode;
+  subtitle?: ReactNode;
   confirmLabel: string;
   tone?: "primary" | "danger" | "success";
   busy?: boolean;
@@ -115,6 +148,8 @@ export function ConfirmDialog({
       onClose={onClose}
       busy={busy}
       title={title}
+      subtitle={subtitle}
+      tone={tone === "primary" ? "default" : tone}
       footer={
         <>
           <Button onClick={onClose} disabled={busy}>

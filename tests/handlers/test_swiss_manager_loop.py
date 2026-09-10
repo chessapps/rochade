@@ -29,7 +29,11 @@ from rochade.swiss_manager import parse_pairing_file
 from tests.conftest import Send
 from tests.handlers.test_result_flow import device_of
 
-pytestmark = pytest.mark.db
+pytestmark = [
+    pytest.mark.db,
+    # Every tournament here runs on Swiss-Manager.
+    pytest.mark.manager("swiss_manager"),
+]
 
 SM = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "swiss_manager"
 
@@ -46,7 +50,6 @@ def test_preview_reads_the_real_export_as_round_3_with_history(
             tournament_id=tournament.id,
             section_name="A",
             content=read("round3_paired.trf"),
-            manager="swiss_manager",
         )
     )
     assert plan.tournament_name == "Rochade M0 Spike"
@@ -65,7 +68,6 @@ def test_boards_carry_swiss_managers_numbers(
             tournament_id=tournament.id,
             section_name="A",
             content=read("round3_paired.trf"),
-            manager="swiss_manager",
         )
     )
     round_ = session.scalars(select(Round).where(Round.number == 3)).one()
@@ -90,7 +92,6 @@ def test_the_export_is_the_pairing_file_swiss_manager_took(
             tournament_id=tournament.id,
             section_name="A",
             content=read("round4_paired.trf"),
-            manager="swiss_manager",
         )
     )
     round_ = session.scalars(select(Round).where(Round.number == 4)).one()
@@ -133,7 +134,6 @@ def test_an_unrated_result_is_refused_before_the_file_is_written(
             tournament_id=tournament.id,
             section_name="A",
             content=read("round3_paired.trf"),
-            manager="swiss_manager",
         )
     )
     round_ = session.scalars(select(Round).where(Round.number == 3)).one()
@@ -190,7 +190,6 @@ def test_the_round_comes_in_as_the_two_text_exports(send: Send, tournament: Tour
             tournament_id=tournament.id,
             section_name="A",
             content=both,
-            manager="swiss_manager",
         )
     )
     assert plan.file_round == 1
@@ -202,7 +201,6 @@ def test_the_round_comes_in_as_the_two_text_exports(send: Send, tournament: Tour
             tournament_id=tournament.id,
             section_name="A",
             content=both,
-            manager="swiss_manager",
         )
     )
     assert result.round_number == 1
@@ -217,7 +215,6 @@ def test_from_round_two_the_pairings_alone_are_enough(
             tournament_id=tournament.id,
             section_name="A",
             content=read("players_round1.txt") + "\n" + read("pairings_round1_played.txt"),
-            manager="swiss_manager",
         )
     )
     first = session.scalars(select(Round).where(Round.number == 1)).one()
@@ -237,7 +234,6 @@ def test_from_round_two_the_pairings_alone_are_enough(
             tournament_id=tournament.id,
             section_name="A",
             content=round_two,
-            manager="swiss_manager",
         )
     )
     assert plan.file_round == 2
@@ -249,7 +245,6 @@ def test_from_round_two_the_pairings_alone_are_enough(
             tournament_id=tournament.id,
             section_name="A",
             content=round_two,
-            manager="swiss_manager",
         )
     )
     second = session.scalars(select(Round).where(Round.number == 2)).one()
@@ -267,7 +262,6 @@ def test_the_first_round_still_needs_both_files(send: Send, tournament: Tourname
                 tournament_id=tournament.id,
                 section_name="A",
                 content=read("pairings_round1_played.txt"),
-                manager="swiss_manager",
             )
         )
 

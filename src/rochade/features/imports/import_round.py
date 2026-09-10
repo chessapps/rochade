@@ -25,7 +25,6 @@ from sqlalchemy.orm import Session
 from rochade.features.audit import record
 from rochade.features.roster import roster_of
 from rochade.interchange import (
-    DEFAULT_MANAGER,
     InterchangeError,
     Manager,
     PairingRow,
@@ -347,9 +346,6 @@ class ImportRound(Command):
     section_name: str = Field(min_length=1, max_length=120)
     content: str = Field(min_length=1)
     filename: str = Field(default="", max_length=255)
-    #: Which manager produced this file. Per section, not per tournament: a
-    #: tournament may hold groups run in different programs.
-    manager: str = DEFAULT_MANAGER
     #: Set only after the arbiter has read a plan that reported a blocker.
     force: bool = False
 
@@ -360,7 +356,7 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
     if tournament is None:
         raise NotFound("tournament not found", tournament_id=str(command.tournament_id))
 
-    manager = resolve_manager(command.manager)
+    manager = resolve_manager(tournament.manager)
     plan, document = build_plan(
         ctx.session,
         tournament=tournament,
@@ -536,7 +532,6 @@ class ImportRoundBody(BaseModel):
     section_name: str
     content: str
     filename: str = ""
-    manager: str = DEFAULT_MANAGER
     force: bool = False
 
 

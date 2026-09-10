@@ -10,7 +10,10 @@ they appear there.
 - Set the round dates: `Eingabe → Termine für die einzelnen Runden…` →
   `Übernehmen` → `OK`. Swiss-Manager's TRF export refuses without them
   (`Fehler (Message:42)`), and a rated tournament needs them anyway.
-- In Rochade: **New tournament**, then **Devices → Issue a QR code**. Open it
+- In Rochade: **New tournament**, choose **Swiss-Manager** as the program that
+  pairs it (this is fixed for the tournament: every import and export from then
+  on is Swiss-Manager's, and nothing asks again), then **Devices → Issue a QR
+  code**. Open it
   as a poster and print it, or show it on the arbiter's screen. One code admits
   any number of phones to this tournament for as long as it runs; issue a second one for
   the other end of the hall if you like. Revoke either at any time, and remove it from

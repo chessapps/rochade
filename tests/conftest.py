@@ -190,8 +190,16 @@ def send(session: Session) -> Send:
 
 
 @pytest.fixture
-def tournament(session: Session) -> Tournament:
-    created = Tournament(name="Rochade Open 2026", city="Rochade", federation="SUI")
+def tournament(request: pytest.FixtureRequest, session: Session) -> Tournament:
+    """A tournament run on Vega, unless the test or its module says otherwise::
+
+    @pytest.mark.manager("swiss_manager")
+    """
+    marker = request.node.get_closest_marker("manager")
+    manager = marker.args[0] if marker else "vega"
+    created = Tournament(
+        name="Rochade Open 2026", city="Rochade", federation="SUI", manager=manager
+    )
     session.add(created)
     session.flush()
     session.add_all(

@@ -26,7 +26,7 @@ pytestmark = pytest.mark.db
 
 
 def test_creating_a_tournament_makes_the_creator_its_owner(send: Send) -> None:
-    created = send(CreateTournament(name="Club Championship", city="Zurich"))
+    created = send(CreateTournament(name="Club Championship", manager="vega", city="Zurich"))
     listed = send(ListTournaments())
     assert [t.id for t in listed] == [created.id]
     assert listed[0].role is Role.OWNER
@@ -51,6 +51,7 @@ def test_a_tournament_that_ends_before_it_starts_is_rejected(send: Send) -> None
         send(
             CreateTournament(
                 name="Impossible",
+                manager="vega",
                 start_date=datetime.date(2026, 5, 2),
                 end_date=datetime.date(2026, 5, 1),
             )

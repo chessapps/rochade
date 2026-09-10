@@ -84,7 +84,8 @@ export interface paths {
         get: operations["get_tournament_api_tournaments__tournament_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Tournament */
+        delete: operations["delete_tournament_api_tournaments__tournament_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -583,6 +584,8 @@ export interface components {
         CreateTournament: {
             /** Name */
             name: string;
+            /** Manager */
+            manager: string;
             /**
              * City
              * @default
@@ -600,6 +603,16 @@ export interface components {
         };
         /** CreateTournamentResult */
         CreateTournamentResult: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** DeleteTournamentResult */
+        DeleteTournamentResult: {
             /**
              * Id
              * Format: uuid
@@ -787,11 +800,6 @@ export interface components {
              */
             filename: string;
             /**
-             * Manager
-             * @default vega
-             */
-            manager: string;
-            /**
              * Force
              * @default false
              */
@@ -955,11 +963,6 @@ export interface components {
             section_name: string;
             /** Content */
             content: string;
-            /**
-             * Manager
-             * @default vega
-             */
-            manager: string;
             /**
              * Force
              * @default false
@@ -1333,6 +1336,10 @@ export interface components {
             start_date: string | null;
             /** End Date */
             end_date: string | null;
+            /** Manager */
+            manager: string;
+            /** Manager Label */
+            manager_label: string;
             /** Join Code */
             join_code?: string | null;
             /** Sections */
@@ -1365,6 +1372,10 @@ export interface components {
             start_date: string | null;
             /** End Date */
             end_date: string | null;
+            /** Manager */
+            manager: string;
+            /** Manager Label */
+            manager_label: string;
             role: components["schemas"]["Role"];
         };
         /** ValidationError */
@@ -1563,6 +1574,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TournamentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_tournament_api_tournaments__tournament_id__delete: {
+        parameters: {
+            query: {
+                /** @description The tournament's name, repeated exactly, to confirm the deletion. */
+                confirm_name: string;
+            };
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteTournamentResult"];
                 };
             };
             /** @description Validation Error */

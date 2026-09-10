@@ -3,8 +3,9 @@
  * instruction, the code. Printing hides everything else on the page.
  */
 
-import { Link, useLocation, useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 
+import { ArrowLeft, Printer } from "../components/icons";
 import { QrCode } from "../components/QrCode";
 import { Button } from "../components/ui";
 import { useTournament } from "../queries";
@@ -22,34 +23,34 @@ export function Poster() {
   if (!state?.qr_payload) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-8 text-center">
-        <p className="font-medium">There is no code to show.</p>
-        <p className="text-sm text-slate-500">
+        <p className="font-semibold">There is no code to show.</p>
+        <p className="text-body-sm text-ink-2">
           A code is shown once, when it is issued. Issue one and open the poster from there.
         </p>
-        <Link to={`/t/${tournamentId}/devices`} className="text-sm underline">
+        <Button to={`/t/${tournamentId}/devices`} icon={<ArrowLeft />}>
           Back to phones
-        </Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-full flex-col items-center bg-white">
+    <div data-theme="light" className="flex min-h-full flex-col items-center bg-white text-ink">
       <div className="no-print flex w-full max-w-3xl items-center gap-2 p-4">
-        <Link to={`/t/${tournamentId}/devices`} className="text-sm text-slate-500 hover:underline">
-          ← Phones
-        </Link>
+        <Button to={`/t/${tournamentId}/devices`} tone="ghost" size="sm" icon={<ArrowLeft />}>
+          Phones
+        </Button>
         <span className="flex-1" />
-        <Button tone="primary" onClick={() => window.print()}>
+        <Button tone="dark" icon={<Printer />} onClick={() => window.print()}>
           Print
         </Button>
       </div>
       <article className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
-        <h1 className="text-3xl font-bold sm:text-4xl">{tournament.data?.name ?? ""}</h1>
-        <p className="text-xl text-slate-700 sm:text-2xl">Scan to enter your result</p>
+        <h1 className="text-headline-lg sm:text-[2.5rem] sm:leading-tight">{tournament.data?.name ?? ""}</h1>
+        <p className="text-body-lg text-ink-2 sm:text-2xl">Scan to enter your result</p>
         <QrCode value={state.qr_payload} size={360} />
-        {state.label && <p className="text-base text-slate-500">{state.label}</p>}
-        <p className="max-w-md text-sm text-slate-400">
+        {state.label && <p className="text-label-md text-ink-2">{state.label}</p>}
+        <p className="max-w-md text-body-sm text-ink-3">
           Find your board by name and tap the result. The arbiter checks every entry before
           it counts.
         </p>

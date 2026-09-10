@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 
-import { errorMessage, type TournamentSummary } from "../api";
+import { errorMessage, type ManagerSummary, type TournamentSummary } from "../api";
 import { Dialog } from "../components/Dialog";
+import { Chip } from "../components/StateChip";
 import { useToast } from "../components/Toast";
-import { Banner, Button, EmptyState, Field, Input, Skeleton } from "../components/ui";
-import { dateRange, joinNonEmpty } from "../format";
-import { useCreateTournament, useTournaments } from "../queries";
+import { Calendar, Check, MapPin } from "../components/icons";
+import { Banner, Button, EmptyState, Field, Input, Skeleton, cx } from "../components/ui";
+import { dateRange } from "../format";
+import { useCreateTournament, useManagers, useTournaments } from "../queries";
 
 export function TournamentList() {
   const tournaments = useTournaments();
@@ -30,7 +32,7 @@ export function TournamentList() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Tournaments</h1>
+        <h1 className="text-headline-md">Tournaments</h1>
         <Button tone="primary" onClick={() => setCreating(true)}>
           New tournament
         </Button>
@@ -64,25 +66,80 @@ export function TournamentList() {
 }
 
 function TournamentCard({ tournament }: { tournament: TournamentSummary }) {
-  const meta = joinNonEmpty([
-    tournament.city,
-    dateRange(tournament.start_date, tournament.end_date),
-  ]);
+  const when = dateRange(tournament.start_date, tournament.end_date);
   return (
     <Link
       to={`/t/${tournament.id}`}
-      className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
+      className="flex h-full flex-col gap-3 rounded-lg border border-line bg-card p-4 transition-colors hover:border-line-strong hover:bg-subtle/40"
     >
-      <p className="font-semibold">{tournament.name}</p>
-      <p className="mt-1 text-sm text-slate-500">{meta || " "}</p>
-      <p className="mt-3 text-xs text-slate-400">you are {tournament.role}</p>
+      <p className="text-headline-sm">{tournament.name}</p>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-ink-2 [&_svg]:size-3.5 [&_svg]:text-ink-3">
+        {tournament.city && (
+          <span className="flex items-center gap-1">
+            <MapPin />
+            {tournament.city}
+          </span>
+        )}
+        {when && (
+          <span className="flex items-center gap-1">
+            <Calendar />
+            {when}
+          </span>
+        )}
+        {!tournament.city && !when && <span>&nbsp;</span>}
+      </p>
+      <p className="mt-auto flex items-center justify-between gap-2 text-label-sm text-ink-3">
+        <span>you are {tournament.role}</span>
+        <span>{tournament.manager_label}</span>
+      </p>
     </Link>
   );
+}
+
+/**
+ * The programs a tournament can run on, in the order they are offered. What
+ * the API lists is what can be chosen; the rest is announced and disabled.
+ */
+interface ProgramOption {
+  key: string;
+  label: string;
+  blurb: string;
+  available: boolean;
+}
+
+const BLURB: Record<string, string> = {
+  swiss_manager: "Two text exports per round: Spielerdaten and Spielerauslosung.",
+  vega: "One TRF16 export per round.",
+};
+
+function programOptions(managers: ManagerSummary[] | undefined): ProgramOption[] {
+  const known = new Map((managers ?? []).map((m) => [m.key, m]));
+  const listed = ["swiss_manager", "vega"]
+    .filter((key) => known.has(key))
+    .map((key) => {
+      const m = known.get(key)!;
+      return {
+        key,
+        label: m.label,
+        blurb: BLURB[key] + (m.verified ? " Verified against the real program." : " Not yet verified."),
+        available: true,
+      };
+    });
+  return [
+    ...listed,
+    {
+      key: "custom",
+      label: "Custom",
+      blurb: "Your own pairing program or a spreadsheet, through a format you define.",
+      available: false,
+    },
+  ];
 }
 
 function CreateTournamentDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const managers = useManagers();
   const create = useCreateTournament({
     onSuccess: (data) => {
       toast.success(`${data.name} created.`);
@@ -90,17 +147,23 @@ function CreateTournamentDialog({ open, onClose }: { open: boolean; onClose: () 
       void navigate(`/t/${data.id}`);
     },
   });
+  const [manager, setManager] = useState("");
+  const [step, setStep] = useState<"program" | "details">("program");
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [federation, setFederation] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
 
+  const options = programOptions(managers.data);
+  const chosen = options.find((o) => o.key === manager);
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim() || create.isPending) return;
+    if (!name.trim() || !manager || create.isPending) return;
     create.mutate({
       name: name.trim(),
+      manager,
       city: city.trim(),
       federation: federation.trim().toUpperCase(),
       start_date: start || null,
@@ -108,59 +171,145 @@ function CreateTournamentDialog({ open, onClose }: { open: boolean; onClose: () 
     });
   };
 
+  const close = () => {
+    onClose();
+    setStep("program");
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={close}
       title="New tournament"
+      subtitle={
+        step === "program"
+          ? "Which program pairs it? Every round is imported from and exported to that one."
+          : undefined
+      }
       footer={
-        <>
-          <Button onClick={onClose} disabled={create.isPending}>
-            Cancel
-          </Button>
-          <Button
-            tone="primary"
-            form="create-tournament"
-            type="submit"
-            busy={create.isPending}
-            disabled={!name.trim()}
-          >
-            Create
-          </Button>
-        </>
+        step === "program" ? (
+          <>
+            <Button onClick={close}>Cancel</Button>
+            <Button tone="primary" onClick={() => setStep("details")} disabled={!chosen?.available}>
+              Continue
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => setStep("program")} disabled={create.isPending}>
+              Back
+            </Button>
+            <Button
+              tone="primary"
+              form="create-tournament"
+              type="submit"
+              busy={create.isPending}
+              disabled={!name.trim()}
+            >
+              Create
+            </Button>
+          </>
+        )
       }
     >
-      <form id="create-tournament" onSubmit={submit} className="flex flex-col gap-3">
-        <Field label="Name">
-          <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
-        </Field>
-        <div className="grid grid-cols-[1fr_6rem] gap-3">
-          <Field label="City">
-            <Input value={city} onChange={(e) => setCity(e.target.value)} />
-          </Field>
-          <Field label="Federation">
-            <Input
-              value={federation}
-              onChange={(e) => setFederation(e.target.value)}
-              placeholder="SUI"
-              maxLength={8}
+      {step === "program" ? (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="sr-only">Pairing program</legend>
+          {managers.isPending && <Skeleton rows={2} className="p-0" />}
+          {managers.isError && (
+            <Banner tone="error">Could not list the programs: {errorMessage(managers.error)}</Banner>
+          )}
+          {options.map((option) => (
+            <ProgramChoice
+              key={option.key}
+              option={option}
+              checked={manager === option.key}
+              onChoose={() => setManager(option.key)}
             />
+          ))}
+        </fieldset>
+      ) : (
+        <form id="create-tournament" onSubmit={submit} className="flex flex-col gap-3">
+          <p className="flex items-center gap-2 text-body-sm text-ink-2">
+            Runs on <Chip tone="emerald">{chosen?.label}</Chip>
+          </p>
+          <Field label="Name">
+            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
           </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="First day">
-            <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          </Field>
-          <Field label="Last day">
-            <Input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
-          </Field>
-        </div>
-        <p className="text-xs text-slate-500">
-          Only the name matters here. Players, pairings and rounds come from your tournament
-          manager, one export per round.
-        </p>
-        {create.isError && <Banner tone="error">{errorMessage(create.error)}</Banner>}
-      </form>
+          <div className="grid grid-cols-[1fr_6rem] gap-3">
+            <Field label="City">
+              <Input value={city} onChange={(e) => setCity(e.target.value)} />
+            </Field>
+            <Field label="Federation">
+              <Input
+                value={federation}
+                onChange={(e) => setFederation(e.target.value)}
+                placeholder="SUI"
+                maxLength={8}
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="First day">
+              <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+            </Field>
+            <Field label="Last day">
+              <Input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
+            </Field>
+          </div>
+          <p className="text-body-sm text-ink-2">
+            Only the name matters here. Players, pairings and rounds come from {chosen?.label},
+            one export per round.
+          </p>
+          {create.isError && <Banner tone="error">{errorMessage(create.error)}</Banner>}
+        </form>
+      )}
     </Dialog>
+  );
+}
+
+function ProgramChoice({
+  option,
+  checked,
+  onChoose,
+}: {
+  option: ProgramOption;
+  checked: boolean;
+  onChoose: () => void;
+}) {
+  return (
+    <label
+      className={cx(
+        "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
+        checked ? "border-accent bg-accent-soft/40" : "border-line hover:border-line-strong",
+        !option.available && "cursor-not-allowed opacity-60",
+      )}
+    >
+      <input
+        type="radio"
+        name="program"
+        value={option.key}
+        checked={checked}
+        disabled={!option.available}
+        onChange={onChoose}
+        className="sr-only"
+      />
+      <span
+        aria-hidden
+        className={cx(
+          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border [&>svg]:size-3",
+          checked ? "border-accent bg-accent text-white" : "border-line-strong bg-card",
+        )}
+      >
+        {checked && <Check />}
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex items-center gap-2 font-semibold text-ink">
+          {option.label}
+          {!option.available && <Chip tone="neutral">Coming soon</Chip>}
+        </span>
+        <span className="text-body-sm text-ink-2">{option.blurb}</span>
+      </span>
+    </label>
   );
 }

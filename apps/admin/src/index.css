@@ -1,24 +1,195 @@
 @import "tailwindcss";
 
 /*
- * One vocabulary for the whole app, and the same hues as the hall app so a
- * colour means the same thing on the arbiter's laptop and on a player's phone:
- * slate for nothing yet, amber for entered, rose for disputed, emerald for
- * confirmed. The admin app is light because it is read at a desk.
+ * The Rochade design system (design/admin/DESIGN.md) as Tailwind tokens.
+ *
+ * A light slate desk console: depth comes from 1px hairlines and flat
+ * surface steps, never from diffuse shadows. Colour is data, not trim: slate
+ * for a board with nothing yet, amber for one result entered, rose for two
+ * phones disagreeing, emerald for confirmed; cobalt for a round open for
+ * entry. The hall app uses the same hues on black, so a colour means the
+ * same thing on the arbiter's laptop and on a player's phone.
  */
-@theme {
-  --color-paper: #f8fafc;
-  --color-ink: #0f172a;
-  --color-accent: #1d4ed8;
-  --color-accent-soft: #dbeafe;
+/*
+ * Light or dark is decided once, on <html data-theme>: index.html sets it
+ * before the first paint, src/theme.ts keeps it current. The colour tokens
+ * below are aliases of plain CSS variables so that every utility built on
+ * them (bg-card, text-ink, border-line ...) follows the attribute without a
+ * dark: variant on every element. The dark values are DESIGN_DARK.md.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-  --animate-row-pulse: row-pulse 1.2s ease-out 1;
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas: #f8fafc;
+  --card: #ffffff;
+  --subtle: #f1f5f9;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+
+  /* Text */
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #94a3b8;
+
+  /* What sits on an ink surface: the wordmark, the dark chip, the dark button. */
+  --on-ink: #ffffff;
+
+  /* The floating arbiter dock is dark in both themes: obsidian on the light
+     desk, one surface step up (DESIGN_DARK level 2) on the dark one. */
+  --dock: #0f172a;
+  --dock-line: #1e293b;
+  --on-dock: #f8fafc;
+  --on-dock-2: #cbd5e1;
+  --on-dock-subtle: #1e293b;
+  --on-dock-rose: #fda4af;
+
+  /* The one accent: cobalt, for the single-path CTA and focus. */
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: #dbeafe;
+
+  /* Tinted surfaces for callouts, banners and chips, one per hue. */
+  --rose-soft: #fff1f2;
+  --rose-line: #fecdd3;
+  --rose-text: #be123c;
+  --amber-soft: #fffbeb;
+  --amber-line: #fde68a;
+  --amber-text: #92400e;
+  --emerald-soft: #ecfdf5;
+  --emerald-line: #a7f3d0;
+  --emerald-text: #047857;
+  --blue-soft: #eff6ff;
+  --blue-line: #bfdbfe;
+  --blue-text: #1d4ed8;
+
+  --backdrop: rgb(15 23 42 / 0.45);
+  --shadow-dock: 0 4px 12px -2px rgb(15 23 42 / 0.08);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #0b0f17;
+  --card: #131b2a;
+  --subtle: #1e293b;
+  --line: #1e293b;
+  --line-strong: #334155;
+
+  --ink: #f8fafc;
+  --ink-2: #94a3b8;
+  --ink-3: #64748b;
+
+  --on-ink: #0b0f17;
+
+  --dock: #1e293b;
+  --dock-line: #334155;
+  --on-dock: #f8fafc;
+  --on-dock-2: #cbd5e1;
+  --on-dock-subtle: #334155;
+  --on-dock-rose: #fda4af;
+
+  --accent: #2563eb;
+  --accent-strong: #3b82f6;
+  --accent-soft: #1e3a8a;
+
+  --rose-soft: #4c0519;
+  --rose-line: #881337;
+  --rose-text: #fda4af;
+  --amber-soft: #78350f;
+  --amber-line: #b45309;
+  --amber-text: #fcd34d;
+  --emerald-soft: #064e3b;
+  --emerald-line: #047857;
+  --emerald-text: #6ee7b7;
+  --blue-soft: #172554;
+  --blue-line: #1e40af;
+  --blue-text: #93c5fd;
+
+  --backdrop: rgb(2 6 23 / 0.7);
+  --shadow-dock: 0 4px 16px -2px rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-card: var(--card);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-on-ink: var(--on-ink);
+  --color-dock: var(--dock);
+  --color-dock-line: var(--dock-line);
+  --color-on-dock: var(--on-dock);
+  --color-on-dock-2: var(--on-dock-2);
+  --color-on-dock-subtle: var(--on-dock-subtle);
+  --color-on-dock-rose: var(--on-dock-rose);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-rose-soft: var(--rose-soft);
+  --color-rose-line: var(--rose-line);
+  --color-rose-text: var(--rose-text);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-line: var(--amber-line);
+  --color-amber-text: var(--amber-text);
+  --color-emerald-soft: var(--emerald-soft);
+  --color-emerald-line: var(--emerald-line);
+  --color-emerald-text: var(--emerald-text);
+  --color-blue-soft: var(--blue-soft);
+  --color-blue-line: var(--blue-line);
+  --color-blue-text: var(--blue-text);
+
+  /* The floating arbiter dock is the only thing that casts a shadow. */
+  --shadow-dock: var(--shadow-dock);
+}
+
+@theme {
+  --font-sans: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Board states: the same hue in both themes, so a colour keeps its meaning. */
+  --color-state-empty: #64748b;
+  --color-state-claimed: #f59e0b;
+  --color-state-disputed: #e11d48;
+  --color-state-confirmed: #059669;
+
+  /* Round phases */
+  --color-round-open: #2563eb;
+  --color-round-released: #d97706;
+  --color-round-exported: #64748b;
+
+  /* Player discs: a white disc is white on a dark desk too. */
+  --color-disc-white: #ffffff;
+  --color-disc-white-stroke: #94a3b8;
+  --color-disc-black: #0f172a;
+  --color-disc-black-stroke: #475569;
+
+  /* Soft (level 1) geometry: chips 2, controls 4, containers 8. */
+  --radius-sm: 0.125rem;
+  --radius: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  --container-desk: 72.5rem; /* 1160px of content */
+
+  --animate-row-pulse: row-pulse 400ms ease-out 1;
   --animate-pop: pop 220ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 1;
   --animate-draw: draw 360ms ease-out 1 forwards;
 
   @keyframes row-pulse {
     0% {
-      background-color: var(--color-amber-100);
+      background-color: rgb(37 99 235 / 0.2);
     }
     100% {
       background-color: transparent;
@@ -44,6 +215,67 @@
   }
 }
 
+/* The type scale of DESIGN.md, so a component says what it is. */
+@utility text-headline-lg {
+  font-size: 1.625rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  @variant sm {
+    font-size: 2rem;
+    line-height: 2.375rem;
+  }
+}
+@utility text-headline-md {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+@utility text-headline-sm {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility text-body-lg {
+  font-size: 1.0625rem;
+  line-height: 1.5rem;
+  letter-spacing: -0.005em;
+}
+@utility text-body-md {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+@utility text-body-sm {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  letter-spacing: 0.005em;
+}
+/* Scores, board numbers, codes, clock times: mono, tabular, tracked. */
+@utility text-label-lg {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+@utility text-label-md {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+@utility text-label-sm {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 html,
 body,
 #root {
@@ -51,12 +283,17 @@ body,
 }
 
 body {
-  background: var(--color-paper);
+  background: var(--color-canvas);
   color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  /* Every number in the app lines up: results, boards, ratings, times. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
 dialog::backdrop {
-  background: rgb(15 23 42 / 0.45);
+  background: var(--backdrop);
 }
 
 /* Focus is visible on everything that takes a keypress, never only on hover. */
@@ -78,6 +315,7 @@ dialog::backdrop {
 @media print {
   body {
     background: white;
+    color: #0f172a;
   }
   .no-print {
     display: none !important;

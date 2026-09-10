@@ -66,7 +66,9 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     verified = {m["key"]: m["verified"] for m in managers.json()}
     check("Swiss-Manager is the verified one", verified["swiss_manager"] and not verified["vega"])
 
-    created = http.post("/api/tournaments", json={"name": "Smoke Open"}, headers=staff)
+    created = http.post(
+        "/api/tournaments", json={"name": "Smoke Open", "manager": "vega"}, headers=staff
+    )
     check("create tournament", created.status_code == 201, created.text)
     tournament = created.json()["id"]
 
@@ -127,11 +129,19 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     frozen = http.post(f"/api/rounds/{round_id}/export", json={}, headers=staff)
     check("round is frozen after export", frozen.status_code == 409, frozen.text)
 
-    # --- section B, a real Swiss-Manager export, in the same tournament --------
+    # --- a second tournament on Swiss-Manager, with a real export as B ---------
+    # The program is fixed per tournament, so the Swiss-Manager leg needs its own.
+    sm_created = http.post(
+        "/api/tournaments",
+        json={"name": "Smoke Open (Swiss-Manager)", "manager": "swiss_manager"},
+        headers=staff,
+    )
+    check("create a Swiss-Manager tournament", sm_created.status_code == 201, sm_created.text)
+    vega_tournament, tournament = tournament, sm_created.json()["id"]
     sm_content = SM_TRF.decode("utf-8")
     sm_import = http.post(
         f"/api/tournaments/{tournament}/imports",
-        json={"section_name": "B", "content": sm_content, "manager": "swiss_manager"},
+        json={"section_name": "B", "content": sm_content},
         headers=staff,
     )
     check("import a Swiss-Manager export as B", sm_import.status_code == 201, sm_import.text)
@@ -139,11 +149,26 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     sm_round = sm_import.json()["round_id"]
 
     detail = http.get(f"/api/tournaments/{tournament}", headers=staff).json()
+    check(
+        "the tournament names its program",
+        detail["manager_label"] == "Swiss-Manager",
+        detail["manager_label"],
+    )
     labels = {s["name"]: s["manager_label"] for s in detail["sections"]}
-    check("sections name managers", labels == {"A": "Vega", "B": "Swiss-Manager"}, str(labels))
+    check(
+        "the section took the tournament's program", labels == {"B": "Swiss-Manager"}, str(labels)
+    )
+    vega_detail = http.get(f"/api/tournaments/{vega_tournament}", headers=staff).json()
+    check(
+        "the Vega tournament stayed on Vega",
+        vega_detail["manager_label"] == "Vega",
+        vega_detail["manager_label"],
+    )
 
-    # Section A is exported and frozen, so the hall shows B's open round only:
-    # four games and the bye, greyed out as already entered.
+    # A phone admitted to this tournament sees B's open round: four games and
+    # the bye, greyed out as already entered.
+    sm_issued = http.post(f"/api/tournaments/{tournament}/devices", json={}, headers=staff)
+    phone = {"Authorization": f"Device {sm_issued.json()['token']}"}
     hall = http.get(f"/api/tournaments/{tournament}/boards", headers=phone).json()["boards"]
     check("hall shows the open round only", len(hall) == 5, str(len(hall)))
     check("the bye is shown as entered", [b["entered"] for b in hall if b["is_bye"]] == [True])

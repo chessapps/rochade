@@ -21,6 +21,7 @@ from rochade.features.imports.preview_import import PreviewImport
 from rochade.features.managers.list_managers import ListManagers
 from rochade.features.rounds.export_round import ExportRound
 from rochade.features.rounds.release_round import ReleaseRound
+from rochade.features.tournaments.create_tournament import CreateTournament
 from rochade.interchange import (
     Capabilities,
     ManagerFile,
@@ -139,6 +140,7 @@ def test_an_adapter_can_be_registered_and_listed(send: Send, simple_manager: Sim
     assert listed["swiss_manager"].merges_on_import is Support.YES
 
 
+@pytest.mark.manager("simple")
 def test_the_whole_loop_runs_through_a_non_trf_adapter(
     send: Send, session: Session, tournament: Tournament, simple_manager: SimpleManager
 ) -> None:
@@ -147,7 +149,6 @@ def test_the_whole_loop_runs_through_a_non_trf_adapter(
             tournament_id=tournament.id,
             section_name="S",
             content=SIMPLE_FILE,
-            manager="simple",
         )
     )
     assert plan.tournament_name == "Simple Open"
@@ -164,7 +165,6 @@ def test_the_whole_loop_runs_through_a_non_trf_adapter(
             tournament_id=tournament.id,
             section_name="S",
             content=SIMPLE_FILE,
-            manager="simple",
         )
     )
     section = session.scalars(select(Section)).one()
@@ -188,6 +188,7 @@ def test_the_whole_loop_runs_through_a_non_trf_adapter(
     assert exported.content.splitlines()[2] == "1|Alpha, Ann|3|Gamma, Gus|1"
 
 
+@pytest.mark.manager("simple")
 def test_export_refuses_a_code_the_adapter_would_silently_drop(
     send: Send, session: Session, tournament: Tournament, simple_manager: SimpleManager
 ) -> None:
@@ -197,7 +198,6 @@ def test_export_refuses_a_code_the_adapter_would_silently_drop(
             tournament_id=tournament.id,
             section_name="S",
             content=SIMPLE_FILE,
-            manager="simple",
         )
     )
     round_ = session.scalars(select(Round)).one()
@@ -231,34 +231,18 @@ def test_vega_carries_every_code_so_nothing_is_refused(
     assert manager_for("vega").capabilities.drops(["+", "-", "H", "U", "Z"]) == []
 
 
-def test_an_unknown_manager_is_rejected_by_name(send: Send, tournament: Tournament) -> None:
-    with pytest.raises(ValidationFailed, match="no manager adapter named"):
-        send(
-            PreviewImport(
-                tournament_id=tournament.id,
-                section_name="S",
-                content=SIMPLE_FILE,
-                manager="nonesuch",
-            )
-        )
+def test_an_unknown_manager_is_rejected_when_the_tournament_is_created(send: Send) -> None:
+    with pytest.raises(ValidationFailed, match="no pairing program named"):
+        send(CreateTournament(name="Nowhere Open", manager="nonesuch"))
 
 
-def test_sections_in_one_tournament_can_use_different_managers(
-    send: Send,
-    session: Session,
-    tournament: Tournament,
-    round1_text: str,
-    simple_manager: SimpleManager,
+@pytest.mark.manager("simple")
+def test_every_section_takes_the_tournaments_program(
+    send: Send, session: Session, tournament: Tournament, simple_manager: SimpleManager
 ) -> None:
-    """The reason `manager` is on the section, not the tournament."""
-    send(ImportRound(tournament_id=tournament.id, section_name="A", content=round1_text))
-    send(
-        ImportRound(
-            tournament_id=tournament.id,
-            section_name="S",
-            content=SIMPLE_FILE,
-            manager="simple",
-        )
-    )
+    """The program is chosen once, when the tournament is created, and the
+    import never asks again: a section cannot come from a different one."""
+    send(ImportRound(tournament_id=tournament.id, section_name="S", content=SIMPLE_FILE))
+    send(ImportRound(tournament_id=tournament.id, section_name="T", content=SIMPLE_FILE))
     sections = {s.name: s.manager for s in session.scalars(select(Section)).all()}
-    assert sections == {"A": "vega", "S": "simple"}
+    assert sections == {"S": "simple", "T": "simple"}

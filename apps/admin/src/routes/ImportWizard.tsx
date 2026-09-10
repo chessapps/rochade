@@ -8,16 +8,20 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { errorMessage, type ImportPlan, type ManagerSummary } from "../api";
+import { Chip } from "../components/StateChip";
 import { currentRound } from "../boards";
 import { ConfirmDialog } from "../components/Dialog";
+import { DropZone as Zone } from "../components/DropZone";
+import { PageHeader } from "../components/PageHeader";
 import { useToast } from "../components/Toast";
-import { Banner, Button, Card, Field, Input, Select, Skeleton, cx } from "../components/ui";
+import { Banner, Button, Card, Field, Input, Skeleton, cx } from "../components/ui";
 import { plural } from "../format";
 import { canImport, headline, planNotes, type PlanNote, type Severity } from "../plan";
 import {
+  dropHint,
   isReady,
   joinContents,
   KIND_LABEL,
@@ -37,6 +41,8 @@ export function ImportWizard() {
   const { tournamentId = "" } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  // Files dropped on the tournament home arrive here through router state.
+  const handed = (useLocation().state as { files?: PickedFile[] } | null)?.files ?? [];
   const toast = useToast();
   const tournament = useTournament(tournamentId);
   const managers = useManagers();
@@ -45,8 +51,7 @@ export function ImportWizard() {
   const once = useSingleFlight();
 
   const [section, setSection] = useState(params.get("section") ?? "");
-  const [manager, setManager] = useState("");
-  const [files, setFiles] = useState<PickedFile[]>([]);
+  const [files, setFiles] = useState<PickedFile[]>(handed);
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [forcing, setForcing] = useState(false);
@@ -56,15 +61,8 @@ export function ImportWizard() {
   // From round two the pairings alone will do: the section names them.
   const rosterHeld = (existing?.players ?? 0) > 0;
 
-  // The section's own manager first; failing that, the one we have watched work.
-  useEffect(() => {
-    if (!managers.data || manager) return;
-    const fallback = managers.data.find((m) => m.verified) ?? managers.data[0];
-    setManager(existing?.manager ?? fallback?.key ?? "");
-  }, [managers.data, existing, manager]);
-  useEffect(() => {
-    if (existing) setManager(existing.manager);
-  }, [existing]);
+  // The program was chosen when the tournament was created; nothing to ask.
+  const manager = tournament.data?.manager;
   useEffect(() => {
     if (!section && sections.length === 0) setSection("A");
   }, [section, sections.length]);
@@ -80,14 +78,13 @@ export function ImportWizard() {
         : `round ${latest.number} is not exported yet`;
 
   const runPreview = () => {
-    if (!isReady(files, rosterHeld)) return;
+    if (!isReady(files, rosterHeld, manager)) return;
     preview.mutate(
       {
         tournamentId,
         section_name: section.trim(),
         content: joinContents(files),
         filename: primaryName(files),
-        manager,
         // Never forced: the preview must show the block that a forced commit
         // would step over, or the arbiter never reads it.
         force: false,
@@ -103,13 +100,12 @@ export function ImportWizard() {
 
   const runImport = (force: boolean) =>
     once(async () => {
-      if (!isReady(files, rosterHeld)) return;
+      if (!isReady(files, rosterHeld, manager)) return;
       const data = await commit.mutateAsync({
         tournamentId,
         section_name: section.trim(),
         content: joinContents(files),
         filename: primaryName(files),
-        manager,
         force,
       });
       toast.success(
@@ -133,19 +129,15 @@ export function ImportWizard() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <header>
-        <Link to={`/t/${tournamentId}`} className="text-sm text-slate-500 hover:underline">
-          ← {tournament.data?.name ?? "Tournament"}
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold">
-          {plan ? `What round ${plan.file_round} changes` : "Import the paired round"}
-        </h1>
-      </header>
+      <PageHeader
+        back={{ to: `/t/${tournamentId}`, label: tournament.data?.name ?? "Tournament" }}
+        title={plan ? `What round ${plan.file_round} changes` : "Import the paired round"}
+      />
 
       {!plan ? (
         <Card className="flex flex-col gap-4 p-4 sm:p-5">
-          <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
-            <Field label="Section" hint={hint}>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <Field label="Section" hint={hint} className="w-32">
               <Input
                 value={section}
                 onChange={(event) => setSection(event.target.value)}
@@ -159,20 +151,10 @@ export function ImportWizard() {
                 ))}
               </datalist>
             </Field>
-            <Field label="Tournament manager">
-              <Select
-                value={manager}
-                onChange={(event) => setManager(event.target.value)}
-                disabled={Boolean(existing)}
-              >
-                {(managers.data ?? []).map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                    {option.verified ? "" : " (unverified)"}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <p className="flex items-center gap-2 pb-1 text-body-sm text-ink-2">
+              Files from
+              <Chip tone="emerald">{tournament.data?.manager_label ?? manager}</Chip>
+            </p>
           </div>
 
           {selected && <ManagerNotice manager={selected} />}
@@ -180,6 +162,7 @@ export function ImportWizard() {
           <DropZone
             files={files}
             rosterHeld={rosterHeld}
+            manager={manager}
             onFile={(picked) => setFiles((held) => withFile(held, picked))}
             onClear={() => setFiles([])}
           />
@@ -192,7 +175,7 @@ export function ImportWizard() {
               size="lg"
               onClick={runPreview}
               busy={preview.isPending}
-              disabled={!isReady(files, rosterHeld) || !section.trim() || !manager}
+              disabled={!isReady(files, rosterHeld, manager) || !section.trim() || !manager}
             >
               Preview the changes
             </Button>
@@ -250,14 +233,14 @@ function ManagerNotice({ manager }: { manager: ManagerSummary }) {
         </p>
       )}
       {unverified && (
-        <p className="mt-1 text-amber-800">
+        <p className="mt-1 text-amber-text">
           Not yet verified against the real program. What we believe about {manager.label}{" "}
           comes from its documentation, not from watching it work — run the round-trip spike
           before relying on this at an event.
         </p>
       )}
       {(manager.notes ?? []).map((note) => (
-        <p key={note} className="mt-1 text-slate-500">
+        <p key={note} className="mt-1 text-ink-3">
           {note}
         </p>
       ))}
@@ -272,65 +255,44 @@ function countLines(content: string): number {
 function DropZone({
   files,
   rosterHeld,
+  manager,
   onFile,
   onClear,
 }: {
   files: PickedFile[];
   rosterHeld: boolean;
+  manager: string | undefined;
   onFile: (file: PickedFile) => void;
   onClear: () => void;
 }) {
-  const [over, setOver] = useState(false);
-
   const take = (picked: FileList | null) => {
     for (const one of Array.from(picked ?? [])) {
       void readText(one).then((content) => onFile({ name: one.name, content, kind: sniff(content) }));
     }
   };
-  const note = missing(files, rosterHeld);
+  const note = missing(files, rosterHeld, manager);
   const roster = rosterNote(files, rosterHeld);
 
   return (
     <div className="space-y-2">
-      <label
-        onDragOver={(event) => {
-          event.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setOver(false);
-          take(event.dataTransfer.files);
-        }}
-        className={cx(
-          "flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
-          over ? "border-accent bg-accent-soft/40" : "border-slate-300 hover:border-slate-400",
-          files.length > 0 && note === null && "border-emerald-400 bg-emerald-50",
-        )}
-      >
-        <input
-          type="file"
-          multiple
-          accept=".trf,.txt,text/plain"
-          className="sr-only"
-          onChange={(event) => take(event.target.files)}
-        />
-        <p className="font-medium">Drop the exported files here</p>
-        <p className="text-sm text-slate-500">
-          or click to choose them — Swiss-Manager writes two, Vega one
-        </p>
-      </label>
+      <Zone
+        multiple
+        accept=".trf,.txt,text/plain"
+        onFiles={take}
+        ready={files.length > 0 && note === null}
+        title={manager === "vega" ? "Drop the exported file here" : "Drop the exported files here"}
+        hint={dropHint(manager)}
+      />
 
       {files.length > 0 && (
         <ul className="space-y-1">
           {files.map((file) => (
             <li
               key={file.kind + file.name}
-              className="flex flex-wrap items-baseline justify-between gap-x-3 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+              className="flex flex-wrap items-baseline justify-between gap-x-3 rounded border border-line bg-subtle px-3 py-2 text-sm"
             >
-              <span className="font-medium [overflow-wrap:anywhere]">{file.name}</span>
-              <span className="text-slate-500">
+              <span className="font-mono text-xs font-medium [overflow-wrap:anywhere]">{file.name}</span>
+              <span className="text-body-sm text-ink-2">
                 {KIND_LABEL[file.kind]} ·{" "}
                 {plural(countLines(file.content), "line")}
               </span>
@@ -345,7 +307,7 @@ function DropZone({
         <button
           type="button"
           onClick={onClear}
-          className="text-xs text-slate-500 underline underline-offset-2 hover:text-ink"
+          className="text-body-sm text-ink-2 underline underline-offset-2 hover:text-ink"
         >
           Start the file choice again
         </button>
@@ -355,9 +317,9 @@ function DropZone({
 }
 
 const SEVERITY_STYLE: Record<Severity, string> = {
-  blocking: "border-rose-300 bg-rose-50 text-rose-900",
-  acknowledge: "border-amber-300 bg-amber-50 text-amber-900",
-  informational: "border-slate-200 bg-white text-slate-600",
+  blocking: "border-rose-line bg-rose-soft text-rose-text",
+  acknowledge: "border-amber-line bg-amber-soft text-amber-text",
+  informational: "border-line bg-card text-ink-2",
 };
 
 function PlanReview({
@@ -390,8 +352,8 @@ function PlanReview({
   return (
     <Card className="flex flex-col gap-4 p-4 sm:p-5">
       <div>
-        <p className="text-lg font-medium">{headline(plan)}</p>
-        <p className="text-sm text-slate-500">
+        <p className="text-headline-sm">{headline(plan)}</p>
+        <p className="text-body-sm text-ink-2">
           {plan.section_exists
             ? `Replaces what we hold for section ${plan.section_name}.`
             : `Creates section ${plan.section_name}.`}
@@ -410,7 +372,7 @@ function PlanReview({
           <button
             type="button"
             onClick={() => setShowInfo((v) => !v)}
-            className="text-sm text-slate-600 underline-offset-2 hover:underline"
+            className="text-sm text-ink-2 underline-offset-2 hover:text-ink hover:underline"
             aria-expanded={showInfo}
           >
             {showInfo ? "Hide" : "Show"} {plural(groups.informational.length, "detail")} — players
@@ -471,7 +433,7 @@ function NoteList({
         {notes.map((note, index) => (
           <li
             key={index}
-            className={cx("rounded-lg border px-3 py-2 text-sm", SEVERITY_STYLE[note.severity])}
+            className={cx("rounded border px-3 py-2 text-sm", SEVERITY_STYLE[note.severity])}
           >
             {note.text}
           </li>

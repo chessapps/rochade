@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rochade Arbiter Desk — Zurich Chess Open 2025</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 font-sans min-h-screen flex flex-col antialiased">
+<!-- Top Navigation Header -->
+<header class="sticky top-0 z-50 bg-white border-b border-slate-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] backdrop-blur-md bg-white/95">
+<div class="max-w-[1240px] mx-auto px-6 h-16 flex items-center justify-between gap-4">
+<!-- Brand & Tournament Selector -->
+<div class="flex items-center gap-6">
+<!-- Logo -->
+<div class="flex items-center gap-2.5 cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[19px]">castle</span>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-bold tracking-wider text-slate-900 text-[15px] font-mono">ROCHADE</span>
+<span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Arbiter</span>
+</div>
+</div>
+<div class="h-5 w-px bg-slate-200"></div>
+<!-- Tournament Switcher Pill -->
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-xs font-medium text-slate-700 transition-colors">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="font-semibold text-slate-900">47th Zurich Chess Open 2025</span>
+<span class="text-slate-400">•</span>
+<span class="text-slate-500 font-mono">R3 Live</span>
+<span class="material-symbols-outlined text-slate-400 text-[16px]">unfold_more</span>
+</button>
+<!-- Nav Tabs -->
+<nav class="hidden lg:flex items-center gap-1">
+<a class="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50/80 rounded-md border border-blue-200/60 transition-colors" href="#">
+            Rounds
+          </a>
+<a class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-md transition-colors" href="#">
+            Standings
+          </a>
+<a class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-md transition-colors flex items-center gap-1.5" href="#">
+<span>Devices</span>
+<span class="text-[10px] px-1 py-0.2 rounded bg-slate-100 text-slate-500 border border-slate-200">QR</span>
+</a>
+<a class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-md transition-colors" href="#">
+            Settings
+          </a>
+</nav>
+</div>
+<!-- Right Arbiter Tools & Profile -->
+<div class="flex items-center gap-3">
+<!-- Polling Indicator -->
+<div class="hidden sm:flex items-center gap-2 px-2.5 py-1 text-[11px] font-mono font-medium text-slate-500 bg-slate-100/80 rounded-full border border-slate-200/60">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+</span>
+<span>Polling live (3s)</span>
+</div>
+<!-- Keyboard Shortcut Hint -->
+<button class="hidden sm:flex items-center gap-1 text-[11px] font-mono text-slate-400 hover:text-slate-600 px-2 py-1 bg-slate-50 border border-slate-200 rounded">
+<span>Press</span>
+<kbd class="font-bold text-slate-600">?</kbd>
+</button>
+<div class="h-5 w-px bg-slate-200"></div>
+<!-- User Profile Pill -->
+<div class="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100/70 cursor-pointer border border-transparent hover:border-slate-200 transition-all">
+<div class="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-semibold shadow-xs">
+            MW
+          </div>
+<div class="hidden md:flex flex-col text-left">
+<span class="text-xs font-semibold text-slate-800 leading-tight">Dr. M. Weber</span>
+<span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Chief Arbiter</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">keyboard_arrow_down</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Work Desk -->
+<main class="max-w-[1240px] w-full mx-auto px-6 py-8 flex-1 flex flex-col gap-8">
+<!-- Tournament Overview Command Bar -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+<div class="flex flex-col gap-1.5">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            FIDE Cat. IX Inv. &amp; National Open
+          </span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+<span class="material-symbols-outlined text-[13px] text-emerald-600">sync_alt</span>
+            Swiss-Manager v14.0 Synced
+          </span>
+</div>
+<h1 class="text-2xl font-bold text-slate-900 tracking-tight">47th Zurich Chess Open 2025</h1>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+<span class="flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[15px] text-slate-400">tune</span>
+            FIDE Swiss (JaVaFo)
+          </span>
+<span class="text-slate-300">•</span>
+<span class="flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[15px] text-slate-400">timer</span>
+            90m + 30s/move
+          </span>
+<span class="text-slate-300">•</span>
+<span class="flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[15px] text-slate-400">pin_drop</span>
+            Kongresshaus Hall A &amp; B
+          </span>
+<span class="text-slate-300">•</span>
+<span class="font-semibold text-slate-700 font-mono">128 Players (64 Boards Active)</span>
+</div>
+</div>
+<!-- Quick Action Controls -->
+<div class="flex flex-wrap items-center gap-2.5">
+<button class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-colors">
+<span class="material-symbols-outlined text-slate-500 text-[17px]">qr_code_scanner</span>
+<span>Hall QR Posters</span>
+</button>
+<button class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-colors">
+<span class="material-symbols-outlined text-slate-500 text-[17px]">ios_share</span>
+<span>Export Pairings</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Manual Entry</span>
+</button>
+</div>
+</div>
+<!-- Live Arbiter Metric Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Metric 1: Total Entered -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-slate-500 tracking-wide uppercase font-mono">Total Results</span>
+<span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">87.5%</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono tracking-tight text-slate-900">56</span>
+<span class="text-xs text-slate-500 font-mono">/ 64 Boards</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+<div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 87.5%"></div>
+</div>
+</div>
+</div>
+<!-- Metric 2: Urgent Dispute -->
+<div class="bg-rose-50/50 p-5 rounded-xl border border-rose-200 shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-rose-700 tracking-wide uppercase font-mono">Active Disputes</span>
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono tracking-tight text-rose-600">1</span>
+<span class="text-xs font-semibold text-rose-800">Board 12 (Section A)</span>
+</div>
+<p class="text-xs text-rose-600/90 mt-1 flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[14px]">priority_high</span>
+            Divergent player claims submitted
+          </p>
+</div>
+</div>
+<!-- Metric 3: In Progress / Clocks -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-slate-500 tracking-wide uppercase font-mono">In Progress</span>
+<span class="text-slate-400 material-symbols-outlined text-[18px]">hourglass_top</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono tracking-tight text-slate-900">7</span>
+<span class="text-xs text-slate-500 font-medium">Hall Clocks running</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">Avg round elapsed: <span class="font-mono text-slate-700 font-medium">2h 45m</span></p>
+</div>
+</div>
+<!-- Metric 4: Next Scheduled Round -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-slate-500 tracking-wide uppercase font-mono">Next Swiss Round</span>
+<span class="text-[11px] font-mono text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-semibold">T - 1h 12m</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono tracking-tight text-slate-900">18:00</span>
+<span class="text-xs text-slate-500 font-semibold">Round 4 Swiss</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">JaVaFo pairing engine standby</p>
+</div>
+</div>
+</div>
+<!-- Primary Layout: Main Tournament Sections (8 cols) & Sidebar (4 cols) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: Tournament Sections (8 Cols) -->
+<div class="lg:col-span-8 flex flex-col gap-8">
+<!-- SECTION A: MASTERS -->
+<section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+<!-- Card Header -->
+<div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-lg bg-slate-900 text-white font-mono font-bold text-lg flex items-center justify-center shadow-xs">
+                A
+              </div>
+<div>
+<div class="flex items-center gap-2.5">
+<h2 class="text-lg font-bold text-slate-900 tracking-tight">Section A — Masters</h2>
+<span class="text-[11px] font-mono uppercase font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    FIDE Rated
+                  </span>
+</div>
+<p class="text-xs text-slate-500 mt-0.5 font-medium">64 Players • Boards 1–32 • Rating avg 2384 • 14 GMs, 18 IMs</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/80">
+<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                Round 3 Live
+              </span>
+</div>
+</div>
+<!-- Dispute Callout Banner -->
+<div class="mx-6 mt-6 p-3.5 rounded-lg bg-rose-50/80 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+<div class="flex items-center gap-2.5 text-rose-900 font-medium">
+<span class="material-symbols-outlined text-rose-600 text-[18px]">warning</span>
+<span><strong>Board 12:</strong> Conflicting claims (<span class="font-mono font-bold">1 - 0</span> vs <span class="font-mono font-bold">0 - 1</span>) — desk review required</span>
+</div>
+<button class="inline-flex items-center gap-1 font-semibold text-rose-700 hover:text-rose-900 bg-white hover:bg-rose-100/50 px-3 py-1 rounded border border-rose-200 shadow-xs transition-colors shrink-0">
+<span>Resolve Board 12</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+<!-- Modern 4-Dot Round Stepper -->
+<div class="px-6 py-5">
+<div class="grid grid-cols-4 gap-2 relative">
+<!-- Step 1: Imported -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="text-xs font-bold text-slate-800">1. Imported</span>
+</div>
+<div class="text-[11px] font-mono text-slate-400 pl-8">14:15:02</div>
+</div>
+<!-- Step 2: Entry Open (Active) -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center ring-4 ring-blue-100 shadow-xs">
+<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+</div>
+<span class="text-xs font-bold text-blue-600">2. Entry Open</span>
+</div>
+<div class="text-[11px] font-mono text-blue-600 font-semibold pl-8">Active (14:30)</div>
+</div>
+<!-- Step 3: Released (Pending) -->
+<div class="flex flex-col gap-1.5 opacity-40">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-500 flex items-center justify-center text-[11px] font-bold font-mono">
+                    3
+                  </div>
+<span class="text-xs font-semibold text-slate-600">3. Released</span>
+</div>
+<div class="text-[11px] font-mono text-slate-400 pl-8">Pending</div>
+</div>
+<!-- Step 4: Exported (Pending) -->
+<div class="flex flex-col gap-1.5 opacity-40">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-500 flex items-center justify-center text-[11px] font-bold font-mono">
+                    4
+                  </div>
+<span class="text-xs font-semibold text-slate-600">4. Exported</span>
+</div>
+<div class="text-[11px] font-mono text-slate-400 pl-8">End of Round</div>
+</div>
+</div>
+</div>
+<!-- Section Progress Stats & Breakdown Bar -->
+<div class="px-6 pb-6 flex flex-col gap-4">
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pt-2 border-t border-slate-100">
+<div>
+<div class="flex items-baseline gap-2">
+<span class="text-xl font-bold font-mono text-slate-900">27 of 32</span>
+<span class="text-sm font-medium text-slate-600">boards confirmed</span>
+<span class="text-xs font-mono text-slate-400">(84.4%)</span>
+</div>
+<span class="text-xs text-slate-500">5 boards unresolved • 1 desk dispute pending resolution</span>
+</div>
+<div class="flex items-center gap-3 text-[11px] font-mono">
+<span class="flex items-center gap-1.5 text-slate-700">
+<span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>24 Confirmed
+                </span>
+<span class="flex items-center gap-1.5 text-slate-700">
+<span class="w-2.5 h-2.5 rounded-sm bg-amber-500"></span>2 Entered
+                </span>
+<span class="flex items-center gap-1.5 text-rose-700 font-bold">
+<span class="w-2.5 h-2.5 rounded-sm bg-rose-500"></span>1 Dispute
+                </span>
+<span class="flex items-center gap-1.5 text-slate-400">
+<span class="w-2.5 h-2.5 rounded-sm bg-slate-200"></span>5 Waiting
+                </span>
+</div>
+</div>
+<!-- Segmented Progress Bar -->
+<div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+<div class="bg-emerald-500 h-full" style="width: 75.0%;" title="24 Confirmed"></div>
+<div class="bg-amber-500 h-full" style="width: 6.25%;" title="2 Entered"></div>
+<div class="bg-rose-500 h-full" style="width: 3.125%;" title="1 Dispute"></div>
+<div class="bg-slate-200 h-full" style="width: 15.625%;" title="5 Waiting"></div>
+</div>
+<!-- Action Bar -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+<div class="flex items-center gap-2.5">
+<a class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors" href="#">
+<span>Manage Round 3 Boards</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+<button class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-xs transition-colors">
+<span class="material-symbols-outlined text-[16px] text-slate-500">dialpad</span>
+<span>Enter by Board #</span>
+</button>
+</div>
+<span class="text-xs font-mono text-slate-400 text-right">Last sync: 1m ago via QR-18</span>
+</div>
+</div>
+<!-- Collapsible Previous Rounds History -->
+<div class="bg-slate-50/70 border-t border-slate-100 px-6 py-3">
+<details class="group cursor-pointer">
+<summary class="flex items-center justify-between text-xs font-medium text-slate-500 hover:text-slate-900 select-none list-none transition-colors">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-slate-400 group-open:rotate-90 transition-transform">chevron_right</span>
+<span class="font-semibold">Completed Rounds Archive (2 of 9)</span>
+</span>
+<span class="text-[11px] font-mono text-slate-400">TRF checksums available</span>
+</summary>
+<div class="mt-3 flex flex-col gap-2 pl-6 pb-2 text-xs">
+<div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+<div class="flex items-center gap-3">
+<span class="font-mono font-bold text-slate-900">Round 2</span>
+<span class="text-slate-500">32/32 boards confirmed</span>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-mono font-semibold border border-emerald-200">Exported 11:20:44</span>
+</div>
+<button class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>Download TRF</span>
+</button>
+</div>
+<div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+<div class="flex items-center gap-3">
+<span class="font-mono font-bold text-slate-900">Round 1</span>
+<span class="text-slate-500">32/32 boards confirmed</span>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-mono font-semibold border border-emerald-200">Exported Yesterday 18:40</span>
+</div>
+<button class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>Download TRF</span>
+</button>
+</div>
+</div>
+</details>
+</div>
+</section>
+<!-- SECTION B: CHALLENGERS -->
+<section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+<!-- Card Header -->
+<div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-lg flex items-center justify-center shadow-xs">
+                B
+              </div>
+<div>
+<div class="flex items-center gap-2.5">
+<h2 class="text-lg font-bold text-slate-900 tracking-tight">Section B — Challengers</h2>
+<span class="text-[11px] font-mono uppercase font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    U2000 Rating
+                  </span>
+</div>
+<p class="text-xs text-slate-500 mt-0.5 font-medium">64 Players • Boards 33–64 • Swiss-Manager tournament #2025-B</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                90.6% Logged
+              </span>
+</div>
+</div>
+<!-- Modern 4-Dot Round Stepper -->
+<div class="px-6 py-5">
+<div class="grid grid-cols-4 gap-2 relative">
+<!-- Step 1: Imported -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="text-xs font-bold text-slate-800">1. Imported</span>
+</div>
+<div class="text-[11px] font-mono text-slate-400 pl-8">14:10:19</div>
+</div>
+<!-- Step 2: Entry Open (Active) -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center ring-4 ring-blue-100 shadow-xs">
+<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+</div>
+<span class="text-xs font-bold text-blue-600">2. Entry Open</span>
+</div>
+<div class="text-[11px] font-mono text-blue-600 font-semibold pl-8">Active (14:30)</div>
+</div>
+<!-- Step 3: Released (Pending) -->
+<div class="flex flex-col gap-1.5 opacity-40">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-500 flex items-center justify-center text-[11px] font-bold font-mono">
+                    3
+                  </div>
+<span class="text-xs font-semibold text-slate-600">3. Released</span>
+</div>
+<div class="text-[11px] font-mono text-slate-400 pl-8">Pending</div>
+</div>
+<!-- Step 4: Exported (Pending) -->
+<div class="flex flex-col gap-1.5 opacity-40">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-500 flex items-center justify-center text-[11px] font-bold font-mono">
+                    4
+                  </div>
+<span class="text-xs font-semibold text-slate-600">4. Exported</span>
+</div>
+<div class="text-[11px] font-mono text-slate-400 pl-8">End of Round</div>
+</div>
+</div>
+</div>
+<!-- Section Progress Stats & Breakdown Bar -->
+<div class="px-6 pb-6 flex flex-col gap-4">
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pt-2 border-t border-slate-100">
+<div>
+<div class="flex items-baseline gap-2">
+<span class="text-xl font-bold font-mono text-slate-900">29 of 32</span>
+<span class="text-sm font-medium text-slate-600">boards confirmed</span>
+<span class="text-xs font-mono text-slate-400">(90.6%)</span>
+</div>
+<span class="text-xs text-slate-500">0 active disputes • 3 matches active (Hall B: Boards 42, 58, 61)</span>
+</div>
+<div class="flex items-center gap-3 text-[11px] font-mono">
+<span class="flex items-center gap-1.5 text-slate-700">
+<span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>28 Confirmed
+                </span>
+<span class="flex items-center gap-1.5 text-slate-700">
+<span class="w-2.5 h-2.5 rounded-sm bg-amber-500"></span>1 Entered
+                </span>
+<span class="flex items-center gap-1.5 text-slate-400">
+<span class="w-2.5 h-2.5 rounded-sm bg-slate-200"></span>3 Waiting
+                </span>
+</div>
+</div>
+<!-- Segmented Progress Bar -->
+<div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+<div class="bg-emerald-500 h-full" style="width: 87.5%;" title="28 Confirmed"></div>
+<div class="bg-amber-500 h-full" style="width: 3.1%;" title="1 Entered"></div>
+<div class="bg-slate-200 h-full" style="width: 9.4%;" title="3 Waiting"></div>
+</div>
+<!-- Action Bar -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+<div class="flex items-center gap-2.5">
+<a class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors" href="#">
+<span>Manage Round 3 Boards</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+<button class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-xs transition-colors">
+<span class="material-symbols-outlined text-[16px] text-slate-500">dialpad</span>
+<span>Enter by Board #</span>
+</button>
+</div>
+<span class="text-xs font-mono text-slate-400 text-right">Last entry: Board 49 (½ - ½) • 4m ago</span>
+</div>
+</div>
+<!-- History collapsed -->
+<div class="bg-slate-50/70 border-t border-slate-100 px-6 py-3">
+<details class="group cursor-pointer">
+<summary class="flex items-center justify-between text-xs font-medium text-slate-500 hover:text-slate-900 select-none list-none transition-colors">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-slate-400 group-open:rotate-90 transition-transform">chevron_right</span>
+<span class="font-semibold">Completed Rounds Archive (2 of 9)</span>
+</span>
+<span class="text-[11px] font-mono text-slate-400">TRF checksums available</span>
+</summary>
+<div class="mt-3 flex flex-col gap-2 pl-6 pb-2 text-xs">
+<div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 shadow-xs">
+<div class="flex items-center gap-3">
+<span class="font-mono font-bold text-slate-900">Round 2</span>
+<span class="text-slate-500">32/32 boards confirmed</span>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-mono font-semibold border border-emerald-200">Exported 11:22:15</span>
+</div>
+<button class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>Download TRF</span>
+</button>
+</div>
+</div>
+</details>
+</div>
+</section>
+</div>
+<!-- Right Column: Sidebar (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Live Hall Activity Feed -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
+<div class="flex items-center justify-between border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+</span>
+<h3 class="text-sm font-bold text-slate-900">Live Hall Feed</h3>
+</div>
+<span class="text-[11px] font-mono text-slate-400">Auto-refresh (3s)</span>
+</div>
+<!-- Activity Stream -->
+<div class="flex flex-col divide-y divide-slate-100">
+<!-- Item 1: High Priority Dispute -->
+<div class="py-3 flex flex-col gap-1.5 bg-rose-50/50 -mx-3 px-3 rounded-lg border border-rose-100 my-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-mono font-bold">DISPUTE</span>
+<span class="text-xs font-bold font-mono text-slate-900">Board 12 (Sec A)</span>
+</div>
+<span class="text-[11px] font-mono text-rose-600 font-medium">1m ago</span>
+</div>
+<p class="text-xs text-slate-700 leading-relaxed">
+                GM Pelletier claims <span class="font-mono font-bold text-slate-900">1 - 0</span>; IM Fischer claims <span class="font-mono font-bold text-slate-900">0 - 1</span> via Hall QR.
+              </p>
+<div class="pt-1">
+<button class="text-xs font-semibold text-rose-700 hover:text-rose-900 inline-flex items-center gap-1">
+<span>Open Arbiter Resolver</span>
+<span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Item 2: Normal Confirmation -->
+<div class="py-3 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-xs font-bold font-mono text-slate-800">Board 4 (Sec A)</span>
+</div>
+<span class="text-[11px] font-mono text-slate-400">2m ago</span>
+</div>
+<p class="text-xs text-slate-600 leading-relaxed">
+                Result confirmed: <span class="font-mono font-bold text-slate-900">1 - 0</span> (GM Gallagher won vs FM Bänziger). Verified on White phone.
+              </p>
+</div>
+<!-- Item 3: Draw Confirmed -->
+<div class="py-3 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-xs font-bold font-mono text-slate-800">Board 49 (Sec B)</span>
+</div>
+<span class="text-[11px] font-mono text-slate-400">4m ago</span>
+</div>
+<p class="text-xs text-slate-600 leading-relaxed">
+                Result confirmed: <span class="font-mono font-bold text-slate-900">½ - ½</span>. Both players verified on device #QR-49.
+              </p>
+</div>
+<!-- Item 4: Preliminary Claim -->
+<div class="py-3 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+<span class="text-xs font-bold font-mono text-slate-800">Board 18 (Sec A)</span>
+</div>
+<span class="text-[11px] font-mono text-slate-400">7m ago</span>
+</div>
+<p class="text-xs text-slate-600 leading-relaxed">
+                Preliminary claim: <span class="font-mono font-bold text-slate-900">0 - 1</span> entered by Black. Awaiting White digital confirmation.
+              </p>
+</div>
+</div>
+<button class="w-full py-2 text-center text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors">
+            View full audit log (56 events) →
+          </button>
+</div>
+<!-- File Ingestion Dropzone (Swiss-Manager / Vega TRF) -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-bold text-slate-900">Round File Sync</h3>
+<span class="text-[10px] font-mono uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              FIDE TRF16
+            </span>
+</div>
+<!-- Drag and Drop Box -->
+<div class="border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 rounded-xl p-5 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-all group">
+<div class="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-500 group-hover:text-blue-600 group-hover:border-blue-300 transition-colors">
+<span class="material-symbols-outlined text-[22px]">cloud_upload</span>
+</div>
+<div>
+<p class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
+                Drop Swiss-Manager <span class="font-mono text-blue-600 font-bold">.txt</span> or Vega <span class="font-mono text-blue-600 font-bold">.trf</span>
+</p>
+<p class="text-[11px] text-slate-400 mt-0.5">Drag file here to prepare Round 4 pairings</p>
+</div>
+</div>
+<!-- Linked Files -->
+<div class="flex flex-col gap-2 pt-1">
+<span class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400">Linked Manager Files</span>
+<div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/80 text-xs font-mono">
+<span class="text-slate-700 truncate max-w-[180px]">Zurich2025_Masters_R3.txt</span>
+<span class="text-emerald-700 font-semibold flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-[14px]">done_all</span> Synced
+              </span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/80 text-xs font-mono">
+<span class="text-slate-700 truncate max-w-[180px]">Zurich2025_Open_R3.trf</span>
+<span class="text-emerald-700 font-semibold flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-[14px]">done_all</span> Synced
+              </span>
+</div>
+</div>
+</div>
+<!-- Quick Arbiter Tools Widget -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</div>
+<div>
+<div class="text-xs font-bold text-slate-800">Batch Pairing Sheets</div>
+<div class="text-[11px] text-slate-400">PDF formatted for A4 clipboard</div>
+</div>
+</div>
+<button class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-xs transition-colors">
+            Generate
+          </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Clean Bottom Status Footer -->
+<footer class="mt-auto border-t border-slate-200 bg-white py-3.5">
+<div class="max-w-[1240px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+<div class="flex items-center gap-2 font-mono text-[11px]">
+<span>Rochade Arbiter Desk v4.12</span>
+<span class="text-slate-300">•</span>
+<span>FIDE Swiss-Manager &amp; JaVaFo Engine Compliant</span>
+</div>
+<div class="flex items-center gap-4 text-[11px] font-mono">
+<span class="flex items-center gap-1.5 text-emerald-700 font-medium">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Hall Sync Active
+        </span>
+<span class="text-slate-300">•</span>
+<span>64 DGT Boards Connected</span>
+</div>
+</div>
+</footer>
+</body></html>
