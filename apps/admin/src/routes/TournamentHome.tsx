@@ -192,7 +192,7 @@ export function TournamentHome() {
                 to={`/t/${tournamentId}/devices`}
                 className="text-label-sm text-ink-3 hover:text-ink"
               >
-                Devices
+                Manage
               </Link>
             }
           />
@@ -466,6 +466,7 @@ function EarlierRound({ round, tournamentId }: { round: RoundSummary; tournament
 }
 
 const FEED_TONE: Record<string, string> = {
+  round_imported: "bg-round-open",
   result_claimed: "bg-state-claimed",
   result_corrected: "bg-state-claimed",
   result_disputed: "bg-state-disputed",
@@ -493,7 +494,7 @@ function describe(event: FeedEvent): string {
     case "dispute_resolved":
       return `Dispute resolved: ${claim("chosen")}.`;
     default:
-      return event.action;
+      return `${String(event.action).replace(/_/g, " ")}${p.filename ? ` from ${String(p.filename)}` : ""}.`;
   }
 }
 
@@ -550,7 +551,7 @@ function LiveFeed({
                       <span aria-hidden className={cx("size-2 rounded-full", FEED_TONE[event.action] ?? "bg-state-empty")} />
                     )}
                     <span className="font-mono text-xs font-bold text-ink">
-                      Board {event.board}
+                      {event.board === null ? "Round" : `Board ${event.board}`}
                       {section && ` (Sec ${section.name})`}
                     </span>
                   </span>
