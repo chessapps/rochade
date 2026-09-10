@@ -187,6 +187,28 @@ export function useCreateTournament(opts?: Opts<{ id: string; name: string }, Cr
   });
 }
 
+/**
+ * The one irreversible action: the tournament and everything under it. The
+ * server wants the name typed back, so a wrong id can never take an event.
+ */
+export function useDeleteTournament(opts?: Opts<{ id: string; name: string }, { tournamentId: string; confirmName: string }>) {
+  const client = useQueryClient();
+  return useMutation({
+    ...opts,
+    mutationFn: ({ tournamentId, confirmName }) =>
+      unwrap(
+        api.DELETE("/api/tournaments/{tournament_id}", {
+          params: { path: { tournament_id: tournamentId }, query: { confirm_name: confirmName } },
+        }),
+      ),
+    onSuccess: (data, vars, ctx, mutation) => {
+      client.removeQueries({ queryKey: keys.tournament(vars.tournamentId) });
+      void client.invalidateQueries({ queryKey: keys.tournaments });
+      opts?.onSuccess?.(data, vars, ctx, mutation);
+    },
+  });
+}
+
 export interface ImportVars {
   tournamentId: string;
   section_name: string;

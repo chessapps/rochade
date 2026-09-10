@@ -14,6 +14,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { errorMessage, type RoundSummary, type SectionSummary } from "../api";
 import { countsOfRound, currentRound, nextAction, readyToRelease, type NextAction } from "../boards";
 import { BoardNumber } from "../components/BoardNumber";
+import { DeleteTournamentDialog } from "../components/DeleteTournamentDialog";
 import { DropZone } from "../components/DropZone";
 import {
   ArrowRight,
@@ -23,6 +24,7 @@ import {
   MapPin,
   QrCode,
   RefreshCw,
+  Trash2,
   TriangleAlert,
   Upload,
   Users,
@@ -35,13 +37,24 @@ import { Chip, RoundChip } from "../components/StateChip";
 import { Banner, Button, Card, EmptyState, Skeleton, cx } from "../components/ui";
 import { clockTime, dateRange, joinNonEmpty, plural, relativeTime, resultLabel } from "../format";
 import { readText, sniff, type PickedFile } from "../importFiles";
-import { useDevices, useExportFile, useLiveFeed, useTournament, type FeedEvent } from "../queries";
+import {
+  useDevices,
+  useExportFile,
+  useLiveFeed,
+  useTournament,
+  useTournaments,
+  type FeedEvent,
+} from "../queries";
 import { useNow } from "../useNow";
 
 export function TournamentHome() {
   const { tournamentId = "" } = useParams();
   const tournament = useTournament(tournamentId, true);
   const devices = useDevices(tournamentId);
+  // The list is where the account's role on this tournament lives; only an
+  // owner gets to see the delete button at all.
+  const tournaments = useTournaments();
+  const [deleting, setDeleting] = useState(false);
   // Once a minute, so "last entry 4 min ago" stays true between fetches.
   const now = useNow(60_000);
 
@@ -61,6 +74,7 @@ export function TournamentHome() {
   }
 
   const detail = tournament.data;
+  const owner = tournaments.data?.some((t) => t.id === tournamentId && t.role === "owner") ?? false;
   const rounds = current.map((pair) => pair.round);
   const boards = rounds.reduce((n, r) => n + r.boards, 0);
   const entered = rounds.reduce((n, r) => n + r.claimed + r.confirmed, 0);
@@ -125,8 +139,27 @@ export function TournamentHome() {
           <Button size="sm" tone="dark" to={`/t/${tournamentId}/import`} icon={<Upload />}>
             Import a round…
           </Button>
+          {owner && (
+            <Button
+              size="sm"
+              tone="ghost"
+              onClick={() => setDeleting(true)}
+              icon={<Trash2 />}
+              className="text-ink-3 hover:text-rose-700"
+              title="Delete this tournament"
+            >
+              Delete…
+            </Button>
+          )}
         </div>
       </Card>
+      {owner && (
+        <DeleteTournamentDialog
+          open={deleting}
+          onClose={() => setDeleting(false)}
+          tournament={{ id: detail.id, name: detail.name }}
+        />
+      )}
 
       {/* Metrics */}
       {sections.length > 0 && (

@@ -1,4 +1,5 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import type { RoundEvent, RoundSummary, TournamentDetail } from "../api";
 import { renderAt, stubApi } from "../test-utils";
@@ -72,8 +73,15 @@ function event(id: string, action: RoundEvent["action"], board: number, at: stri
   };
 }
 
-function mount() {
-  stubApi({
+function mount(role: "owner" | "arbiter" = "owner") {
+  const calls = stubApi({
+    DELETE: {
+      [`/api/tournaments/${T}`]: (_path: string, init?: { params?: { query?: { confirm_name?: string } } }) => {
+        const query = init?.params?.query;
+        if (query?.confirm_name !== "Test Open") return new Error("the name does not match");
+        return { id: T, name: "Test Open" };
+      },
+    },
     GET: {
       [`/api/tournaments/${T}/devices`]: [
         { id: "d1", label: "poster", active: true, last_seen_at: "2026-09-02T12:30:00Z", revoked_at: null, issued_at: "2026-09-02T10:00:00Z" },
@@ -84,9 +92,14 @@ function mount() {
         event("e2", "result_disputed", 3, "2026-09-02T12:30:00Z"),
       ],
       "/api/rounds/r2/events": [],
+      // Last: a bare prefix would otherwise answer every tournament route.
+      "/api/tournaments": [
+        { id: T, name: "Test Open", city: "Zürich", federation: "SUI", start_date: null, end_date: null, role },
+      ],
     },
   });
   renderAt(`/t/${T}`, "/t/:tournamentId", <TournamentHome />);
+  return calls;
 }
 
 describe("TournamentHome", () => {
@@ -138,5 +151,34 @@ describe("TournamentHome", () => {
       "href",
       `/t/${T}/rounds/r3?filter=attention`,
     );
+  });
+
+  it("lets only the owner delete, and only after typing the name back", async () => {
+    const user = userEvent.setup();
+    const calls = mount();
+    await screen.findByRole("heading", { level: 1, name: "Test Open" });
+    await user.click(await screen.findByRole("button", { name: /Delete…/ }));
+
+    const dialog = screen.getByRole("dialog", { name: "Delete this tournament?" });
+    const confirm = within(dialog).getByRole("button", { name: "Delete tournament" });
+    expect(confirm).toBeDisabled();
+
+    const input = within(dialog).getByLabelText(/Type the tournament's name/);
+    await user.type(input, "Test Ope");
+    expect(confirm).toBeDisabled();
+    await user.type(input, "n");
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+
+    await waitFor(() =>
+      expect(calls.some((c) => c.method === "DELETE" && c.path === `/api/tournaments/${T}`)).toBe(true),
+    );
+  });
+
+  it("hides the delete button from an arbiter", async () => {
+    mount("arbiter");
+    await screen.findByRole("heading", { level: 1, name: "Test Open" });
+    await screen.findByText("Phones admitted");
+    expect(screen.queryByRole("button", { name: /Delete…/ })).not.toBeInTheDocument();
   });
 });

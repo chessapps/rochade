@@ -23,6 +23,7 @@ export {
   RefreshCw,
   Search,
   Smartphone,
+  Trash2,
   TriangleAlert,
   Upload,
   Users,
