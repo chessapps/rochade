@@ -22,6 +22,7 @@ from rochade.features.imports.import_round import ImportRound
 from rochade.features.imports.preview_import import PreviewImport
 from rochade.features.rounds.export_round import ExportRound
 from rochade.features.rounds.release_round import ReleaseRound
+from rochade.features.standings.import_standings import ImportStandings
 from rochade.interchange import InterchangeError, manager_for
 from rochade.platform.errors import ValidationFailed
 from rochade.shared.enums import GameResult, RoundState
@@ -392,3 +393,42 @@ def test_a_player_the_list_does_not_name_gets_an_unsquashed_name() -> None:
     document = manager_for("vega").read_round(read("engine26_round1.trf") + "\n" + pairs)
     assert document.players[6].name == "Gruber, Sarah"
     assert document.players[7].name == "Huber, Marco"
+
+
+# --- standings.txt ----------------------------------------------------------
+
+
+def test_vegas_standings_come_in_from_its_standings_file(
+    send: Send, session: Session, tournament: Tournament
+) -> None:
+    """standings.txt from the same 16-player tournament as the round-1 files,
+    written by Vega after round 3; matched on the start number."""
+    send(ImportRound(tournament_id=tournament.id, section_name="A", content=round_one()))
+    outcome = send(
+        ImportStandings(
+            tournament_id=tournament.id, section_name="A", content=read("standings_round3.txt")
+        )
+    )
+    assert outcome.players_updated == 16
+    assert outcome.unknown_start_numbers == []
+    assert outcome.standings.tiebreak_names == ["Buchholz"]
+    rows = {row.start_rank: row for row in outcome.standings.rows}
+    assert (rows[6].rank, rows[6].points, rows[6].tiebreaks) == (1, 2.5, [5.0])
+    assert (rows[10].rank, rows[10].points) == (1, 2.5)  # shares the position
+    assert (rows[13].rank, rows[13].points, rows[13].tiebreaks) == (15, 0.5, [4.5])
+    assert outcome.standings.rows[0].start_rank == 6
+    assert [row.rank for row in outcome.standings.rows][:4] == [1, 1, 3, 4]
+
+
+def test_the_wrong_file_on_the_standings_page_names_the_right_one(
+    send: Send, tournament: Tournament
+) -> None:
+    send(ImportRound(tournament_id=tournament.id, section_name="A", content=round_one()))
+    with pytest.raises(ValidationFailed, match=r"standings.txt"):
+        send(
+            ImportStandings(
+                tournament_id=tournament.id,
+                section_name="A",
+                content=read("sorted_pairs_round1.txt"),
+            )
+        )

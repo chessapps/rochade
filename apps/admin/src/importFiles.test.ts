@@ -164,3 +164,12 @@ describe("what Vega needs from round one", () => {
     expect(dropHint("swiss_manager", true)).toMatch(/Spielerauslosung, from/);
   });
 });
+
+describe("Vega's standings", () => {
+  const STANDINGS = "TestOpen\r\n - , \r\n\r\nStandings at round 3\r\n\r\nPos   N     NAME   g | FRtg  NRtg  Fed |  Pts      BH\r\n";
+
+  it("is recognised, and sent to the Standings page rather than the round import", () => {
+    expect(sniff(STANDINGS)).toBe("standings");
+    expect(missing([pick("standings.txt", STANDINGS)], true, "vega")).toMatch(/Standings page/);
+  });
+});

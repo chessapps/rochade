@@ -7,10 +7,12 @@ manual change to one, is rewrite two plain files in the tournament folder:
 
 - ``crosstable.txt`` -- every player with start number, rating, title and
   federation, and one cell per round played so far;
-- ``SortedPairs.txt`` -- the boards of the round just paired, by name.
+- ``SortedPairs.txt`` -- the boards of the round just paired, by name;
+- ``standings.txt`` -- its own standings with its tie-breaks, at every result.
 
-Together they say what the TRF export would have said. The modules here parse
-each one; ``interchange.formats.vega_text`` joins them into a round.
+The first two say what the TRF export would have said; the modules here
+parse each one and ``interchange.formats.vega_text`` joins them into a round.
+The standings are read on their own by ``features.standings``.
 
 Observed on Vega 12.1.8 -- see ``docs/m0-vega.md``.
 """
@@ -30,6 +32,13 @@ from rochade.vega.sorted_pairs import (
     looks_like_sorted_pairs,
     parse_sorted_pairs,
 )
+from rochade.vega.standings import (
+    Standings,
+    StandingsError,
+    StandingsRow,
+    looks_like_standings,
+    parse_standings,
+)
 from rochade.vega.trf_dialect import to_vega
 
 __all__ = [
@@ -40,9 +49,14 @@ __all__ = [
     "SortedPair",
     "SortedPairs",
     "SortedPairsError",
+    "Standings",
+    "StandingsError",
+    "StandingsRow",
     "looks_like_cross_table",
     "looks_like_sorted_pairs",
+    "looks_like_standings",
     "parse_cross_table",
     "parse_sorted_pairs",
+    "parse_standings",
     "to_vega",
 ]

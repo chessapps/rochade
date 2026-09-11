@@ -63,6 +63,8 @@ class VegaManager:
             "The import replaces the open tournament with the file and names it after "
             "the file; tie-breaks other than Buchholz are reset to Vega's default, so "
             "set them again if Vega's own standings matter.",
+            "Standings come from standings.txt in the tournament folder, tie-break "
+            "names included, on the Standings page.",
             "Verified against Vega 12.1.8.",
         ),
     )

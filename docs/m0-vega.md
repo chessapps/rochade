@@ -62,7 +62,7 @@ Automatic` for round 3 the folder held, all with the same timestamp:
 | `engine26.trf` | every engine pairing, from round 1 on | the TRF Vega hands the Gacrux plugin, the state *before* the pairing: every player, every result with colour, byes as `U`/`H`, forfeits as `+`/`-`, rounds as `142 N`, birth dates; names squashed (`BaumannLukas`) | **yes** — the players and the history; the boards come from `SortedPairs.txt` |
 | `pairingsN.qtf`, `standings.qtf` | every pairing / result | the same in U++ rich text, for printing | no |
 | `www<name>/<name>N.pgn` | every pairing | a PGN skeleton per board, `[Round "3.1"]` | no |
-| `standings.TXT` | every result | Vega's own standings with its tie-breaks | no (standings stay in Vega) |
+| `standings.txt` | every result | Vega's own standings with its tie-breaks, a legend naming the columns, shared positions on ties (`standings_round3.txt`) | **yes**, on the Standings page (`rochade.vega.standings`) |
 | `<name>.vegz`, `<name>-VEGZ-NN.bakz` | save / before a pairing | the tournament, binary | no |
 
 ### `SortedPairs.txt`

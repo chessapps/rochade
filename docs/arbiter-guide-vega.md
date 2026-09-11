@@ -101,8 +101,12 @@ Then pair the next round — back to step 1.
 
 ### 6. Standings
 
-Vega's standings stay in Vega (`standings.TXT` in the folder, or its printed
-lists). Rochade shows no table for a Vega tournament.
+Vega computes them; Rochade shows them. Vega rewrites `standings.txt` in the
+tournament folder at every result, tie-breaks included. On Rochade's
+**Standings** page, drop that file: points, tie-breaks and ranks are taken
+as Vega printed them, matched on the start number, and the tie-break columns
+carry Vega's names. The hall app shows the same table. Do it after the
+results of a round went back to Vega, or after the last round.
 
 ## Things to know
 

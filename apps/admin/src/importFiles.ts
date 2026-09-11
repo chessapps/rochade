@@ -12,7 +12,14 @@
  * still choosing.
  */
 
-export type FileKind = "players" | "pairings" | "crosstable" | "sorted_pairs" | "trf" | "unknown";
+export type FileKind =
+  | "players"
+  | "pairings"
+  | "crosstable"
+  | "sorted_pairs"
+  | "standings"
+  | "trf"
+  | "unknown";
 
 export interface PickedFile {
   name: string;
@@ -35,6 +42,7 @@ export function sniff(content: string): FileKind {
   // Vega's cross table starts with the tournament's name; its own header is
   // a few lines down.
   if (/^\s*Cross Table at round \d+\s*$/m.test(content)) return "crosstable";
+  if (/^\s*Standings at round \d+\s*$/m.test(content)) return "standings";
   return "unknown";
 }
 
@@ -43,6 +51,7 @@ export const KIND_LABEL: Record<FileKind, string> = {
   pairings: "pairings",
   crosstable: "cross table",
   sorted_pairs: "pairing list",
+  standings: "standings",
   trf: "TRF16",
   unknown: "not recognised",
 };
@@ -126,6 +135,9 @@ export function missing(
   }
   if (kinds.has("crosstable")) {
     return "The cross table pairs nobody on its own. Add SortedPairs.txt, which Vega writes when it pairs the round.";
+  }
+  if (kinds.has("standings")) {
+    return "This is Vega's standings.txt. It belongs on the Standings page; the round comes in as SortedPairs.txt.";
   }
   return "This does not look like a manager export. Choose the file the manager wrote.";
 }

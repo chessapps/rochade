@@ -42,7 +42,9 @@ export function Standings() {
         lead={
           native
             ? "Computed here at every release, with the tie-breaks the section was opened with. A correction to a released board moves the table at once."
-            : "As the tournament manager computes them. They arrive with its player list: import a round with both files, or drop the player list here on its own after the last round."
+            : tournament.data?.manager === "vega"
+              ? "As Vega computes them. Vega writes standings.txt into the tournament folder at every result: drop it here after a round, or after the last one."
+              : "As the tournament manager computes them. They arrive with its player list: import a round with both files, or drop the player list here on its own after the last round."
         }
       />
 
@@ -50,7 +52,9 @@ export function Standings() {
         <EmptyState title="No standings yet">
           {native
             ? "The table appears when the first round is released."
-            : "Standings come with Swiss-Manager's player list (Extras → Daten Import/Export → Spielerdaten). Import a round with both files, or drop the list below."}
+            : tournament.data?.manager === "vega"
+              ? "Standings are Vega's standings.txt, in the tournament folder. Drop it below."
+              : "Standings come with Swiss-Manager's player list (Extras → Daten Import/Export → Spielerdaten). Import a round with both files, or drop the list below."}
         </EmptyState>
       ) : (
         sections.map((section) => (
@@ -66,6 +70,7 @@ export function Standings() {
       {known.length > 0 && !native && (
         <ImportStandingsCard
           tournamentId={tournamentId}
+          manager={tournament.data?.manager}
           sections={known.map((s) => s.name)}
           initial={sections[0]?.section_name ?? known[0]?.name ?? ""}
         />
@@ -273,13 +278,17 @@ function TiebreakNames({
 
 function ImportStandingsCard({
   tournamentId,
+  manager,
   sections,
   initial,
 }: {
   tournamentId: string;
+  manager: string | undefined;
   sections: string[];
   initial: string;
 }) {
+  const vega = manager === "vega";
+  const wanted = vega ? "standings" : "players";
   const [section, setSection] = useState(initial);
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
   const importStandings = useImportStandings();
@@ -291,7 +300,7 @@ function ImportStandingsCard({
     void readText(one).then((content) => setFile({ name: one.name, content }));
   };
   const kind = file ? sniff(file.content) : null;
-  const ready = kind === "players" && section.trim() !== "";
+  const ready = kind === wanted && section.trim() !== "";
 
   const run = () =>
     file &&
@@ -316,9 +325,20 @@ function ImportStandingsCard({
       <CardHeader title="Import standings on their own" />
       <div className="flex flex-col gap-3 p-4 sm:p-5">
         <p className="text-body-sm text-ink-2">
-          For the table after the last round, or a refresh before the next pairing: Extras →
-          Daten Import/Export → <strong>Spielerdaten (Text-File)</strong>, and drop that file here.
-          Only points, tiebreaks and ranks change; the players stay as the round import left them.
+          {vega ? (
+            <>
+              For the table after a round: Vega rewrites <strong>standings.txt</strong> in the
+              tournament folder at every result. Drop that file here. Only points, tie-breaks and
+              ranks change, and the tie-break columns take the names Vega gives them.
+            </>
+          ) : (
+            <>
+              For the table after the last round, or a refresh before the next pairing: Extras →
+              Daten Import/Export → <strong>Spielerdaten (Text-File)</strong>, and drop that file
+              here. Only points, tiebreaks and ranks change; the players stay as the round import
+              left them.
+            </>
+          )}
         </p>
         {sections.length > 1 && (
           <label className="flex items-center gap-2 text-sm">
@@ -335,15 +355,23 @@ function ImportStandingsCard({
         <DropZone
           compact
           accept=".txt,text/plain"
-          inputLabel="player list file"
+          inputLabel={vega ? "standings file" : "player list file"}
           onFiles={take}
           ready={ready}
-          title={file ? file.name : "Drop the player list here, or click to choose it"}
-          hint={!file && "Spielerdaten (Text-File)"}
+          title={
+            file
+              ? file.name
+              : vega
+                ? "Drop standings.txt here, or click to choose it"
+                : "Drop the player list here, or click to choose it"
+          }
+          hint={!file && (vega ? "standings.txt, from the tournament folder" : "Spielerdaten (Text-File)")}
         >
-          {file && kind !== "players" && (
+          {file && kind !== wanted && (
             <span className="text-body-sm text-rose-text">
-              This is not the player list. Standings come with Spielerdaten.
+              {vega
+                ? "This is not Vega's standings. They are standings.txt in the tournament folder."
+                : "This is not the player list. Standings come with Spielerdaten."}
             </span>
           )}
         </DropZone>
