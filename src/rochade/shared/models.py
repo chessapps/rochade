@@ -14,6 +14,7 @@ from typing import Any, ClassVar
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -63,6 +64,12 @@ class Tournament(Base):
     #: Six characters a phone can type instead of scanning the QR. None means
     #: joining that way is closed; see `features/devices/join_code.py`.
     join_code: Mapped[str | None] = mapped_column(String(12), unique=True, default=None)
+    #: Readable by anyone at /live/<slug> while True. Off by default: a test
+    #: tournament never leaks. See `features/tournaments/publish_tournament.py`.
+    published: Mapped[bool] = mapped_column(Boolean(), default=False, server_default="false")
+    #: The short name in the public URL; set the first time the tournament is
+    #: published and kept afterwards, so a link that was shared stays good.
+    slug: Mapped[str | None] = mapped_column(String(80), unique=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     sections: Mapped[list[Section]] = relationship(

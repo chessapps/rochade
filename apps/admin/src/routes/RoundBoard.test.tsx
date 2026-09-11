@@ -53,6 +53,8 @@ function tournament(state: RoundDetail["state"] = "open", counts = { empty: 1, c
     id: T,
     name: "Test Open",
     city: "",
+    published: false,
+    slug: null,
     federation: "",
     start_date: null,
     end_date: null,

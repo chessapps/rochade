@@ -108,6 +108,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{tournament_id}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publish Tournament */
+        put: operations["publish_tournament_api_tournaments__tournament_id__publication_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/{tournament_id}/imports/preview": {
         parameters: {
             query?: never;
@@ -1334,6 +1351,20 @@ export interface components {
          * @enum {string}
          */
         PrincipalKind: "staff" | "device" | "system" | "anonymous";
+        /** Publication */
+        Publication: {
+            /** Published */
+            published: boolean;
+            /** Slug */
+            slug: string | null;
+        };
+        /** PublicationBody */
+        PublicationBody: {
+            /** Published */
+            published: boolean;
+            /** Slug */
+            slug?: string | null;
+        };
         /** QueueEntry */
         QueueEntry: {
             /**
@@ -1724,6 +1755,13 @@ export interface components {
             native: boolean;
             /** Join Code */
             join_code?: string | null;
+            /**
+             * Published
+             * @default false
+             */
+            published: boolean;
+            /** Slug */
+            slug?: string | null;
             /** Sections */
             sections: components["schemas"]["SectionSummary"][];
         };
@@ -2074,6 +2112,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_tournament_api_tournaments__tournament_id__publication_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Publication"];
                 };
             };
             /** @description Validation Error */
