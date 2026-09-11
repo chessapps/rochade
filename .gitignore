@@ -19,6 +19,9 @@ scripts/out/
 # Scratch space for test tournaments and manager experiments. Never committed.
 sandbox/
 
+# The pywinauto environment the GUI spikes use (spikes/*_gui.py).
+gui-env/
+
 # TypeScript incremental build state, per machine.
 *.tsbuildinfo
 

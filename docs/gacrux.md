@@ -86,9 +86,10 @@ with anything that moved.
 - The golden values for the messy seed after two rounds are in
   `tests/fixtures/gacrux/round3_standings_after_2.json`.
 
-## Still to check
+## Checked since
 
-- The engine against Swiss-Manager on the same nine-player seed
-  (`spikes/make_seed.py`), board by board, before a pilot.
-- Whether the 2026 rule set (`"rules": "2026-02-01"`) matches what
-  Swiss-Manager 15.0.0.3 pairs; both claim the FIDE Dutch system.
+- Round 3 of the nine-player seed (`spikes/make_seed.py`), board by board,
+  2026-09-11: the vendored engine, Vega 12.1.8 with its bundled Gacrux, and
+  Swiss-Manager 15.0.0.3 all pair `4-2 1-3 7-9 5-8`, bye 6
+  (`docs/m0-vega.md`). One round of one seed, not a proof; but the three
+  agree where they were compared.

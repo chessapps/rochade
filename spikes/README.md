@@ -8,18 +8,22 @@ is to turn documentation into observed fact, one manager at a time.
 | Manager | Result | Record |
 |---|---|---|
 | **Swiss-Manager 15.0.0.3** | **done — the loop closes.** TRF16 out, its own pairing file back in, merged into the open tournament. | `docs/m0-swiss-manager.md`; real files under `tests/fixtures/swiss_manager/` |
-| **Vega** | **not run.** `interchange/vega.py` still carries `Support.UNVERIFIED` and the admin app says so on screen. | this folder is what runs it |
+| **Vega 12.1.8** | **done — the loop closes.** Two files from its tournament folder in, a TRF back that replaces the open tournament; the next round pairs. Its rating report refuses to export a paired round; its own `engine.man` goes stale after a manual change. | `docs/m0-vega.md`; real files under `tests/fixtures/vega/` |
 
 The Swiss-Manager run also settled two design questions for every adapter:
 board numbers follow the FIDE order (they now match the manager's pairing list),
 and results cross the port as a pair of codes so a double forfeit exists.
 
-## Running it against Vega
+## How it was run against Vega
 
 The lesson from Swiss-Manager, in one line: **the obvious inbound path may be
 the wrong one.** Its TRF16 import created a fresh tournament every time; the
-path that merged was a program-specific pairing file two menus away. Expect
-Vega to have an equivalent surprise, and look for a merge before believing one.
+path that merged was a program-specific pairing file two menus away. Vega's
+surprise was the mirror image: the documented *export* refuses while a round is
+unplayed, and the files it writes into its tournament folder are the way in.
+The steps below are what the plan said; `docs/m0-vega.md` is what happened.
+`vega_gui.py` drove the clicks and `vega_pairing_trf.py` built the first TRF we
+handed back, before the product did it from the folder files.
 
 1. `uv run python spikes/make_seed.py` — nine players, rounds 1–2 played with a
    forfeit, a pairing-allocated bye and a half-point bye, round 3 absent.

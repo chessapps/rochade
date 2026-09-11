@@ -51,7 +51,7 @@ def test_the_loop_closes(
 
     assert exported.boards_written == 4
     assert exported.boards_left_blank == []
-    assert exported.filename == "A-round1.trf"
+    assert exported.filename == "A.trf"
 
     out = parse(exported.content)
     # Boards are (1,5) (6,2) (3,7) (8,4) in FIDE order.
@@ -85,7 +85,9 @@ def test_export_touches_only_the_result_and_points_cells(
     exported = send(ExportRound(round_id=round_.id))
 
     before = round1_text.split("\r\n")
-    after = exported.content.split("\r\n")
+    # The one line Vega's importer needs that the file did not have: its own
+    # round-count record. Everything else is the file as it came.
+    after = [line for line in exported.content.split("\r\n") if not line.startswith("142 ")]
     assert len(before) == len(after)
 
     from rochade.trf import columns

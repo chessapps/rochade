@@ -40,6 +40,7 @@ class PreviewImport(Query):
     section_name: str
     content: str
     force: bool = False
+    declared_rounds: int | None = None
 
 
 @bus.register(PreviewImport)
@@ -55,6 +56,7 @@ def handle(query: PreviewImport, ctx: Context) -> ImportPlan:
         content=query.content,
         manager=require_file_driven(resolve_manager(tournament.manager)),
         force=query.force,
+        declared_rounds=query.declared_rounds,
     )
     return plan
 
@@ -63,6 +65,7 @@ class PreviewBody(BaseModel):
     section_name: str
     content: str
     force: bool = False
+    declared_rounds: int | None = None
 
 
 @router.post("/{tournament_id}/imports/preview", response_model=ImportPlan)

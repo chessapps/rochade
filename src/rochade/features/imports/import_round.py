@@ -15,7 +15,7 @@ written until an arbiter has seen what will change.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -156,6 +156,7 @@ def build_plan(
     content: str,
     manager: Manager,
     force: bool = False,
+    declared_rounds: int | None = None,
 ) -> tuple[ImportPlan, RoundDocument]:
     """Diff a file against what we hold. Pure: reads only, writes nothing."""
     existing = _load_existing(session, tournament.id, section_name)
@@ -165,6 +166,11 @@ def build_plan(
         document = manager.read_round(content, roster_of(existing.section))
     except InterchangeError as exc:
         raise ValidationFailed(f"the file could not be read: {exc}", line_no=exc.line_no) from exc
+    if document.declared_rounds is None:
+        # The file does not say how long the tournament is: the arbiter's
+        # answer wins, then what the section already knows.
+        held = existing.section.declared_rounds if existing.section else None
+        document = replace(document, declared_rounds=declared_rounds or held)
 
     if not document.players:
         raise ValidationFailed("the file contains no player rows")
@@ -358,6 +364,10 @@ class ImportRound(Command):
     filename: str = Field(default="", max_length=255)
     #: Set only after the arbiter has read a plan that reported a blocker.
     force: bool = False
+    #: How many rounds the tournament has, when the file does not say. Vega's
+    #: folder files carry no round count, and the file we hand back needs one
+    #: or Vega calls the tournament finished. Kept on the section once given.
+    declared_rounds: int | None = Field(default=None, ge=1, le=30)
 
 
 @bus.register(ImportRound)
@@ -374,6 +384,7 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
         content=command.content,
         manager=manager,
         force=command.force,
+        declared_rounds=command.declared_rounds,
     )
     if not plan.can_import:
         raise Conflict("this file cannot be imported", reasons=plan.blocked_by)
@@ -543,6 +554,7 @@ class ImportRoundBody(BaseModel):
     content: str
     filename: str = ""
     force: bool = False
+    declared_rounds: int | None = None
 
 
 @router.post("/{tournament_id}/imports", response_model=ImportRoundResult, status_code=201)

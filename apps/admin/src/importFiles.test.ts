@@ -5,6 +5,10 @@ import { isReady, joinContents, missing, primaryName, readText, rosterNote, snif
 const PLAYERS = "Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;Nachname;Vorname\r\n1;Brunner Livia;WGM;;0;2447;01.06.1992;SUI;W;Brunner;Livia\r\n";
 const PAIRINGS = "Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS\r\n1;1;0;0;1;51;0;0;;0:0;0;;\r\n";
 const TRF = "012 Rochade Open 2026\r\n001    1 m    Baumann, Lukas                 2201 SUI\r\n";
+const CROSSTABLE =
+  "Rochade M0 Spike\r\nRochade - 05/09/2026, 07/09/2026\r\n\r\n Cross Table at round 2\r\n\r\n" +
+  "  N NAME                 Rtg   T  Fed  Pts |   1     2  \r\n";
+const SORTED_PAIRS = "Rochade M0 Spike: Pairing of round 3 sorted by name\n\n====\n";
 
 const pick = (name: string, content: string) => ({ name, content, kind: sniff(content) });
 
@@ -13,6 +17,8 @@ describe("telling the manager's files apart", () => {
     expect(sniff(PLAYERS)).toBe("players");
     expect(sniff(PAIRINGS)).toBe("pairings");
     expect(sniff(TRF)).toBe("trf");
+    expect(sniff(CROSSTABLE)).toBe("crosstable");
+    expect(sniff(SORTED_PAIRS)).toBe("sorted_pairs");
     expect(sniff("hello\nthere")).toBe("unknown");
   });
 
@@ -53,6 +59,38 @@ describe("what is still needed", () => {
 
   it("says so plainly when the file is not a manager export at all", () => {
     expect(missing([pick("notes.txt", "hello")])).toMatch(/does not look like/);
+  });
+});
+
+describe("what Vega needs", () => {
+  it("takes the cross table and the pairing list together, in either order", () => {
+    const pair = [pick("crosstable.txt", CROSSTABLE), pick("SortedPairs.txt", SORTED_PAIRS)];
+    expect(missing(pair, false, "vega")).toBeNull();
+    expect(isReady([...pair].reverse(), false, "vega")).toBe(true);
+    expect(primaryName(pair)).toBe("SortedPairs.txt");
+    const body = joinContents([...pair].reverse());
+    expect(body.indexOf("Cross Table")).toBeLessThan(body.indexOf("Pairing of round"));
+  });
+
+  it("asks for the cross table when only the pairing list is there, unless the roster is held", () => {
+    const files = [pick("SortedPairs.txt", SORTED_PAIRS)];
+    expect(missing(files, false, "vega")).toMatch(/crosstable.txt/);
+    expect(missing(files, true, "vega")).toBeNull();
+    expect(rosterNote(files, true)).toMatch(/Start numbers come from/);
+    expect(rosterNote([pick("crosstable.txt", CROSSTABLE), ...files], true)).toBeNull();
+  });
+
+  it("asks for the pairing list when only the cross table is there", () => {
+    expect(missing([pick("crosstable.txt", CROSSTABLE)], true, "vega")).toMatch(/SortedPairs.txt/);
+  });
+
+  it("sends each program's files back to the other", () => {
+    expect(missing([pick("players.txt", PLAYERS), pick("pairings.txt", PAIRINGS)], false, "vega")).toMatch(
+      /runs on Vega/,
+    );
+    expect(
+      missing([pick("crosstable.txt", CROSSTABLE), pick("SortedPairs.txt", SORTED_PAIRS)], false, "swiss_manager"),
+    ).toMatch(/runs on Swiss-Manager/);
   });
 });
 

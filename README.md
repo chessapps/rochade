@@ -26,7 +26,7 @@ ships `UNVERIFIED` until someone has watched it work.
 | Manager | Status | Read more |
 |---|---|---|
 | **Swiss-Manager** | **verified** against 15.0.0.3 — its two text exports out, its pairing file back in, merges into the open tournament | [arbiter guide](docs/arbiter-guide-swiss-manager.md) · [what was observed](docs/m0-swiss-manager.md) |
-| **Vega** | unverified — TRF16 both ways is what the manual says | [how to run the spike](spikes/README.md) |
+| **Vega** | **verified** against 12.1.8 — two files from its tournament folder out, a TRF it imports back in; it replaces the open tournament with the file and pairs on | [arbiter guide](docs/arbiter-guide-vega.md) · [what was observed](docs/m0-vega.md) |
 | **Rochade (Gacrux engine)** | native — no files: players are entered here, rounds are paired and the table computed by the vendored [TieBreakServer](https://github.com/OttoMilvang/TieBreakServer) | [arbiter guide](docs/arbiter-guide-gacrux.md) · [what the engine does](docs/gacrux.md) |
 
 See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
@@ -110,19 +110,21 @@ code under **Devices** — print it as a poster or show it on screen. Then each
 round is the same five minutes, and the section card on the tournament home
 always names the next step:
 
-1. Pair the round in Swiss-Manager or Vega and export it — Swiss-Manager
-   writes the players and the pairings as two text files; **Import round N**
-   shows what they change before anything is written.
+1. Pair the round in Swiss-Manager or Vega and hand it over — Swiss-Manager
+   exports the players and the pairings as two text files, Vega has already
+   written `crosstable.txt` and `SortedPairs.txt` into its tournament folder;
+   **Import round N** shows what they change before anything is written.
 2. Players enter results on their phones — scanning the QR, or typing the join
    code when a camera will not do. The round board updates every few
    seconds and opens on **Attention**: the boards with no result, and the ones
    two phones disagree about, with which phone said what. Forfeits are one tap
    further away; `1` `=` `0` on the keyboard work too.
-3. **Release**, then **Export for Swiss-Manager**. The file downloads, the round
-   freezes, and the card at the top says which menu to use — with the file a
-   click away should the download have gone astray.
+3. **Release**, then **Export for Swiss-Manager** (or **for Vega**). The file
+   downloads, the round freezes, and the card at the top says which menu to
+   use — with the file a click away should the download have gone astray.
 
-`docs/arbiter-guide-swiss-manager.md` has the Swiss-Manager menus for each step.
+`docs/arbiter-guide-swiss-manager.md` and `docs/arbiter-guide-vega.md` have
+the menus for each step.
 
 A tournament on **Rochade (Gacrux engine)** skips the files: enter the players
 under **Players**, **Pair round N** from the section card (the preview shows

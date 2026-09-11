@@ -111,7 +111,10 @@ class SimpleManager:
                 f"{row.white_rank}|{row.white_name}|{row.black_rank}|{row.black_name}"
                 f"|{by_rank.get(row.white_rank, '')}"
             )
-        return ManagerFile(filename=f"{stem}.simple", content="\n".join(lines) + "\n")
+        return ManagerFile(
+            filename=f"{stem}-round{round_number}.simple",
+            content="\n".join(lines) + "\n",
+        )
 
 
 @pytest.fixture
@@ -138,10 +141,10 @@ def test_an_adapter_can_be_registered_and_listed(send: Send, simple_manager: Sim
     assert listed["gacrux"].native is True
     assert listed["gacrux"].verified is True
     assert listed["gacrux"].writes_format == ""
-    # Vega's flags are honest about never having been checked against the real
-    # program -- that is what M0 is for. Swiss-Manager's were.
-    assert listed["vega"].verified is False
-    assert listed["vega"].exports_unplayed_round is Support.UNVERIFIED
+    # Both file-driven programs have been watched doing it: Swiss-Manager on
+    # 2026-09-02, Vega on 2026-09-11.
+    assert listed["vega"].verified is True
+    assert listed["vega"].exports_unplayed_round is Support.YES
     assert listed["swiss_manager"].verified is True
     assert listed["swiss_manager"].merges_on_import is Support.YES
 
@@ -233,7 +236,7 @@ def test_vega_carries_every_code_so_nothing_is_refused(
 
     exported = send(ExportRound(round_id=round_.id))
     assert exported.manager == "vega"
-    assert exported.file_format == "trf16"
+    assert exported.file_format == "trf16 for Vega"
     assert manager_for("vega").capabilities.drops(["+", "-", "H", "U", "Z"]) == []
 
 

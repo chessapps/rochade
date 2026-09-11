@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
@@ -113,6 +113,10 @@ def render(round_: Round, *, force: bool) -> Rendered:
         document = manager.read_round(round_.source_trf, roster_of(round_.section))
     except InterchangeError as exc:  # pragma: no cover - it parsed on import
         raise ValidationFailed(f"the stored source file no longer reads: {exc}") from exc
+    if document.declared_rounds is None and round_.section.declared_rounds is not None:
+        # Vega's folder files carry no round count; the section remembers the
+        # one the arbiter gave at import, and the file we hand back needs it.
+        document = replace(document, declared_rounds=round_.section.declared_rounds)
 
     # What the manager already knows. A bye it allocated, or a result it exported
     # with the round, is not something we write -- it goes back as it came, so it
@@ -247,9 +251,8 @@ def handle_get(query: GetExportFile, ctx: Context) -> ExportRoundResult:
 
 
 def _stem(round_: Round) -> str:
-    """The filename without an extension -- the adapter picks that."""
-    section = re.sub(r"[^A-Za-z0-9_-]+", "-", round_.section.name).strip("-") or "section"
-    return f"{section}-round{round_.number}"
+    """The section's name made file-safe. The adapter adds the round and the extension."""
+    return re.sub(r"[^A-Za-z0-9_-]+", "-", round_.section.name).strip("-") or "section"
 
 
 class ExportBody(BaseModel):

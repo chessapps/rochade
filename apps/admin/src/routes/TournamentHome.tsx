@@ -709,7 +709,7 @@ function RoundFileSync({
     <Card className="flex flex-col gap-4 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">Round file sync</h2>
-        <Chip tone="neutral">{manager === "vega" ? "TRF16" : "Text export"} · {managerLabel}</Chip>
+        <Chip tone="neutral">{manager === "vega" ? "Tournament folder" : "Text export"} · {managerLabel}</Chip>
       </div>
       <DropZone
         compact
@@ -720,7 +720,8 @@ function RoundFileSync({
         title={
           manager === "vega" ? (
             <>
-              Drop the Vega <span className="font-mono text-accent">.trf</span> here
+              Drop Vega's <span className="font-mono text-accent">crosstable.txt</span> and{" "}
+              <span className="font-mono text-accent">SortedPairs.txt</span> here
             </>
           ) : (
             <>
