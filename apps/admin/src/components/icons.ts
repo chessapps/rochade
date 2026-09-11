@@ -6,6 +6,7 @@
 export {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Calendar,
   Castle,
   Check,

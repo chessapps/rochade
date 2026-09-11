@@ -18,6 +18,7 @@ import { DeleteTournamentDialog } from "../components/DeleteTournamentDialog";
 import { DropZone } from "../components/DropZone";
 import {
   ArrowRight,
+  BookOpen,
   Calendar,
   ChevronRight,
   Download,
@@ -139,6 +140,11 @@ export function TournamentHome() {
           <Button size="sm" to={`/t/${tournamentId}/players`} icon={<Users />}>
             Players
           </Button>
+          {detail.manager === "vega" && (
+            <Button size="sm" to="/guides/vega" icon={<BookOpen />}>
+              Vega guide
+            </Button>
+          )}
           {detail.native ? (
             <Button size="sm" tone="dark" to={`/t/${tournamentId}/sections/new`} icon={<Plus />}>
               New section…

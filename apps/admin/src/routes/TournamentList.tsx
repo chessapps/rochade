@@ -5,7 +5,7 @@ import { errorMessage, type ManagerSummary, type TournamentSummary } from "../ap
 import { Dialog } from "../components/Dialog";
 import { Chip } from "../components/StateChip";
 import { useToast } from "../components/Toast";
-import { Calendar, Check, MapPin } from "../components/icons";
+import { BookOpen, Calendar, Check, MapPin } from "../components/icons";
 import { Banner, Button, EmptyState, Field, Input, Skeleton, cx } from "../components/ui";
 import { dateRange } from "../format";
 import { useCreateTournament, useManagers, useTournaments } from "../queries";
@@ -33,9 +33,14 @@ export function TournamentList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-headline-md">Tournaments</h1>
-        <Button tone="primary" onClick={() => setCreating(true)}>
-          New tournament
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button to="/guides/vega" icon={<BookOpen />}>
+            How to run a round with Vega
+          </Button>
+          <Button tone="primary" onClick={() => setCreating(true)}>
+            New tournament
+          </Button>
+        </div>
       </div>
 
       {list.length === 0 ? (
@@ -48,7 +53,11 @@ export function TournamentList() {
           }
         >
           A tournament here holds one or more sections, each imported from your tournament
-          manager one round at a time.
+          manager one round at a time. New to the loop?{" "}
+          <Link to="/guides/vega" className="font-medium text-accent hover:underline">
+            Read how a round runs with Vega
+          </Link>
+          .
         </EmptyState>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
