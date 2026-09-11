@@ -71,6 +71,12 @@ export function VegaGuide() {
             can revoke it at any time. If the tablet cannot scan, <b>Open joining with a code</b>{" "}
             shows six characters to type instead.
           </Step>
+          <Step title="Publish it, if the public may follow">
+            <b>Publish…</b> on the tournament home. Anyone with the link then sees the pairings of
+            every round, results as they come in, marked preliminary until you confirm them or
+            release the round, the standings, and every game of a player. Nothing is public until
+            you press it; <b>Hide</b> takes it down at once.
+          </Step>
         </Steps>
       </Section>
 

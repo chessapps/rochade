@@ -19,6 +19,11 @@ they appear there.
   the other end of the hall if you like. Revoke either at any time, and remove it from
   the list once revoked.
 
+- **Publish** on the tournament home if the public may follow: anyone then
+  sees pairings, results and standings at `/live/<slug>`, results marked
+  preliminary until you confirm them or release the round. Nothing is public
+  until you press it; **Hide** takes it down at once.
+
 ### If a phone cannot scan
 
 Under **Devices**, **Open joining with a code** shows six characters you can read
