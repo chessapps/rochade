@@ -108,15 +108,18 @@ export function Player() {
               >
                 <span className="font-mono text-sm text-ink-3">R{game.round_number}</span>
                 {game.colour ? (
-                  <span
-                    aria-label={game.colour === "white" ? "white" : "black"}
-                    className={cx(
-                      "size-3 rounded-full border",
-                      game.colour === "white"
-                        ? "border-disc-white-stroke bg-disc-white"
-                        : "border-disc-black-stroke bg-disc-black",
-                    )}
-                  />
+                  <span className="flex items-center">
+                    <span
+                      aria-hidden
+                      className={cx(
+                        "size-3 rounded-full border",
+                        game.colour === "white"
+                          ? "border-disc-white-stroke bg-disc-white"
+                          : "border-disc-black-stroke bg-disc-black",
+                      )}
+                    />
+                    <span className="sr-only">{game.colour}</span>
+                  </span>
                 ) : (
                   <span aria-hidden />
                 )}
