@@ -590,6 +590,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/public/tournaments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Tournaments */
+        get: operations["list_public_tournaments_api_public_tournaments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/tournaments/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Tournament */
+        get: operations["get_public_tournament_api_public_tournaments__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/tournaments/{slug}/sections/{section_id}/rounds/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Round */
+        get: operations["get_public_round_api_public_tournaments__slug__sections__section_id__rounds__number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/tournaments/{slug}/sections/{section_id}/standings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Standings */
+        get: operations["get_public_standings_api_public_tournaments__slug__sections__section_id__standings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/tournaments/{slug}/sections/{section_id}/players/{start_rank}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Player */
+        get: operations["get_public_player_api_public_tournaments__slug__sections__section_id__players__start_rank__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -727,6 +812,11 @@ export interface components {
             /** Disputed */
             disputed: boolean;
         };
+        /**
+         * Colour
+         * @enum {string}
+         */
+        Colour: "white" | "black";
         /** ComputeStandingsResult */
         ComputeStandingsResult: {
             /** Computed */
@@ -1351,6 +1441,171 @@ export interface components {
          * @enum {string}
          */
         PrincipalKind: "staff" | "device" | "system" | "anonymous";
+        /** PublicBoard */
+        PublicBoard: {
+            /** Board */
+            board: number;
+            white: components["schemas"]["Side"];
+            black: components["schemas"]["Side"] | null;
+            /** Result */
+            result: string;
+            state: components["schemas"]["Shown"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PublicGame */
+        PublicGame: {
+            /** Round Number */
+            round_number: number;
+            /** Board */
+            board: number;
+            colour: components["schemas"]["Colour"] | null;
+            opponent: components["schemas"]["Side"] | null;
+            /** Result */
+            result: string;
+            /** Score */
+            score: number | null;
+            state: components["schemas"]["Shown"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PublicPlayer */
+        PublicPlayer: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Section Name */
+            section_name: string;
+            /** Start Rank */
+            start_rank: number;
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Rating */
+            rating: number | null;
+            /** Federation */
+            federation: string;
+            /** Withdrawn From Round */
+            withdrawn_from_round: number | null;
+            /** Rank */
+            rank: number | null;
+            /** Points */
+            points: number | null;
+            /** Tiebreaks */
+            tiebreaks: (number | null)[];
+            /** Tiebreak Names */
+            tiebreak_names: string[];
+            /** Standings After Round */
+            standings_after_round: number | null;
+            /** Games */
+            games?: components["schemas"]["PublicGame"][];
+        };
+        /** PublicRound */
+        PublicRound: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Section Name */
+            section_name: string;
+            /** Number */
+            number: number;
+            state: components["schemas"]["RoundState"];
+            /** Boards */
+            boards?: components["schemas"]["PublicBoard"][];
+        };
+        /** PublicRoundSummary */
+        PublicRoundSummary: {
+            /** Number */
+            number: number;
+            state: components["schemas"]["RoundState"];
+            /** Boards */
+            boards: number;
+            /** Results In */
+            results_in: number;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** PublicSection */
+        PublicSection: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Players */
+            players: number;
+            /** Declared Rounds */
+            declared_rounds: number | null;
+            /** Standings After Round */
+            standings_after_round: number | null;
+            /** Tiebreak Names */
+            tiebreak_names: string[];
+            /** Rounds */
+            rounds?: components["schemas"]["PublicRoundSummary"][];
+        };
+        /** PublicSectionSummary */
+        PublicSectionSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Rounds Held */
+            rounds_held: number;
+            /** In Play */
+            in_play: boolean;
+            /** Declared Rounds */
+            declared_rounds: number | null;
+        };
+        /** PublicTournament */
+        PublicTournament: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** City */
+            city: string;
+            /** Federation */
+            federation: string;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Sections */
+            sections?: components["schemas"]["PublicSection"][];
+        };
+        /** PublicTournamentSummary */
+        PublicTournamentSummary: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** City */
+            city: string;
+            /** Federation */
+            federation: string;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Sections */
+            sections?: components["schemas"]["PublicSectionSummary"][];
+        };
         /** Publication */
         Publication: {
             /** Published */
@@ -1688,6 +1943,34 @@ export interface components {
             white_result: string;
             /** Black Result */
             black_result: string;
+        };
+        /**
+         * Shown
+         * @description How far a result can be trusted, as the public sees it.
+         *
+         *     Claims are never exposed: a disputed board is preliminary like a claimed
+         *     one, with the result that stands, and nothing says two people disagreed.
+         * @enum {string}
+         */
+        Shown: "pending" | "preliminary" | "confirmed";
+        /** Side */
+        Side: {
+            /** Start Rank */
+            start_rank: number;
+            /** Name */
+            name: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Federation
+             * @default
+             */
+            federation: string;
         };
         /** StandingRow */
         StandingRow: {
@@ -3350,6 +3633,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResolveDisputeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_tournaments_api_public_tournaments_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTournamentSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_tournament_api_public_tournaments__slug__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTournament"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_round_api_public_tournaments__slug__sections__section_id__rounds__number__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                slug: string;
+                section_id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicRound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_standings_api_public_tournaments__slug__sections__section_id__standings_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                slug: string;
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionStandings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_player_api_public_tournaments__slug__sections__section_id__players__start_rank__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                slug: string;
+                section_id: string;
+                start_rank: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlayer"];
                 };
             };
             /** @description Validation Error */

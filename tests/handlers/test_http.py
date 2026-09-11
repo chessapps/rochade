@@ -188,6 +188,38 @@ def test_a_conflict_becomes_a_409(client: TestClient, round1_text: str) -> None:
     assert response.json()["details"]["empty_boards"] == [1, 2, 3, 4]
 
 
+def test_the_public_reads_a_published_tournament_without_credentials(
+    client: TestClient, round1_text: str
+) -> None:
+    created = client.post(
+        "/api/tournaments", json={"name": "Open", "manager": "vega"}, headers=staff(OWNER.subject)
+    ).json()
+    client.post(
+        f"/api/tournaments/{created['id']}/imports",
+        json={"section_name": "A", "content": round1_text},
+        headers=staff(OWNER.subject),
+    )
+
+    assert client.get("/api/public/tournaments/open").status_code == 404
+    assert client.get("/api/public/tournaments").json() == []
+
+    shown = client.put(
+        f"/api/tournaments/{created['id']}/publication",
+        json={"published": True},
+        headers=staff(OWNER.subject),
+    )
+    assert shown.status_code == 200, shown.text
+    assert shown.json() == {"published": True, "slug": "open"}
+
+    answer = client.get("/api/public/tournaments/open")
+    assert answer.status_code == 200
+    assert answer.headers["Cache-Control"] == "public, max-age=15"
+    section = answer.json()["sections"][0]
+    boards = client.get(f"/api/public/tournaments/open/sections/{section['id']}/rounds/1")
+    assert boards.status_code == 200
+    assert len(boards.json()["boards"]) == 4
+
+
 def test_dev_auth_is_off_unless_asked_for(monkeypatch: pytest.MonkeyPatch) -> None:
     """An insecure auth mode must be opted into, never inherited."""
     monkeypatch.delenv("ROCHADE_DEV_AUTH_ENABLED", raising=False)
