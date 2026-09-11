@@ -3,7 +3,7 @@
 	auto_https off
 }
 
-# The app: both frontends and the API on one origin.
+# The app: the three frontends and the API on one origin.
 :8080 {
 	# In a deployment a shared Caddy in front of this one terminates TLS and
 	# sets X-Forwarded-Proto/Host. Trust those from the docker network, or
@@ -22,6 +22,14 @@
 	handle /admin* {
 		uri strip_prefix /admin
 		root * /srv/admin
+		try_files {path} /index.html
+		file_server
+	}
+
+	# The public view: readable by anyone, published tournaments only.
+	handle /live* {
+		uri strip_prefix /live
+		root * /srv/live
 		try_files {path} /index.html
 		file_server
 	}
