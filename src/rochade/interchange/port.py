@@ -58,6 +58,11 @@ class Capabilities:
     export_howto: str = ""
     import_howto: str = ""
     notes: tuple[str, ...] = ()
+    #: The adapter is Rochade itself: it owns the player list, pairs the
+    #: rounds and computes the standings in process. No file goes in or out,
+    #: so the import and export use cases refuse such a tournament and the
+    #: pairing use cases accept only it.
+    native: bool = False
 
     def drops(self, codes: Sequence[str]) -> list[str]:
         """Which of these result codes this manager cannot carry out."""
@@ -65,6 +70,8 @@ class Capabilities:
 
     @property
     def verified(self) -> bool:
+        if self.native:
+            return True
         return Support.UNVERIFIED not in (self.exports_unplayed_round, self.merges_on_import)
 
 

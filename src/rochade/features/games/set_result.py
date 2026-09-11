@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from rochade.features.audit import record
 from rochade.features.locking import lock_round_of_game, require_open
+from rochade.features.pairing.compute_standings import restand
 from rochade.features.scoping import tournament_of_game
 from rochade.platform.bus import bus
 from rochade.platform.errors import ValidationFailed
@@ -88,6 +89,8 @@ def handle(command: SetResult, ctx: Context) -> SetResultResult:
         black_result=game.black_result,
         note=command.note,
     )
+
+    restand(ctx, round_)
 
     return SetResultResult(
         game_id=game.id,

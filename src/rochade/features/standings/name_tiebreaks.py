@@ -14,8 +14,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from rochade.interchange import native_of
 from rochade.platform.bus import bus
-from rochade.platform.errors import NotFound
+from rochade.platform.errors import Conflict, NotFound
 from rochade.platform.http import get_context
 from rochade.platform.mediator import Access, Command, Context
 from rochade.shared.models import Section
@@ -50,6 +51,12 @@ def handle(command: NameTiebreaks, ctx: Context) -> TiebreakNamesResult:
     )
     if section is None:
         raise NotFound("section not found", section_name=command.section_name)
+
+    if native_of(section.manager):
+        raise Conflict(
+            "this section is paired in Rochade; its standings are computed at every release",
+            section_name=section.name,
+        )
 
     names = [name.strip()[:40] for name in command.names]
     while names and not names[-1]:

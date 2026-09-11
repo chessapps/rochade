@@ -18,7 +18,12 @@ import uuid
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from rochade.features.imports.import_round import ImportPlan, build_plan, resolve_manager
+from rochade.features.imports.import_round import (
+    ImportPlan,
+    build_plan,
+    require_file_driven,
+    resolve_manager,
+)
 from rochade.platform.bus import bus
 from rochade.platform.errors import NotFound
 from rochade.platform.http import get_context
@@ -48,7 +53,7 @@ def handle(query: PreviewImport, ctx: Context) -> ImportPlan:
         tournament=tournament,
         section_name=query.section_name,
         content=query.content,
-        manager=resolve_manager(tournament.manager),
+        manager=require_file_driven(resolve_manager(tournament.manager)),
         force=query.force,
     )
     return plan

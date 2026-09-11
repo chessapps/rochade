@@ -17,7 +17,9 @@ from sqlalchemy.orm import Session
 
 from rochade.features.audit import record
 from rochade.features.locking import lock_round
+from rochade.features.pairing.compute_standings import compute_standings
 from rochade.features.scoping import tournament_of_round
+from rochade.interchange import native_of
 from rochade.platform.bus import bus
 from rochade.platform.errors import Conflict, RoundFrozen
 from rochade.platform.http import get_context
@@ -33,6 +35,10 @@ class ReleaseRoundResult(BaseModel):
     state: RoundState
     confirmed: int
     forced: bool
+    #: For a section Rochade pairs itself: whether the table was recomputed
+    #: on release, and if not, why (boards a forced release left open).
+    standings_computed: bool | None = None
+    standings_note: str = ""
 
 
 class ReleaseRound(Command):
@@ -54,7 +60,8 @@ def handle(command: ReleaseRound, ctx: Context) -> ReleaseRoundResult:
 
     if round_.state is RoundState.EXPORTED:
         raise RoundFrozen(
-            "this round has been exported to the manager and is read-only",
+            "this round has been closed (exported, or the next round paired on it) "
+            "and is read-only",
             round_number=round_.number,
         )
     if round_.state is RoundState.CONFIRMED:
@@ -78,6 +85,14 @@ def handle(command: ReleaseRound, ctx: Context) -> ReleaseRoundResult:
     round_.state = RoundState.CONFIRMED
     round_.released_at = datetime.now(UTC)
 
+    # The table is a derived view: an engine that cannot rank the section
+    # tonight must not stop the arbiter from closing the round to the phones.
+    computed: bool | None = None
+    note = ""
+    if native_of(round_.section.manager):
+        outcome = compute_standings(ctx, round_.section, round_.number)
+        computed, note = outcome.computed, outcome.reason
+
     record(
         ctx,
         section_id=round_.section_id,
@@ -88,6 +103,7 @@ def handle(command: ReleaseRound, ctx: Context) -> ReleaseRoundResult:
         disputed_boards=disputed,
         forced=command.force,
         note=command.note,
+        standings_computed=computed,
     )
 
     return ReleaseRoundResult(
@@ -96,6 +112,8 @@ def handle(command: ReleaseRound, ctx: Context) -> ReleaseRoundResult:
         state=round_.state,
         confirmed=confirmed,
         forced=command.force,
+        standings_computed=computed,
+        standings_note=note,
     )
 
 

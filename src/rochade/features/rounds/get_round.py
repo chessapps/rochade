@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from rochade.features.scoping import tournament_of_round
+from rochade.interchange import native_of
 from rochade.platform.bus import bus
 from rochade.platform.errors import NotFound
 from rochade.platform.http import get_context
@@ -41,6 +42,8 @@ class RoundDetail(BaseModel):
     state: RoundState
     section_id: uuid.UUID
     section_name: str
+    #: Rochade paired this round itself: no export, the next pairing closes it.
+    native: bool
     source_filename: str
     imported_at: datetime | None
     released_at: datetime | None
@@ -69,6 +72,7 @@ def handle(query: GetRound, ctx: Context) -> RoundDetail:
         state=round_.state,
         section_id=round_.section_id,
         section_name=round_.section.name,
+        native=native_of(round_.section.manager),
         source_filename=round_.source_filename,
         imported_at=round_.imported_at,
         released_at=round_.released_at,

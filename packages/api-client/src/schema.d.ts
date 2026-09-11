@@ -142,6 +142,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tournaments/{tournament_id}/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Section */
+        post: operations["create_section_api_tournaments__tournament_id__sections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tournaments/{tournament_id}/boards": {
         parameters: {
             query?: never;
@@ -298,6 +315,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sections/{section_id}/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Players */
+        get: operations["list_players_api_sections__section_id__players_get"];
+        put?: never;
+        /** Add Player */
+        post: operations["add_player_api_sections__section_id__players_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{player_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Player */
+        put: operations["update_player_api_players__player_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{player_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Player */
+        post: operations["withdraw_player_api_players__player_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{player_id}/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reinstate Player */
+        post: operations["reinstate_player_api_players__player_id__reinstate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sections/{section_id}/pairings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Pairing */
+        post: operations["preview_pairing_api_sections__section_id__pairings_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sections/{section_id}/pairings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pair Round */
+        post: operations["pair_round_api_sections__section_id__pairings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sections/{section_id}/standings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute Standings */
+        post: operations["recompute_standings_api_sections__section_id__standings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rounds/{round_id}": {
         parameters: {
             query?: never;
@@ -309,7 +446,8 @@ export interface paths {
         get: operations["get_round_api_rounds__round_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Unpair Round */
+        delete: operations["unpair_round_api_rounds__round_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -439,6 +577,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Absence
+         * @description A player who sits this round out, and what it is worth to them.
+         */
+        Absence: {
+            /** Start Rank */
+            start_rank: number;
+            /**
+             * Result
+             * @default Z
+             * @enum {string}
+             */
+            result: "H" | "Z";
+        };
         /** AddMember */
         AddMember: {
             /**
@@ -558,6 +710,16 @@ export interface components {
             /** Disputed */
             disputed: boolean;
         };
+        /** ComputeStandingsResult */
+        ComputeStandingsResult: {
+            /** Computed */
+            computed: boolean;
+            /** After Round */
+            after_round: number;
+            /** Reason */
+            reason: string;
+            standings: components["schemas"]["SectionStandings"];
+        };
         /** ConfirmBoardsResult */
         ConfirmBoardsResult: {
             /**
@@ -579,6 +741,35 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /** CreateSectionBody */
+        CreateSectionBody: {
+            /** Name */
+            name: string;
+            /** Declared Rounds */
+            declared_rounds: number;
+            /** Tiebreaks */
+            tiebreaks?: string[];
+            /** Top Board Colour */
+            top_board_colour?: ("white" | "black") | null;
+        };
+        /** CreateSectionResult */
+        CreateSectionResult: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Name */
+            name: string;
+            /** Declared Rounds */
+            declared_rounds: number;
+            /** Tiebreaks */
+            tiebreaks: string[];
+            /** Top Board Colour */
+            top_board_colour: string;
+            /** Drawn By Lot */
+            drawn_by_lot: boolean;
         };
         /** CreateTournament */
         CreateTournament: {
@@ -647,7 +838,7 @@ export interface components {
          * @description Every entry in the append-only audit log.
          * @enum {string}
          */
-        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "result_confirmed" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed" | "standings_imported";
+        EventAction: "round_imported" | "result_claimed" | "result_corrected" | "result_disputed" | "result_set" | "result_confirmed" | "dispute_resolved" | "round_released" | "round_exported" | "claim_dropped" | "device_issued" | "device_revoked" | "device_removed" | "standings_imported" | "section_created" | "player_added" | "player_updated" | "player_withdrawn" | "player_reinstated" | "round_paired" | "round_unpaired" | "standings_computed";
         /** ExportBody */
         ExportBody: {
             /**
@@ -922,6 +1113,11 @@ export interface components {
             merges_on_import: components["schemas"]["Support"];
             /** Verified */
             verified: boolean;
+            /**
+             * Native
+             * @default false
+             */
+            native: boolean;
             /** Result Codes Out */
             result_codes_out?: string[];
             /**
@@ -948,6 +1144,86 @@ export interface components {
             subject: string;
             role: components["schemas"]["Role"];
         };
+        /** PairBody */
+        PairBody: {
+            /** Absent */
+            absent?: components["schemas"]["Absence"][];
+        };
+        /** PairRoundResult */
+        PairRoundResult: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /**
+             * Round Id
+             * Format: uuid
+             */
+            round_id: string;
+            /** Round Number */
+            round_number: number;
+            /** Boards */
+            boards: number;
+            /** Byes */
+            byes: number;
+            /** Seeded */
+            seeded: boolean;
+            /** Previous Round Closed */
+            previous_round_closed: number | null;
+        };
+        /** PairingBoard */
+        PairingBoard: {
+            /** Board */
+            board: number;
+            /** White Rank */
+            white_rank: number;
+            /** White Name */
+            white_name: string;
+            /** Black Rank */
+            black_rank: number;
+            /** Black Name */
+            black_name: string;
+        };
+        /** PairingBye */
+        PairingBye: {
+            /** Board */
+            board: number;
+            /** Start Rank */
+            start_rank: number;
+            /** Name */
+            name: string;
+            /** Result */
+            result: string;
+        };
+        /** PairingPlan */
+        PairingPlan: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Section Name */
+            section_name: string;
+            /** Round Number */
+            round_number: number;
+            /** Declared Rounds */
+            declared_rounds: number | null;
+            /** Seeds */
+            seeds: boolean;
+            /** Players In */
+            players_in: number;
+            /** Boards */
+            boards?: components["schemas"]["PairingBoard"][];
+            /** Byes */
+            byes?: components["schemas"]["PairingBye"][];
+            /** Withdrawn */
+            withdrawn?: components["schemas"]["PlayerRef"][];
+            /** Warnings */
+            warnings?: string[];
+            /** Blocked By */
+            blocked_by?: string[];
+        };
         /** PlayerChange */
         PlayerChange: {
             /** Start Rank */
@@ -957,17 +1233,99 @@ export interface components {
             /** Rating */
             rating?: number | null;
         };
-        /** PreviewBody */
-        PreviewBody: {
+        /** PlayerDetail */
+        PlayerDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Start Rank */
+            start_rank: number;
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Rating */
+            rating: number | null;
+            /** Federation */
+            federation: string;
+            /** Fide Id */
+            fide_id: string;
+            /** Sex */
+            sex: string;
+            /** Birth Date */
+            birth_date: string;
+            /** Withdrawn From Round */
+            withdrawn_from_round: number | null;
+            /** Points */
+            points: number | null;
+            /** Rank */
+            rank: number | null;
+        };
+        /**
+         * PlayerFields
+         * @description What a player line carries, validated to the TRF column grammar.
+         *
+         *     The engine reads fixed columns and `int()`s the numeric ones, so a FIDE
+         *     id with a letter in it or a title that is not a title would make it
+         *     refuse the whole section -- at release, hours after the typo.
+         */
+        PlayerFields: {
+            /** Name */
+            name: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Federation
+             * @default
+             */
+            federation: string;
+            /**
+             * Fide Id
+             * @default
+             */
+            fide_id: string;
+            /**
+             * Sex
+             * @default
+             */
+            sex: string;
+            /**
+             * Birth Date
+             * @default
+             */
+            birth_date: string;
+        };
+        /** PlayerList */
+        PlayerList: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
             /** Section Name */
             section_name: string;
-            /** Content */
-            content: string;
-            /**
-             * Force
-             * @default false
-             */
-            force: boolean;
+            /** Editable */
+            editable: boolean;
+            /** Seeded */
+            seeded: boolean;
+            /** Rounds Held */
+            rounds_held: number;
+            /** Players */
+            players: components["schemas"]["PlayerDetail"][];
+        };
+        /** PlayerRef */
+        PlayerRef: {
+            /** Start Rank */
+            start_rank: number;
+            /** Name */
+            name: string;
         };
         /**
          * PrincipalKind
@@ -1009,6 +1367,14 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ReinstateBody */
+        ReinstateBody: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** ReleaseBody */
         ReleaseBody: {
             /**
@@ -1036,6 +1402,13 @@ export interface components {
             confirmed: number;
             /** Forced */
             forced: boolean;
+            /** Standings Computed */
+            standings_computed?: boolean | null;
+            /**
+             * Standings Note
+             * @default
+             */
+            standings_note: string;
         };
         /** RemoveDeviceResult */
         RemoveDeviceResult: {
@@ -1129,6 +1502,8 @@ export interface components {
             section_id: string;
             /** Section Name */
             section_name: string;
+            /** Native */
+            native: boolean;
             /** Source Filename */
             source_filename: string;
             /** Imported At */
@@ -1169,11 +1544,12 @@ export interface components {
         };
         /**
          * RoundState
-         * @description Where a round sits in the Vega round-trip.
+         * @description Where a round sits in its life.
          *
-         *     OPEN     pairings imported, players may claim results
-         *     CONFIRMED the arbiter has released it; results are final
-         *     EXPORTED  written back to Vega and frozen -- read-only from here on
+         *     OPEN      paired (imported from the manager, or by our own engine); players may claim
+         *     CONFIRMED the arbiter has released it; results are final, standings stand on them
+         *     EXPORTED  closed: written back to the manager, or the next round has been paired
+         *               on it -- read-only from here on
          * @enum {string}
          */
         RoundState: "open" | "confirmed" | "exported";
@@ -1243,6 +1619,8 @@ export interface components {
             manager: string;
             /** Manager Label */
             manager_label: string;
+            /** Native */
+            native: boolean;
             /** Players */
             players: number;
             /** Declared Rounds */
@@ -1340,6 +1718,8 @@ export interface components {
             manager: string;
             /** Manager Label */
             manager_label: string;
+            /** Native */
+            native: boolean;
             /** Join Code */
             join_code?: string | null;
             /** Sections */
@@ -1376,7 +1756,21 @@ export interface components {
             manager: string;
             /** Manager Label */
             manager_label: string;
+            /** Native */
+            native: boolean;
             role: components["schemas"]["Role"];
+        };
+        /** UnpairRoundResult */
+        UnpairRoundResult: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Round Number */
+            round_number: number;
+            /** Previous Round Reopened */
+            previous_round_reopened: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1390,6 +1784,33 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WithdrawBody */
+        WithdrawBody: {
+            /** From Round */
+            from_round?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** PreviewBody */
+        rochade__features__imports__preview_import__PreviewBody: {
+            /** Section Name */
+            section_name: string;
+            /** Content */
+            content: string;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
+        /** PreviewBody */
+        rochade__features__pairing__preview_pairing__PreviewBody: {
+            /** Absent */
+            absent?: components["schemas"]["Absence"][];
         };
     };
     responses: never;
@@ -1676,7 +2097,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PreviewBody"];
+                "application/json": components["schemas"]["rochade__features__imports__preview_import__PreviewBody"];
             };
         };
         responses: {
@@ -1725,6 +2146,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportRoundResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_section_api_tournaments__tournament_id__sections_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateSectionResult"];
                 };
             };
             /** @description Validation Error */
@@ -2164,6 +2623,302 @@ export interface operations {
             };
         };
     };
+    list_players_api_sections__section_id__players_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_player_api_sections__section_id__players_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerFields"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_player_api_players__player_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                player_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerFields"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_player_api_players__player_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                player_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reinstate_player_api_players__player_id__reinstate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                player_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReinstateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_pairing_api_sections__section_id__pairings_preview_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["rochade__features__pairing__preview_pairing__PreviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pair_round_api_sections__section_id__pairings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairRoundResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recompute_standings_api_sections__section_id__standings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeStandingsResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_round_api_rounds__round_id__get: {
         parameters: {
             query?: never;
@@ -2185,6 +2940,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoundDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unpair_round_api_rounds__round_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnpairRoundResult"];
                 };
             };
             /** @description Validation Error */

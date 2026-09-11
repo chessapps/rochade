@@ -6,7 +6,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 
 import {
   errorMessage,
@@ -28,6 +28,7 @@ import {
 } from "../boards";
 import { BoardRow, PLAYED, ROW_GRID } from "../components/BoardRow";
 import { ConfirmDialog } from "../components/Dialog";
+import { PairDialog } from "../components/PairDialog";
 import { Gavel, Keyboard, QrCode, Search } from "../components/icons";
 import { ProgressBar } from "../components/ProgressBar";
 import { download, ExportDialog, ReleaseDialog } from "../components/RoundDialogs";
@@ -46,6 +47,7 @@ import {
   useRoundEvents,
   useSetResult,
   useTournament,
+  useUnpairRound,
 } from "../queries";
 import { useNow } from "../useNow";
 
@@ -61,6 +63,7 @@ export function RoundBoard() {
   const round = useRound(roundId);
   const tournament = useTournament(tournamentId);
   const location = useLocation();
+  const navigate = useNavigate();
   const toast = useToast();
   const client = useQueryClient();
   const now = useNow(1_000);
@@ -70,12 +73,13 @@ export function RoundBoard() {
   const setResult = useSetResult();
   const resolve = useResolveDispute();
   const confirmBoards = useConfirmBoards();
+  const unpair = useUnpairRound();
 
   const [params, setParams] = useSearchParams();
   const requested = params.get("filter");
   const filter: Filter = isFilter(requested) ? requested : defaultFilter(state ?? "open");
   const [query, setQuery] = useState("");
-  const [dialog, setDialog] = useState<"release" | "export" | "confirm" | null>(null);
+  const [dialog, setDialog] = useState<"release" | "export" | "confirm" | "pair" | "unpair" | null>(null);
   const search = useRef<HTMLInputElement>(null);
 
   // Rows that moved since the previous poll light up for a moment, and a board
@@ -119,7 +123,12 @@ export function RoundBoard() {
   const detail = round.data;
   const section = tournament.data?.sections?.find((s) => s.id === detail.section_id);
   const managerLabel = section?.manager_label ?? "the manager";
+  // From the round itself, so a native round never flashes the export flow
+  // while the tournament summary is still on its way.
+  const native = detail.native;
   const counts = countBoards(detail.boards);
+  // A pairing nobody has entered anything on can be taken back.
+  const untouched = counts.claimed + counts.disputed + counts.confirmed === 0;
   // The release and export dialogs read the same numbers the board shows,
   // polled together, never a second copy that could lag behind.
   const summary = summarise(detail, counts);
@@ -196,7 +205,7 @@ export function RoundBoard() {
               <h1 className="text-headline-md">
                 Section {detail.section_name} · Round {detail.number}
               </h1>
-              <RoundChip state={detail.state}>
+              <RoundChip state={detail.state} native={native}>
                 {every && <span className="normal-case tracking-normal">· polling {every / 1000}s</span>}
               </RoundChip>
               <span
@@ -250,7 +259,14 @@ export function RoundBoard() {
         </Banner>
       )}
 
-      {detail.state === "exported" && (
+      {detail.state === "exported" && native && (
+        <Banner tone="success">
+          Round {detail.number} is closed: round {detail.number + 1} was paired on these results,
+          so they are read-only now.
+        </Banner>
+      )}
+
+      {detail.state === "exported" && !native && (
         <Handoff
           roundId={roundId}
           roundNumber={detail.number}
@@ -372,10 +388,13 @@ export function RoundBoard() {
           round={summary}
           disputedBoards={disputedBoards}
           managerLabel={managerLabel}
+          native={native}
+          canUnpair={native && detail.state === "open" && untouched}
           showingAttention={filter === "attention"}
           onAttention={() => setParams({ filter: "attention" })}
           onRelease={() => setDialog("release")}
-          onExport={() => setDialog("export")}
+          onExport={() => setDialog(native ? "pair" : "export")}
+          onUnpair={() => setDialog("unpair")}
         />
       )}
 
@@ -412,6 +431,7 @@ export function RoundBoard() {
           <ReleaseDialog
             round={summary}
             tournamentId={tournamentId}
+            native={native}
             boards={{
               empty: detail.boards.filter((b) => !b.is_bye && b.state === "empty").map((b) => b.board),
               disputed: disputedBoards,
@@ -419,13 +439,57 @@ export function RoundBoard() {
             open={dialog === "release"}
             onClose={() => setDialog(null)}
           />
-          <ExportDialog
-            round={summary}
-            tournamentId={tournamentId}
-            managerLabel={managerLabel}
-            open={dialog === "export"}
-            onClose={() => setDialog(null)}
-          />
+          {!native && (
+            <ExportDialog
+              round={summary}
+              tournamentId={tournamentId}
+              managerLabel={managerLabel}
+              open={dialog === "export"}
+              onClose={() => setDialog(null)}
+            />
+          )}
+          {native && (
+            <PairDialog
+              section={{ id: detail.section_id, name: detail.section_name }}
+              tournamentId={tournamentId}
+              roundNumber={detail.number + 1}
+              open={dialog === "pair"}
+              onClose={() => setDialog(null)}
+            />
+          )}
+          {native && (
+            <ConfirmDialog
+              open={dialog === "unpair"}
+              onClose={() => setDialog(null)}
+              title={`Unpair round ${detail.number}?`}
+              confirmLabel="Unpair"
+              tone="danger"
+              busy={unpair.isPending}
+              onConfirm={() =>
+                unpair.mutate(
+                  { roundId, tournamentId },
+                  {
+                    onSuccess: (outcome) => {
+                      toast.success(
+                        `Round ${outcome.round_number} unpaired.` +
+                          (outcome.previous_round_reopened
+                            ? ` Round ${outcome.previous_round_reopened} is open for corrections again.`
+                            : ""),
+                      );
+                      void navigate(`/t/${tournamentId}`);
+                    },
+                    onError: fail,
+                  },
+                )
+              }
+            >
+              <p>
+                The boards are taken down and the round before reopens for corrections. Pairing
+                again gives the same boards unless the players or their absences change. Only
+                possible while nobody has entered a result.
+              </p>
+            </ConfirmDialog>
+          )}
         </>
       )}
     </div>
@@ -468,18 +532,25 @@ function Dock({
   round,
   disputedBoards,
   managerLabel,
+  native,
+  canUnpair,
   showingAttention,
   onAttention,
   onRelease,
   onExport,
+  onUnpair,
 }: {
   round: RoundSummary;
   disputedBoards: number[];
   managerLabel: string;
+  native: boolean;
+  canUnpair: boolean;
   showingAttention: boolean;
   onAttention: () => void;
   onRelease: () => void;
+  /** After release: export for the manager, or pair the next round here. */
   onExport: () => void;
+  onUnpair: () => void;
 }) {
   const ready = readyToRelease(round);
   const open = round.empty + round.disputed;
@@ -488,6 +559,17 @@ function Dock({
     <div className="no-print pointer-events-none fixed inset-x-0 bottom-4 z-10 px-4 sm:px-6">
       <div className="pointer-events-auto mx-auto flex max-w-[1160px] flex-col items-center justify-between gap-3 rounded-lg border border-dock-line bg-dock p-3 text-on-dock shadow-dock sm:flex-row sm:px-5 sm:py-3.5">
         <div className="flex w-full items-center gap-3 sm:w-auto">
+          {canUnpair && (
+            <Button
+              tone="ghost"
+              size="sm"
+              onClick={onUnpair}
+              className="order-last text-on-dock-2 hover:bg-on-dock-subtle hover:text-on-dock-rose sm:order-first"
+              title="Take the pairing back while nobody has entered anything"
+            >
+              Unpair…
+            </Button>
+          )}
           <span aria-hidden className="relative flex size-2.5 shrink-0">
             {!ready && round.state === "open" && (
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-soft0" />
@@ -508,6 +590,16 @@ function Dock({
                   <span>
                     <span className="text-on-dock-rose">{plural(open, "board")}</span> still{" "}
                     {open === 1 ? "needs" : "need"} you before release.
+                  </span>
+                )
+              ) : native ? (
+                readyToRelease(round) ? (
+                  <span>Released and in the standings. Pair round {round.number + 1} when the hall is ready.</span>
+                ) : (
+                  <span>
+                    Released with{" "}
+                    <span className="text-on-dock-rose">{plural(open, "board")}</span> still open.
+                    Set them here before round {round.number + 1} can be paired.
                   </span>
                 )
               ) : (
@@ -539,6 +631,10 @@ function Dock({
               className={cx(!ready && "text-on-dock-2 hover:bg-on-dock-subtle hover:text-on-dock")}
             >
               {ready ? `Release round ${round.number}` : "Release anyway…"}
+            </Button>
+          ) : native ? (
+            <Button tone="primary" size="md" onClick={onExport} disabled={!readyToRelease(round)}>
+              Pair round {round.number + 1}…
             </Button>
           ) : (
             <Button tone="success" size="md" onClick={onExport}>

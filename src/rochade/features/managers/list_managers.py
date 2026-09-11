@@ -30,6 +30,8 @@ class ManagerSummary(BaseModel):
     #: arbiter, because "we read this in the manual" is not the same claim as
     #: "we watched it work".
     verified: bool
+    #: Rochade pairs and scores this program's tournaments itself; no files.
+    native: bool = False
     result_codes_out: list[str] = Field(default_factory=list)
     #: One menu path each -- what the arbiter does in the manager before and
     #: after a round here. Shown at those two moments and nowhere else.
@@ -53,6 +55,7 @@ def handle(query: ListManagers, ctx: Context) -> list[ManagerSummary]:
             exports_unplayed_round=manager.capabilities.exports_unplayed_round,
             merges_on_import=manager.capabilities.merges_on_import,
             verified=manager.capabilities.verified,
+            native=manager.capabilities.native,
             result_codes_out=sorted(manager.capabilities.result_codes_out),
             export_howto=manager.capabilities.export_howto,
             import_howto=manager.capabilities.import_howto,

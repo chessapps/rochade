@@ -119,6 +119,7 @@ describe("nextAction", () => {
     name: "A",
     manager: "swiss_manager",
     manager_label: "Swiss-Manager",
+    native: false,
     players: 9,
     declared_rounds: 5,
     rounds,
@@ -136,5 +137,54 @@ describe("nextAction", () => {
       kind: "import",
       round_number: 3,
     });
+  });
+
+  describe("in a section Rochade pairs itself", () => {
+    const native = (rounds: RoundSummary[], players = 9, declared: number | null = 5): SectionSummary => ({
+      ...section(rounds),
+      manager: "gacrux",
+      manager_label: "Rochade (Gacrux engine)",
+      native: true,
+      players,
+      declared_rounds: declared,
+    });
+
+    it("asks for players first, then pairs round 1", () => {
+      expect(nextAction(native([], 0))).toEqual({ kind: "players" });
+      expect(nextAction(native([], 1))).toEqual({ kind: "players" });
+      expect(nextAction(native([], 2))).toEqual({ kind: "pair", round_number: 1, round: null });
+    });
+
+    it("never asks to import or export", () => {
+      const kinds = [
+        nextAction(native([round(1, "open", 1, 0)])).kind,
+        nextAction(native([round(1, "open")])).kind,
+        nextAction(native([round(1, "confirmed")])).kind,
+        nextAction(native([round(1, "exported"), round(2, "confirmed")])).kind,
+      ];
+      expect(kinds).toEqual(["fix", "release", "pair", "pair"]);
+      expect(kinds).not.toContain("import");
+      expect(kinds).not.toContain("export");
+    });
+
+    it("pairs the next round on a released one, and stops at the last", () => {
+      const r2 = round(2, "confirmed");
+      expect(nextAction(native([round(1, "exported"), r2]))).toEqual({ kind: "pair", round_number: 3, round: r2 });
+      const r5 = round(5, "confirmed");
+      expect(nextAction(native([r5]))).toEqual({ kind: "finished", round: r5 });
+      expect(nextAction(native([r5], 9, null)).kind).toBe("pair");
+    });
+
+    it("a forced release leaves boards to fix before the next pairing", () => {
+      expect(nextAction(native([round(1, "confirmed", 1, 0)])).kind).toBe("fix");
+    });
+  });
+});
+
+describe("stepLabels", () => {
+  it("names the steps after what happens", async () => {
+    const { stepLabels } = await import("./boards");
+    expect(stepLabels(false)).toEqual(["Imported", "Entry open", "Released", "Exported"]);
+    expect(stepLabels(true)).toEqual(["Paired", "Entry open", "Released", "Closed"]);
   });
 });

@@ -17,7 +17,8 @@ import { useToast } from "../components/Toast";
 import { Banner, Button, Card, CardHeader, EmptyState, Input, Select, Skeleton } from "../components/ui";
 import { plural } from "../format";
 import { readText, sniff } from "../importFiles";
-import { useImportStandings, useNameTiebreaks, useStandings, useTournament } from "../queries";
+import { useImportStandings, useNameTiebreaks, useRecomputeStandings, useStandings, useTournament } from "../queries";
+import { tiebreakLabel } from "../tiebreaks";
 
 export function Standings() {
   const { tournamentId = "" } = useParams();
@@ -31,27 +32,38 @@ export function Standings() {
 
   const sections = standings.data.sections ?? [];
   const known = tournament.data?.sections ?? [];
+  const native = tournament.data?.native ?? false;
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         back={{ to: `/t/${tournamentId}`, label: tournament.data?.name ?? "Tournament" }}
         title="Standings"
-        lead="As the tournament manager computes them. They arrive with its player list: import a round with both files, or drop the player list here on its own after the last round."
+        lead={
+          native
+            ? "Computed here at every release, with the tie-breaks the section was opened with. A correction to a released board moves the table at once."
+            : "As the tournament manager computes them. They arrive with its player list: import a round with both files, or drop the player list here on its own after the last round."
+        }
       />
 
       {sections.length === 0 ? (
         <EmptyState title="No standings yet">
-          Standings come with Swiss-Manager's player list (Extras → Daten Import/Export →
-          Spielerdaten). Import a round with both files, or drop the list below.
+          {native
+            ? "The table appears when the first round is released."
+            : "Standings come with Swiss-Manager's player list (Extras → Daten Import/Export → Spielerdaten). Import a round with both files, or drop the list below."}
         </EmptyState>
       ) : (
         sections.map((section) => (
-          <SectionTable key={section.section_id} tournamentId={tournamentId} section={section} />
+          <SectionTable
+            key={section.section_id}
+            tournamentId={tournamentId}
+            section={section}
+            native={known.find((s) => s.id === section.section_id)?.native ?? native}
+          />
         ))
       )}
 
-      {known.length > 0 && (
+      {known.length > 0 && !native && (
         <ImportStandingsCard
           tournamentId={tournamentId}
           sections={known.map((s) => s.name)}
@@ -65,13 +77,19 @@ export function Standings() {
 function SectionTable({
   tournamentId,
   section,
+  native,
 }: {
   tournamentId: string;
   section: SectionStandings;
+  native: boolean;
 }) {
   const columns = Math.max(section.tiebreak_columns, section.tiebreak_names.length);
-  const names = Array.from({ length: columns }, (_, i) => section.tiebreak_names[i] || `TB${i + 1}`);
+  const names = Array.from({ length: columns }, (_, i) =>
+    native ? tiebreakLabel(section.tiebreak_names[i] ?? `TB${i + 1}`) : section.tiebreak_names[i] || `TB${i + 1}`,
+  );
   const inPlay = section.rounds_held > section.after_round;
+  const recompute = useRecomputeStandings();
+  const toast = useToast();
 
   return (
     <Card>
@@ -88,8 +106,28 @@ function SectionTable({
             round {section.rounds_held} {section.stale ? "played, standings not yet updated" : "in play"}
           </span>
         )}
+        {native && (
+          <Button
+            size="sm"
+            busy={recompute.isPending}
+            onClick={() =>
+              recompute.mutate(
+                { sectionId: section.section_id, tournamentId },
+                {
+                  onSuccess: (outcome) =>
+                    outcome.computed
+                      ? toast.success(`Standings after round ${outcome.after_round} recomputed.`)
+                      : toast.info(`Not recomputed: ${outcome.reason}.`),
+                  onError: (error) => toast.error(errorMessage(error)),
+                },
+              )
+            }
+          >
+            Recompute
+          </Button>
+        )}
       </CardHeader>
-      {section.stale && (
+      {section.stale && !native && (
         <Banner tone="warn" className="m-4 mb-0">
           Round {section.rounds_held} went back to {section.manager_label} after these standings
           were exported. Drop a fresh player list below to bring the table up to date.
@@ -136,18 +174,24 @@ function SectionTable({
           </tbody>
         </table>
       </div>
-      {columns > 0 && (
+      {columns > 0 && !native && (
         <TiebreakNames tournamentId={tournamentId} section={section} columns={columns} />
       )}
     </Card>
   );
 }
 
-/** "2½" rather than "2.5": the way it is written on the wall. */
+/**
+ * "2½" rather than "2.5": the way it is written on the wall. A value that is
+ * not a whole or a half -- a Sonneborn-Berger of 2.75, a performance rating
+ * -- is written as it is, trailing zeros dropped.
+ */
 export function score(value: number | null | undefined): string {
   if (value === null || value === undefined) return "";
+  const doubled = value * 2;
+  if (!Number.isInteger(doubled)) return String(Math.round(value * 100) / 100);
   const whole = Math.floor(value);
-  const half = value - whole >= 0.5;
+  const half = doubled % 2 !== 0;
   if (whole === 0 && half) return "½";
   return `${whole}${half ? "½" : ""}`;
 }

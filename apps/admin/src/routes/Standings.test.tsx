@@ -14,6 +14,7 @@ const standings = {
       section_id: "s1",
       section_name: "A",
       manager_label: "Swiss-Manager",
+    native: false,
       after_round: 3,
       rounds_held: 4,
       stale: false,
@@ -29,7 +30,8 @@ const standings = {
 
 const tournament = {
   id: T, name: "Test Open", city: "", federation: "", start_date: null, end_date: null, join_code: null,
-  sections: [{ id: "s1", name: "A", manager: "swiss_manager", manager_label: "Swiss-Manager", players: 14, declared_rounds: 5, rounds: [] }],
+  sections: [{ id: "s1", name: "A", manager: "swiss_manager", manager_label: "Swiss-Manager",
+    native: false, players: 14, declared_rounds: 5, rounds: [] }],
 };
 
 describe("Standings", () => {
@@ -99,5 +101,40 @@ describe("score", () => {
     expect(score(2.5)).toBe("2½");
     expect(score(13)).toBe("13");
     expect(score(null)).toBe("");
+  });
+});
+
+describe("Standings for a section Rochade pairs itself", () => {
+  const native = {
+    ...standings,
+    sections: [
+      { ...standings.sections[0]!, manager_label: "Rochade (Gacrux engine)", tiebreak_names: ["BH/C1", "SB"], tiebreak_columns: 2 },
+    ],
+  };
+  const nativeTournament = {
+    ...tournament,
+    manager: "gacrux",
+    manager_label: "Rochade (Gacrux engine)",
+    native: true,
+    sections: [{ ...tournament.sections[0]!, manager: "gacrux", manager_label: "Rochade (Gacrux engine)", native: true }],
+  };
+
+  it("labels the tie-break codes, offers a recompute, and has no file to drop", async () => {
+    const calls = stubApi({
+      GET: { [`/api/tournaments/${T}/standings`]: native, [`/api/tournaments/${T}`]: nativeTournament },
+      POST: {
+        "/api/sections/s1/standings": {
+          computed: false, after_round: 3, reason: "boards without a confirmed result: round 3 board 2", standings: native.sections[0],
+        },
+      },
+    });
+    renderAt(`/t/${T}/standings`, "/t/:tournamentId/standings", <Standings />);
+    expect(await screen.findByRole("columnheader", { name: "Buchholz Cut 1" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Sonneborn-Berger" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /name them/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("player list file")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Recompute" }));
+    await waitFor(() => expect(calls.some((c) => c.path === "/api/sections/s1/standings")).toBe(true));
+    expect(await screen.findByText(/Not recomputed: boards without a confirmed result/)).toBeInTheDocument();
   });
 });

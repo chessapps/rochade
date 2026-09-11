@@ -71,7 +71,8 @@ describe("Devices", () => {
 describe("TournamentList", () => {
   it("goes straight to the only tournament", async () => {
     stubApi({
-      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, manager: "vega", manager_label: "Vega", role: "owner" }] },
+      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, manager: "vega", manager_label: "Vega",
+    native: false, role: "owner" }] },
     });
     renderAt("/", "/", <TournamentList />);
     expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
@@ -79,7 +80,8 @@ describe("TournamentList", () => {
 
   it("shows the list when asked for it, even with one tournament", async () => {
     stubApi({
-      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, manager: "vega", manager_label: "Vega", role: "owner" }] },
+      GET: { "/api/tournaments": [{ id: "only", name: "Only Open", city: "", start_date: null, end_date: null, manager: "vega", manager_label: "Vega",
+    native: false, role: "owner" }] },
     });
     renderAt("/?all", "/", <TournamentList />);
     expect(await screen.findByText("Only Open")).toBeInTheDocument();
@@ -91,8 +93,9 @@ describe("TournamentList", () => {
       GET: {
         "/api/tournaments": [],
         "/api/managers": [
-          { key: "vega", label: "Vega", verified: false },
-          { key: "swiss_manager", label: "Swiss-Manager", verified: true },
+          { key: "vega", label: "Vega", verified: false, native: false },
+          { key: "swiss_manager", label: "Swiss-Manager", verified: true, native: false },
+          { key: "gacrux", label: "Rochade (Gacrux engine)", verified: true, native: true },
         ],
       },
       POST: { "/api/tournaments": { id: "new", name: "Club Open" } },
@@ -100,10 +103,10 @@ describe("TournamentList", () => {
     renderAt("/", "/", <TournamentList />);
     await userEvent.click(await screen.findByRole("button", { name: "Create the first one" }));
     const dialog = screen.getByRole("dialog");
-    // Nothing chosen yet: no way forward. Custom is announced but not offered.
+    // Nothing chosen yet: no way forward. Rochade's own program is one of the three.
     const next = within(dialog).getByRole("button", { name: "Continue" });
     expect(next).toBeDisabled();
-    expect(await within(dialog).findByRole("radio", { name: /Custom/ })).toBeDisabled();
+    expect(await within(dialog).findByRole("radio", { name: /Rochade \(Gacrux engine\)/ })).toBeEnabled();
     await userEvent.click(within(dialog).getByRole("radio", { name: /Swiss-Manager/ }));
     await userEvent.click(next);
 

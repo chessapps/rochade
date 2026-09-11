@@ -57,6 +57,36 @@ export type CreateTournamentBody = NonNullable<
 >["content"]["application/json"];
 export type AuthConfig = Json<paths["/api/auth/config"]["get"]["responses"]["200"]>;
 
+// A tournament Rochade pairs itself.
+export type PlayerList = Json<
+  paths["/api/sections/{section_id}/players"]["get"]["responses"]["200"]
+>;
+export type PlayerDetail = PlayerList["players"][number];
+export type PlayerBody = NonNullable<
+  paths["/api/sections/{section_id}/players"]["post"]["requestBody"]
+>["content"]["application/json"];
+export type CreateSectionBody = NonNullable<
+  paths["/api/tournaments/{tournament_id}/sections"]["post"]["requestBody"]
+>["content"]["application/json"];
+export type CreateSectionResult = Json<
+  paths["/api/tournaments/{tournament_id}/sections"]["post"]["responses"]["201"]
+>;
+export type PairingPlan = Json<
+  paths["/api/sections/{section_id}/pairings/preview"]["post"]["responses"]["200"]
+>;
+export type PairingBoard = NonNullable<PairingPlan["boards"]>[number];
+export type Absence = NonNullable<
+  NonNullable<
+    paths["/api/sections/{section_id}/pairings"]["post"]["requestBody"]
+  >["content"]["application/json"]["absent"]
+>[number];
+export type PairRoundResult = Json<
+  paths["/api/sections/{section_id}/pairings"]["post"]["responses"]["201"]
+>;
+export type ComputeStandingsResult = Json<
+  paths["/api/sections/{section_id}/standings"]["post"]["responses"]["200"]
+>;
+
 /** The API returns a structured domain error; surface its message, not "500". */
 export function errorMessage(error: unknown): string {
   if (error && typeof error === "object" && "message" in error) {

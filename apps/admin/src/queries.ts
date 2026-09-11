@@ -17,8 +17,11 @@ import {
 import {
   api,
   ApiError,
+  type Absence,
+  type CreateSectionBody,
   type CreateTournamentBody,
   type GameResult,
+  type PlayerBody,
   type RoundEvent,
   type RoundState,
 } from "./api";
@@ -42,6 +45,7 @@ export const keys = {
   devices: (tournamentId: string) => ["devices", tournamentId] as const,
   standings: (tournamentId: string) => ["standings", tournamentId] as const,
   managers: ["managers"] as const,
+  players: (sectionId: string) => ["players", sectionId] as const,
 };
 
 /** How often to look again. Claims arrive while a round is open; a frozen round never moves. */
@@ -160,6 +164,19 @@ export function useStandings(tournamentId: string | undefined) {
         }),
       ),
     enabled: Boolean(tournamentId),
+  });
+}
+
+export function usePlayers(sectionId: string | undefined) {
+  return useQuery({
+    queryKey: keys.players(sectionId ?? ""),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/sections/{section_id}/players", {
+          params: { path: { section_id: sectionId! } },
+        }),
+      ),
+    enabled: Boolean(sectionId),
   });
 }
 
@@ -445,5 +462,158 @@ export function useRemoveDevices() {
 
 function invalidateRound(client: ReturnType<typeof useQueryClient>, vars: RoundVars): void {
   void client.invalidateQueries({ queryKey: keys.round(vars.roundId) });
+  void client.invalidateQueries({ queryKey: keys.tournament(vars.tournamentId) });
+  // A section Rochade pairs itself recomputes its table on release and on
+  // every correction of a released board; the Standings tab must not lag.
+  void client.invalidateQueries({ queryKey: keys.standings(vars.tournamentId) });
+}
+
+/** A pairing or an unpairing moves two rounds and the table at once. */
+function invalidateSection(client: ReturnType<typeof useQueryClient>, tournamentId: string): void {
+  void client.invalidateQueries({ queryKey: ["round"] });
+  void client.invalidateQueries({ queryKey: keys.tournament(tournamentId) });
+  void client.invalidateQueries({ queryKey: keys.standings(tournamentId) });
+}
+
+// --- a tournament Rochade pairs itself -----------------------------------------
+
+interface SectionVars {
+  sectionId: string;
+  tournamentId: string;
+}
+
+export function useCreateSection() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tournamentId, ...body }: CreateSectionBody & { tournamentId: string }) =>
+      unwrap(
+        api.POST("/api/tournaments/{tournament_id}/sections", {
+          params: { path: { tournament_id: tournamentId } },
+          body,
+        }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      void client.invalidateQueries({ queryKey: keys.tournament(vars.tournamentId) });
+    },
+  });
+}
+
+export function useAddPlayer() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sectionId, tournamentId: _t, ...body }: SectionVars & PlayerBody) =>
+      unwrap(
+        api.POST("/api/sections/{section_id}/players", {
+          params: { path: { section_id: sectionId } },
+          body,
+        }),
+      ),
+    onSettled: (_data, _error, vars) => invalidatePlayers(client, vars),
+  });
+}
+
+export function useUpdatePlayer() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      playerId,
+      sectionId: _s,
+      tournamentId: _t,
+      ...body
+    }: SectionVars & PlayerBody & { playerId: string }) =>
+      unwrap(
+        api.PUT("/api/players/{player_id}", { params: { path: { player_id: playerId } }, body }),
+      ),
+    onSettled: (_data, _error, vars) => invalidatePlayers(client, vars),
+  });
+}
+
+export function useWithdrawPlayer() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ playerId, fromRound }: SectionVars & { playerId: string; fromRound: number | null }) =>
+      unwrap(
+        api.POST("/api/players/{player_id}/withdraw", {
+          params: { path: { player_id: playerId } },
+          body: { from_round: fromRound, note: "" },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => invalidatePlayers(client, vars),
+  });
+}
+
+export function useReinstatePlayer() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ playerId }: SectionVars & { playerId: string }) =>
+      unwrap(
+        api.POST("/api/players/{player_id}/reinstate", {
+          params: { path: { player_id: playerId } },
+          body: { note: "" },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => invalidatePlayers(client, vars),
+  });
+}
+
+/** What pairing the next round would do. A mutation, not a query: it runs the engine. */
+export function usePreviewPairing() {
+  return useMutation({
+    mutationFn: ({ sectionId, absent }: SectionVars & { absent: Absence[] }) =>
+      unwrap(
+        api.POST("/api/sections/{section_id}/pairings/preview", {
+          params: { path: { section_id: sectionId } },
+          body: { absent },
+        }),
+      ),
+  });
+}
+
+export function usePairRound() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sectionId, absent }: SectionVars & { absent: Absence[] }) =>
+      unwrap(
+        api.POST("/api/sections/{section_id}/pairings", {
+          params: { path: { section_id: sectionId } },
+          body: { absent },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      invalidateSection(client, vars.tournamentId);
+      void client.invalidateQueries({ queryKey: keys.players(vars.sectionId) });
+    },
+  });
+}
+
+export function useUnpairRound() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roundId }: RoundVars) =>
+      unwrap(api.DELETE("/api/rounds/{round_id}", { params: { path: { round_id: roundId } } })),
+    // The round is gone; the screen that showed it navigates away on
+    // success and its query is dropped with it. Nothing is removed here,
+    // so an observer still mounted does not refetch a 404 mid-transition.
+    onSettled: (_data, _error, vars) => invalidateSection(client, vars.tournamentId),
+  });
+}
+
+export function useRecomputeStandings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sectionId }: SectionVars) =>
+      unwrap(
+        api.POST("/api/sections/{section_id}/standings", {
+          params: { path: { section_id: sectionId } },
+        }),
+      ),
+    onSettled: (_data, _error, vars) => {
+      void client.invalidateQueries({ queryKey: keys.standings(vars.tournamentId) });
+    },
+  });
+}
+
+function invalidatePlayers(client: ReturnType<typeof useQueryClient>, vars: SectionVars): void {
+  void client.invalidateQueries({ queryKey: keys.players(vars.sectionId) });
   void client.invalidateQueries({ queryKey: keys.tournament(vars.tournamentId) });
 }

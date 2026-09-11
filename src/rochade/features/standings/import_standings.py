@@ -18,9 +18,10 @@ from sqlalchemy.orm import Session
 
 from rochade.features.audit import record
 from rochade.features.standings.get_standings import SectionStandings, standings_of
+from rochade.interchange import native_of
 from rochade.interchange.formats.swiss_manager_text import split_blocks
 from rochade.platform.bus import bus
-from rochade.platform.errors import NotFound, ValidationFailed
+from rochade.platform.errors import Conflict, NotFound, ValidationFailed
 from rochade.platform.http import get_context
 from rochade.platform.mediator import Access, Command, Context
 from rochade.shared.enums import EventAction, RoundState
@@ -65,6 +66,12 @@ def handle(command: ImportStandings, ctx: Context) -> ImportStandingsResult:
         raise NotFound(
             "no such section; import its first round before its standings",
             section_name=command.section_name,
+        )
+
+    if native_of(section.manager):
+        raise Conflict(
+            "this section is paired in Rochade; its standings are computed at every release",
+            section_name=section.name,
         )
 
     players_text, _pairings = split_blocks(command.content)

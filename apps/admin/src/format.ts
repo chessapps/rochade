@@ -19,6 +19,17 @@ export const ROUND_STATE_LABEL: Record<RoundState, string> = {
   exported: "exported — frozen",
 };
 
+/** The same states in a section Rochade pairs itself: nothing is exported, the next pairing closes it. */
+export const NATIVE_ROUND_STATE_LABEL: Record<RoundState, string> = {
+  open: "open for entry",
+  confirmed: "released",
+  exported: "closed — the next round is paired",
+};
+
+export function roundStateLabel(state: RoundState, native = false): string {
+  return (native ? NATIVE_ROUND_STATE_LABEL : ROUND_STATE_LABEL)[state];
+}
+
 const CODE: Record<string, string> = { "1": "1", "=": "½", "0": "0", "+": "+", "-": "−" };
 const BYE: Record<string, string> = {
   U: "1 · bye",

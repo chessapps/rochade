@@ -44,6 +44,15 @@ class Settings(BaseSettings):
     device_join_enabled: bool = False
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:5174"]
 
+    #: Where the Gacrux pairing engine (TieBreakServer) lives. Empty means the
+    #: copy packaged under `rochade/gacrux/vendor`; set it to run a different
+    #: checkout of upstream without rebuilding.
+    gacrux_dir: str = ""
+    #: How long one pairing or tie-break run may take. A 200-player round
+    #: pairs in well under a second, so this only ever catches a hang -- and
+    #: a request thread is held for the whole of it.
+    gacrux_timeout: float = 15.0
+
     @property
     def token_audience(self) -> str:
         return self.oidc_audience or self.oidc_client_id

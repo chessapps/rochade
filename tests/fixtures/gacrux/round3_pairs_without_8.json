@@ -1,0 +1,6 @@
+{
+  "source": "tests/fixtures/round3_messy.trf",
+  "command": "pairingchecker.py -n 3 -p -m dutch -u 8",
+  "engine": "TieBreakServer 1.9.57 (14a34a2c)",
+  "pairs": [[1, 4], [3, 2], [5, 7], [6, 0]]
+}

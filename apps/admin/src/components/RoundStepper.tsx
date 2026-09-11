@@ -1,18 +1,26 @@
 import type { RoundSummary } from "../api";
-import { stepOf } from "../boards";
+import { stepLabels, stepOf } from "../boards";
 import { clockTime } from "../format";
 import { Check } from "./icons";
 import { cx } from "./ui";
-
-const STEPS = ["Imported", "Entry open", "Released", "Exported"] as const;
 
 /**
  * Where a round is in the loop. Four milestones in a row: the ones behind are
  * emerald, the one under way glows cobalt, the ones ahead are hairline frames.
  * The arbiter reads position, not prose; the clock times say when.
  */
-export function RoundStepper({ round, className }: { round: RoundSummary; className?: string }) {
+export function RoundStepper({
+  round,
+  native = false,
+  className,
+}: {
+  round: RoundSummary;
+  /** A section Rochade pairs itself: paired and closed rather than imported and exported. */
+  native?: boolean;
+  className?: string;
+}) {
   const current = stepOf(round);
+  const STEPS = stepLabels(native);
   const times = [round.imported_at, round.imported_at, round.released_at, round.exported_at];
   return (
     <ol className={cx("grid grid-cols-4 gap-2", className)} aria-label={`round ${round.number} progress`}>

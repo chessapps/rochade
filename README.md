@@ -27,6 +27,7 @@ ships `UNVERIFIED` until someone has watched it work.
 |---|---|---|
 | **Swiss-Manager** | **verified** against 15.0.0.3 — its two text exports out, its pairing file back in, merges into the open tournament | [arbiter guide](docs/arbiter-guide-swiss-manager.md) · [what was observed](docs/m0-swiss-manager.md) |
 | **Vega** | unverified — TRF16 both ways is what the manual says | [how to run the spike](spikes/README.md) |
+| **Rochade (Gacrux engine)** | native — no files: players are entered here, rounds are paired and the table computed by the vendored [TieBreakServer](https://github.com/OttoMilvang/TieBreakServer) | [arbiter guide](docs/arbiter-guide-gacrux.md) · [what the engine does](docs/gacrux.md) |
 
 See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 
@@ -123,6 +124,11 @@ always names the next step:
 
 `docs/arbiter-guide-swiss-manager.md` has the Swiss-Manager menus for each step.
 
+A tournament on **Rochade (Gacrux engine)** skips the files: enter the players
+under **Players**, **Pair round N** from the section card (the preview shows
+the boards first), release, and pair the next one. The standings are computed
+at every release. `docs/arbiter-guide-gacrux.md` walks through it.
+
 ## Developing
 
 ```sh
@@ -187,6 +193,7 @@ src/rochade/
   platform/        mediator + pipeline, db, auth, migrations
   registry.py      every route module, in REST order
   trf/             the TRF library -- pure, no database, no framework
+  gacrux/          the pairing engine: a wrapper over the vendored TieBreakServer
 spikes/            M0: throwaway tooling for the manager round-trip spike
 apps/hall          the player PWA: board list -> result (one tap sends) -> done, offline-first
 apps/admin         the arbiter app: tournament home, round board, import wizard, phones
@@ -196,3 +203,14 @@ packages/api-client        generated from the OpenAPI schema
 Commands and queries are still separate things -- `Command` opens a transaction
 and dedupes on an idempotency key, `Query` does neither -- but that is carried
 by the base class, not by which folder a file lives in.
+
+## Credits
+
+Pairings and tie-breaks in tournaments that Rochade runs itself are computed
+by [TieBreakServer](https://github.com/OttoMilvang/TieBreakServer), the
+**Gacrux pairing** and **Gacrux tiebreak** reference implementations by IA
+Otto Milvang, © 2024 FIDE, MIT licence. See <https://www.gacrux.no>. A
+verbatim copy lives under `src/rochade/gacrux/vendor/tiebreakserver/`; the
+licence text is in `NOTICE`.
+
+Rochade is not endorsed by FIDE.
