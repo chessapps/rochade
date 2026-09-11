@@ -19,6 +19,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from rochade.platform.bus import bus
 from rochade.platform.errors import NotFound, ValidationFailed
@@ -69,7 +70,13 @@ def handle(command: PublishTournament, ctx: Context) -> Publication:
         tournament.slug = _free_slug(ctx, slugify(tournament.name) or "tournament")
 
     tournament.published = command.published
-    ctx.session.flush()
+    try:
+        ctx.session.flush()
+    except IntegrityError:
+        # Two publications raced for one slug; the unique constraint decided.
+        raise ValidationFailed(
+            "another tournament already uses that slug", slug=tournament.slug
+        ) from None
     return Publication(published=tournament.published, slug=tournament.slug)
 
 

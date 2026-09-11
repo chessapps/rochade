@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from rochade.platform.errors import NotFound
 from rochade.shared.enums import ResultState, RoundState
 from rochade.shared.models import Game, Round, Section, SectionPlayer, Tournament
+from rochade.trf.results import mirror
 
 #: Public answers are the same for everybody and change at most every few
 #: seconds, so a cache in front of the API may hold them this long.
@@ -121,13 +122,16 @@ def shown_result(game: Game) -> str:
         points = points_of(game.white_result)
         return "" if points is None else _HALF[points]
     white, black = game.white_result, game.black_result
-    if white in "+-" and white != " ":
+    if white == " ":
+        return ""
+    if black == " ":
+        # The arbiter may set one side only; the other is what the TRF would carry.
+        black = mirror(white)
+    if white in "+-":
         return f"{white}:{black}"
     left, right = points_of(white), points_of(black)
-    if left is None:
+    if left is None or right is None:
         return ""
-    if right is None:
-        right = 1.0 - left
     return f"{_HALF[left]}-{_HALF[right]}"
 
 

@@ -157,6 +157,30 @@ def test_a_player_page_lists_every_game_from_their_side(
         )
 
 
+def test_a_section_id_only_answers_under_its_own_tournament(
+    send: Send, session: Session, tournament: Tournament, round_: Round
+) -> None:
+    publish(send, tournament)
+    other = Tournament(name="Other", manager="vega", slug="other", published=True)
+    session.add(other)
+    session.commit()
+    with pytest.raises(NotFound, match="section not found"):
+        send(
+            GetPublicRound(slug="other", section_id=round_.section_id, number=1),
+            principal=ANONYMOUS,
+        )
+
+
+def test_changing_the_slug_moves_the_tournament(
+    send: Send, tournament: Tournament, round_: Round
+) -> None:
+    publish(send, tournament)
+    send(PublishTournament(tournament_id=tournament.id, published=True, slug="moved"))
+    with pytest.raises(NotFound):
+        send(GetPublicTournament(slug=SLUG), principal=ANONYMOUS)
+    assert send(GetPublicTournament(slug="moved"), principal=ANONYMOUS).slug == "moved"
+
+
 def test_a_released_round_is_confirmed_throughout(
     send: Send, tournament: Tournament, round_: Round
 ) -> None:
@@ -171,6 +195,10 @@ def test_a_released_round_is_confirmed_throughout(
     )
     assert shown.state is RoundState.CONFIRMED
     assert {b.state for b in shown.boards if b.black is not None} == {Shown.CONFIRMED}
+    detail = send(GetPublicTournament(slug=SLUG), principal=ANONYMOUS)
+    summary = detail.sections[0].rounds[0]
+    assert (summary.results_in, summary.boards) == (4, 4)
+    assert summary.updated_at is not None
 
 
 @pytest.mark.parametrize(
@@ -181,6 +209,8 @@ def test_a_released_round_is_confirmed_throughout(
         ("0", "1", 2, "0-1"),
         ("W", "L", 2, "1-0"),
         ("+", "-", 2, "+:-"),
+        ("+", " ", 2, "+:-"),
+        ("1", " ", 2, "1-0"),
         ("-", "+", 2, "-:+"),
         ("-", "-", 2, "-:-"),
         (" ", " ", 2, ""),
