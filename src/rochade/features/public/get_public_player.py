@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from rochade.features.public.shown import (
     Shown,
@@ -58,7 +58,7 @@ class PublicPlayer(BaseModel):
     tiebreaks: list[float | None]
     tiebreak_names: list[str]
     standings_after_round: int | None
-    games: list[PublicGame] = Field(default_factory=list)
+    games: list[PublicGame]
 
 
 class GetPublicPlayer(Query):

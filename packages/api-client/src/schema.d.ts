@@ -1507,7 +1507,7 @@ export interface components {
             /** Standings After Round */
             standings_after_round: number | null;
             /** Games */
-            games?: components["schemas"]["PublicGame"][];
+            games: components["schemas"]["PublicGame"][];
         };
         /** PublicRound */
         PublicRound: {
@@ -1522,7 +1522,7 @@ export interface components {
             number: number;
             state: components["schemas"]["RoundState"];
             /** Boards */
-            boards?: components["schemas"]["PublicBoard"][];
+            boards: components["schemas"]["PublicBoard"][];
         };
         /** PublicRoundSummary */
         PublicRoundSummary: {
@@ -1554,7 +1554,7 @@ export interface components {
             /** Tiebreak Names */
             tiebreak_names: string[];
             /** Rounds */
-            rounds?: components["schemas"]["PublicRoundSummary"][];
+            rounds: components["schemas"]["PublicRoundSummary"][];
         };
         /** PublicSectionSummary */
         PublicSectionSummary: {
@@ -1587,7 +1587,7 @@ export interface components {
             /** End Date */
             end_date: string | null;
             /** Sections */
-            sections?: components["schemas"]["PublicSection"][];
+            sections: components["schemas"]["PublicSection"][];
         };
         /** PublicTournamentSummary */
         PublicTournamentSummary: {
@@ -1604,7 +1604,7 @@ export interface components {
             /** End Date */
             end_date: string | null;
             /** Sections */
-            sections?: components["schemas"]["PublicSectionSummary"][];
+            sections: components["schemas"]["PublicSectionSummary"][];
         };
         /** Publication */
         Publication: {

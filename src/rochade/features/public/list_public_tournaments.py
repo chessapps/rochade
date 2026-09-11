@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from rochade.features.public.shown import cacheable
@@ -35,7 +35,7 @@ class PublicTournamentSummary(BaseModel):
     federation: str
     start_date: date | None
     end_date: date | None
-    sections: list[PublicSectionSummary] = Field(default_factory=list)
+    sections: list[PublicSectionSummary]
 
 
 class ListPublicTournaments(Query):

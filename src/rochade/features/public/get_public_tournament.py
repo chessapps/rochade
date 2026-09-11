@@ -6,7 +6,7 @@ import uuid
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import func, select
 
 from rochade.features.public.shown import cacheable, published_tournament
@@ -37,7 +37,7 @@ class PublicSection(BaseModel):
     #: The round the standings are current for; None when none were imported.
     standings_after_round: int | None
     tiebreak_names: list[str]
-    rounds: list[PublicRoundSummary] = Field(default_factory=list)
+    rounds: list[PublicRoundSummary]
 
 
 class PublicTournament(BaseModel):
@@ -47,7 +47,7 @@ class PublicTournament(BaseModel):
     federation: str
     start_date: date | None
     end_date: date | None
-    sections: list[PublicSection] = Field(default_factory=list)
+    sections: list[PublicSection]
 
 
 class GetPublicTournament(Query):

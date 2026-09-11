@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from rochade.features.public.shown import (
     Shown,
@@ -44,7 +44,7 @@ class PublicRound(BaseModel):
     section_name: str
     number: int
     state: RoundState
-    boards: list[PublicBoard] = Field(default_factory=list)
+    boards: list[PublicBoard]
 
 
 class GetPublicRound(Query):
