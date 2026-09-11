@@ -69,13 +69,20 @@ export function isReady(files: PickedFile[], rosterHeld = false, manager?: strin
   return missing(files, rosterHeld, manager) === null;
 }
 
-/** What the tournament's program hands over, for the drop zone's hint. */
-export function dropHint(manager: string | undefined): string {
+/**
+ * What the tournament's program hands over, for the drop zone's hint. Once
+ * the section holds players, the pairings alone are the round.
+ */
+export function dropHint(manager: string | undefined, rosterHeld = false): string {
   switch (manager) {
     case "swiss_manager":
-      return "or click to choose them — Spielerdaten and Spielerauslosung, from Extras → Daten Import/Export";
+      return rosterHeld
+        ? "or click to choose it — Spielerauslosung, from Extras → Daten Import/Export; Spielerdaten too only if a player was added or removed"
+        : "or click to choose them — Spielerdaten and Spielerauslosung, from Extras → Daten Import/Export";
     case "vega":
-      return "or click to choose them — engine26.trf and SortedPairs.txt, from the tournament folder";
+      return rosterHeld
+        ? "or click to choose it — SortedPairs.txt, from the tournament folder; engine26.trf too only if a player was added or removed"
+        : "or click to choose them — engine26.trf and SortedPairs.txt, from the tournament folder";
     default:
       return "or click to choose them";
   }

@@ -692,6 +692,8 @@ function RoundFileSync({
   const next = sections
     .map((section) => nextAction(section))
     .find((action): action is Extract<NextAction, { kind: "import" }> => action.kind === "import");
+  // From round two the pairings alone are the round: the section names them.
+  const rosterHeld = sections.some((section) => section.players > 0);
   const onFiles = (list: FileList | null) => {
     const files = Array.from(list ?? []);
     if (files.length === 0) return;
@@ -718,7 +720,11 @@ function RoundFileSync({
         inputLabel="round files"
         onFiles={onFiles}
         title={
-          manager === "vega" ? (
+          manager === "vega" && rosterHeld ? (
+            <>
+              Drop Vega's <span className="font-mono text-accent">SortedPairs.txt</span> here
+            </>
+          ) : manager === "vega" ? (
             <>
               Drop Vega's <span className="font-mono text-accent">engine26.trf</span> and{" "}
               <span className="font-mono text-accent">SortedPairs.txt</span> here
@@ -729,7 +735,12 @@ function RoundFileSync({
             </>
           )
         }
-        hint={next ? `Drag files here to prepare round ${next.round_number}` : "The preview shows what the file changes"}
+        hint={
+          next
+            ? `Drag files here to prepare round ${next.round_number}` +
+              (manager === "vega" && rosterHeld ? "; engine26.trf too only if a player was added or removed" : "")
+            : "The preview shows what the file changes"
+        }
       />
     </Card>
   );

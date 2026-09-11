@@ -302,8 +302,8 @@ function DropZone({
         accept=".trf,.txt,text/plain"
         onFiles={take}
         ready={files.length > 0 && note === null}
-        title="Drop the exported files here"
-        hint={dropHint(manager)}
+        title={rosterHeld ? "Drop the pairings here" : "Drop the exported files here"}
+        hint={dropHint(manager, rosterHeld)}
       />
 
       {files.length > 0 && (

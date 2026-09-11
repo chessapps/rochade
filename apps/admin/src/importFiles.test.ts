@@ -160,5 +160,7 @@ describe("what Vega needs from round one", () => {
   it("names the engine file when the pairing list is alone and nothing is held yet", () => {
     expect(missing([pick("SortedPairs.txt", SORTED_PAIRS)], false, "vega")).toMatch(/engine26.trf/);
     expect(dropHint("vega")).toMatch(/engine26.trf and SortedPairs.txt/);
+    expect(dropHint("vega", true)).toMatch(/^or click to choose it — SortedPairs.txt/);
+    expect(dropHint("swiss_manager", true)).toMatch(/Spielerauslosung, from/);
   });
 });
