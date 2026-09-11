@@ -49,7 +49,7 @@ def handle(query: ListPublicTournaments, ctx: Context) -> list[PublicTournamentS
         .where(Tournament.published.is_(True), Tournament.slug.is_not(None))
         .order_by(Tournament.start_date.desc().nullslast(), Tournament.name)
     ).all()
-    return [
+    summaries = [
         PublicTournamentSummary(
             slug=tournament.slug or "",
             name=tournament.name,
@@ -70,6 +70,9 @@ def handle(query: ListPublicTournaments, ctx: Context) -> list[PublicTournamentS
         )
         for tournament in tournaments
     ]
+    # A tournament with a round in play comes first, whatever its dates say.
+    summaries.sort(key=lambda t: not any(s.in_play for s in t.sections))
+    return summaries
 
 
 @router.get("", response_model=list[PublicTournamentSummary])
