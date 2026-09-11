@@ -50,6 +50,12 @@ import {
 } from "../queries";
 import { useNow } from "../useNow";
 
+/** The guide page for the programs that have one. */
+const GUIDE: Record<string, string> = {
+  swiss_manager: "/guides/swiss-manager",
+  vega: "/guides/vega",
+};
+
 export function TournamentHome() {
   const { tournamentId = "" } = useParams();
   const tournament = useTournament(tournamentId, true);
@@ -140,9 +146,9 @@ export function TournamentHome() {
           <Button size="sm" to={`/t/${tournamentId}/players`} icon={<Users />}>
             Players
           </Button>
-          {detail.manager === "vega" && (
-            <Button size="sm" to="/guides/vega" icon={<BookOpen />}>
-              Vega guide
+          {GUIDE[detail.manager] && (
+            <Button size="sm" to={GUIDE[detail.manager]} icon={<BookOpen />}>
+              {detail.manager_label} guide
             </Button>
           )}
           {detail.native ? (

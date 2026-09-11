@@ -5,11 +5,10 @@
  * Verified against Vega 12.1.8.
  */
 
-import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 import { PageHeader } from "../components/PageHeader";
-import { Card, Kbd } from "../components/ui";
+import { Code, Fact, File, Files, Kbd, Loop, M, Note, Section, Step, Steps } from "../components/Guide";
 
 export function VegaGuide() {
   return (
@@ -20,7 +19,39 @@ export function VegaGuide() {
         lead="Vega pairs, Rochade collects the results in the hall, Vega gets them back. Two files in and one file out per round; everything else is what you do already. Written for Vega 12.1.8 with the English menus."
       />
 
-      <Overview />
+      <Loop
+        cells={[
+          {
+            where: "In Vega",
+            title: "Pair the round",
+            body: (
+              <>
+                Vega writes <Code>engine26.trf</Code> and <Code>SortedPairs.txt</Code> into the
+                tournament folder.
+              </>
+            ),
+          },
+          {
+            where: "In Rochade",
+            title: "Import, play, release",
+            body: (
+              <>
+                Drop the two files. Phones enter the results. Release, then <b>Export for Vega</b>{" "}
+                downloads <Code>&lt;section&gt;.trf</Code>.
+              </>
+            ),
+          },
+          {
+            where: "In Vega",
+            title: "Import the results",
+            body: (
+              <>
+                <M>File → Import tournament in FIDE format - TRF2026</M>. Then pair the next round.
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Section title="Once, before the tournament">
         <Steps>
@@ -174,111 +205,4 @@ export function VegaGuide() {
       </p>
     </div>
   );
-}
-
-/** The loop in one picture: where each file comes from and where it goes. */
-function Overview() {
-  const cell = "flex flex-col gap-1 rounded-md border border-line bg-subtle/60 p-3";
-  const arrow = (
-    <span aria-hidden className="self-center font-mono text-ink-3">
-      →
-    </span>
-  );
-  return (
-    <Card className="p-4 sm:p-5">
-      <h2 className="text-headline-sm">One round, in files</h2>
-      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr]">
-        <div className={cell}>
-          <span className="text-label-sm text-ink-3">In Vega</span>
-          <span className="font-semibold">Pair the round</span>
-          <span className="text-body-sm text-ink-2">
-            Vega writes <Code>engine26.trf</Code> and <Code>SortedPairs.txt</Code> into the
-            tournament folder.
-          </span>
-        </div>
-        {arrow}
-        <div className={cell}>
-          <span className="text-label-sm text-ink-3">In Rochade</span>
-          <span className="font-semibold">Import, play, release</span>
-          <span className="text-body-sm text-ink-2">
-            Drop the two files. Phones enter the results. Release, then <b>Export for Vega</b>{" "}
-            downloads <Code>&lt;section&gt;.trf</Code>.
-          </span>
-        </div>
-        {arrow}
-        <div className={cell}>
-          <span className="text-label-sm text-ink-3">In Vega</span>
-          <span className="font-semibold">Import the results</span>
-          <span className="text-body-sm text-ink-2">
-            <M>File → Import tournament in FIDE format - TRF2026</M>. Then pair the next round.
-          </span>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card as="section" className="flex flex-col gap-4 p-4 sm:p-5">
-      <h2 className="text-headline-sm">{title}</h2>
-      {children}
-    </Card>
-  );
-}
-
-function Steps({ children }: { children: ReactNode }) {
-  return <ol className="flex flex-col gap-5">{children}</ol>;
-}
-
-function Step({ n, title, children }: { n?: number; title: string; children: ReactNode }) {
-  return (
-    <li className="grid gap-x-4 gap-y-2 sm:grid-cols-[2rem_1fr]">
-      <span
-        aria-hidden
-        className="flex size-8 items-center justify-center rounded-full bg-ink font-mono text-sm font-bold text-on-ink"
-      >
-        {n ?? "·"}
-      </span>
-      <div className="flex flex-col gap-2 text-body-md text-ink-2 [&>p]:m-0">
-        <h3 className="text-base font-semibold text-ink">{title}</h3>
-        {children}
-      </div>
-    </li>
-  );
-}
-
-function Files({ children }: { children: ReactNode }) {
-  return <ul className="flex flex-col gap-1.5">{children}</ul>;
-}
-
-function File({ name, children }: { name: string; children: ReactNode }) {
-  return (
-    <li className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-      <Code>{name}</Code>
-      <span className="text-body-sm text-ink-2">{children}</span>
-    </li>
-  );
-}
-
-function Note({ tone = "plain", children }: { tone?: "plain" | "good" | "warn"; children: ReactNode }) {
-  const tones = {
-    plain: "border-line bg-subtle/60 text-ink-2",
-    good: "border-emerald-line bg-emerald-soft text-emerald-text",
-    warn: "border-amber-line bg-amber-soft text-amber-text",
-  };
-  return <div className={`rounded-md border px-3 py-2 text-body-sm ${tones[tone]}`}>{children}</div>;
-}
-
-function Fact({ children }: { children: ReactNode }) {
-  return <li className="border-l-2 border-line pl-3">{children}</li>;
-}
-
-/** A menu path in Vega, as it appears there. */
-function M({ children }: { children: ReactNode }) {
-  return <span className="font-medium text-ink">{children}</span>;
-}
-
-function Code({ children }: { children: ReactNode }) {
-  return <span className="font-mono text-[0.92em] text-accent">{children}</span>;
 }

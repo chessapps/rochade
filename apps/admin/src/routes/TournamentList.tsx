@@ -34,8 +34,11 @@ export function TournamentList() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-headline-md">Tournaments</h1>
         <div className="flex flex-wrap items-center gap-2">
+          <Button to="/guides/swiss-manager" icon={<BookOpen />}>
+            Swiss-Manager guide
+          </Button>
           <Button to="/guides/vega" icon={<BookOpen />}>
-            How to run a round with Vega
+            Vega guide
           </Button>
           <Button tone="primary" onClick={() => setCreating(true)}>
             New tournament
@@ -53,9 +56,13 @@ export function TournamentList() {
           }
         >
           A tournament here holds one or more sections, each imported from your tournament
-          manager one round at a time. New to the loop?{" "}
+          manager one round at a time. New to the loop? Read how a round runs with{" "}
+          <Link to="/guides/swiss-manager" className="font-medium text-accent hover:underline">
+            Swiss-Manager
+          </Link>{" "}
+          or{" "}
           <Link to="/guides/vega" className="font-medium text-accent hover:underline">
-            Read how a round runs with Vega
+            Vega
           </Link>
           .
         </EmptyState>
