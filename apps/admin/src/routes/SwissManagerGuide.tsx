@@ -36,7 +36,7 @@ export function SwissManagerGuide() {
             title: "Import, play, release",
             body: (
               <>
-                Drop the two files. Phones enter the results. Release, then{" "}
+                Drop the two files. Enter the results. Release, then{" "}
                 <b>Export for Swiss-Manager</b> downloads <Code>&lt;section&gt;-round&lt;N&gt;.txt</Code>.
               </>
             ),
@@ -66,13 +66,11 @@ export function SwissManagerGuide() {
             program that pairs it. That choice is fixed for the tournament: every import and
             export from then on is Swiss-Manager&rsquo;s, and nothing asks again.
           </Step>
-          <Step title="Let the phones in">
-            <b>Devices → Issue a QR code</b>. Print it as a poster or show it on the arbiter&rsquo;s
-            screen. One code admits any number of phones for as long as the tournament runs;
-            issue a second one for the other end of the hall if you like, and revoke either at any
-            time. If a phone cannot scan, <b>Open joining with a code</b> shows six characters to
-            read out in the hall. It grants what the QR grants, so read it out there, not in a
-            group chat.
+          <Step title="Set up the hall device">
+            <b>Devices → Issue a QR code</b> and scan it with the tablet at the desk where results
+            are entered. The code admits that device for as long as the tournament runs, and you
+            can revoke it at any time. If the tablet cannot scan, <b>Open joining with a code</b>{" "}
+            shows six characters to type instead.
           </Step>
         </Steps>
       </Section>
@@ -101,8 +99,8 @@ export function SwissManagerGuide() {
               <M>OK</M> closes the dialog. Neither export asks anything else, and neither says
               anything when it works. In Rochade the section card says <b>Import round N</b>.
               Press it, drop both files on the page, <b>Preview the changes</b>, read what they
-              change, <b>Import</b>. You land on the round board; the phones show the board
-              numbers Swiss-Manager printed on the pairing list.
+              change, <b>Import</b>. You land on the round board, with the board numbers
+              Swiss-Manager printed on the pairing list.
             </p>
             <Note tone="good">
               <b>From round 2 on, the pairings file alone is enough.</b> Rochade names the boards
@@ -119,16 +117,14 @@ export function SwissManagerGuide() {
           </Step>
 
           <Step n={3} title="Play">
-            Players enter results on their phones. The round board updates every few seconds and
-            opens on <b>Attention</b>: the boards with no result and the ones two phones disagree
-            about, so an empty list means the round is done. A disputed board shows both claims
-            and which phone made each; pick the right one or set it from the scoresheet. A
-            no-show is yours: <b>more…</b> on the board, then <b>+:−</b>, <b>−:+</b> or{" "}
+            Results are entered on the hall device at the desk, or by you on the round board.
+            The board updates every few seconds and opens on <b>Attention</b>: the boards with no
+            result yet, so an empty list means the round is done. A no-show is yours: <b>more…</b> on the board, then <b>+:−</b>, <b>−:+</b> or{" "}
             <b>−:−</b>. The same menu has the unrated results and, under <b>Any pair</b>, every
             code for either side. With a board focused, <Kbd>1</Kbd> <Kbd>=</Kbd> <Kbd>0</Kbd> on
             the keyboard set it too. <b>Entered → Confirm all</b> confirms checked results in one
-            go without releasing the round; a confirmed board is closed to the phones, so a late
-            correction from a player comes to you instead of overwriting what you checked.
+            go without releasing the round; a confirmed board is closed to the hall device, so a
+            late correction comes to you instead of overwriting what you checked.
           </Step>
 
           <Step n={4} title="Release and export">
