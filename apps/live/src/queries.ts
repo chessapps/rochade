@@ -6,7 +6,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { api, unwrap } from "./api";
+import { api, unwrap, type Tournament } from "./api";
 
 export const POLL_MS = 20_000;
 
@@ -27,13 +27,20 @@ export function useTournaments() {
   });
 }
 
-export function useTournament(slug: string, live = false) {
+/** Whether any round of the tournament is still open for results. */
+export function inPlay(tournament: Tournament | undefined): boolean {
+  return tournament?.sections.some((s) => s.rounds.some((r) => r.state === "open")) ?? false;
+}
+
+export function useTournament(slug: string) {
   return useQuery({
     queryKey: keys.tournament(slug),
     queryFn: () =>
       unwrap(api.GET("/api/public/tournaments/{slug}", { params: { path: { slug } } })),
     enabled: Boolean(slug),
-    refetchInterval: live ? POLL_MS : false,
+    // Asked again while a round is in play, so the page learns when it
+    // closes or the next one opens; a finished tournament is asked once.
+    refetchInterval: (query) => (inPlay(query.state.data) ? POLL_MS : false),
   });
 }
 

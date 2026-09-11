@@ -4,7 +4,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router";
+import { Link } from "react-router";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -76,7 +76,7 @@ export function Banner({
 
 export function Skeleton({ rows = 3, className }: { rows?: number; className?: string }) {
   return (
-    <div className={cx("flex flex-col gap-2 p-4", className)} aria-busy="true" aria-label="Loading">
+    <div role="status" className={cx("flex flex-col gap-2 p-4", className)} aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="h-5 animate-pulse rounded bg-subtle" />
       ))}
@@ -93,32 +93,34 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
   );
 }
 
-/** A row of tabs that are links, so the choice sits in the URL and survives a reload. */
+/**
+ * A row of tabs that are links, so the choice sits in the URL and survives a
+ * reload. The caller says which is active: the tabs differ only in their
+ * query string, which the router's own active matching does not look at.
+ */
 export function Tabs({
   items,
   ariaLabel,
 }: {
-  items: { to: string; label: ReactNode; end?: boolean }[];
+  items: { to: string; label: ReactNode; active: boolean }[];
   ariaLabel: string;
 }) {
   return (
     <nav aria-label={ariaLabel} className="flex gap-1 overflow-x-auto">
       {items.map((item) => (
-        <NavLink
+        <Link
           key={item.to}
           to={item.to}
-          end={item.end}
-          className={({ isActive }) =>
-            cx(
-              "inline-flex min-h-9 items-center rounded-md border px-3 text-sm whitespace-nowrap transition-colors",
-              isActive
-                ? "border-blue-line bg-blue-soft font-semibold text-blue-text"
-                : "border-transparent font-medium text-ink-2 hover:bg-subtle hover:text-ink",
-            )
-          }
+          aria-current={item.active ? "page" : undefined}
+          className={cx(
+            "inline-flex min-h-9 items-center rounded-md border px-3 text-sm whitespace-nowrap transition-colors",
+            item.active
+              ? "border-blue-line bg-blue-soft font-semibold text-blue-text"
+              : "border-transparent font-medium text-ink-2 hover:bg-subtle hover:text-ink",
+          )}
         >
           {item.label}
-        </NavLink>
+        </Link>
       ))}
     </nav>
   );

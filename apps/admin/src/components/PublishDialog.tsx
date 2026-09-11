@@ -55,7 +55,6 @@ export function PublishDialog({
           );
           if (!published) onClose();
         },
-        onError: (error) => toast.error(errorMessage(error)),
       },
     );
   };
@@ -107,7 +106,11 @@ export function PublishDialog({
       <form id="publish-tournament" onSubmit={submit} className="flex flex-col gap-3">
         <Field
           label="Address"
-          hint="Lower-case letters, digits and dashes. Leave it empty to take one from the name."
+          hint={
+            tournament.published
+              ? "Lower-case letters, digits and dashes. Changing it breaks the link already shared."
+              : "Lower-case letters, digits and dashes. Leave it empty to take one from the name."
+          }
         >
           <div className="flex items-center gap-1">
             <span className="shrink-0 font-mono text-body-sm text-ink-3">/live/</span>

@@ -14,7 +14,7 @@ import { Result } from "../components/Result";
 import { Banner, Card, Chip, EmptyState, Skeleton, Tabs, cx } from "../components/ui";
 import { WatchStrip } from "../components/WatchStrip";
 import { dateRange, plural, points, relativeTime } from "../format";
-import { useRound, useStandings, useTournament } from "../queries";
+import { inPlay, useRound, useStandings, useTournament } from "../queries";
 
 type View = "pairings" | "standings" | "players";
 const VIEWS: View[] = ["pairings", "standings", "players"];
@@ -22,7 +22,7 @@ const VIEWS: View[] = ["pairings", "standings", "players"];
 export function Tournament() {
   const { slug = "" } = useParams();
   const [params] = useSearchParams();
-  const tournament = useTournament(slug, true);
+  const tournament = useTournament(slug);
 
   if (tournament.isPending) return <Skeleton rows={6} />;
   if (tournament.isError) {
@@ -40,7 +40,7 @@ export function Tournament() {
   const section = sections.find((s) => s.id === params.get("s")) ?? sections[0];
   const view = (VIEWS as string[]).includes(params.get("v") ?? "") ? (params.get("v") as View) : "pairings";
   const when = dateRange(detail.start_date, detail.end_date);
-  const inPlay = sections.some((s) => s.rounds.some((r) => r.state === "open"));
+  const playing = inPlay(detail);
 
   const href = (next: { s?: string; v?: View; r?: number }) => {
     const q = new URLSearchParams();
@@ -58,7 +58,7 @@ export function Tournament() {
       <header className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
           {detail.federation && <Chip tone="neutral">{detail.federation}</Chip>}
-          {inPlay && (
+          {playing && (
             <Chip tone="blue">
               <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-round-open" />
               in play
@@ -93,7 +93,11 @@ export function Tournament() {
       {sections.length > 1 && (
         <Tabs
           ariaLabel="Section"
-          items={sections.map((s) => ({ to: href({ s: s.id }), label: `Section ${s.name}` }))}
+          items={sections.map((s) => ({
+            to: href({ s: s.id }),
+            label: `Section ${s.name}`,
+            active: s.id === section?.id,
+          }))}
         />
       )}
 
@@ -104,9 +108,9 @@ export function Tournament() {
           <Tabs
             ariaLabel="View"
             items={[
-              { to: href({ v: "pairings" }), label: "Pairings" },
-              { to: href({ v: "standings" }), label: "Standings" },
-              { to: href({ v: "players" }), label: "Players" },
+              { to: href({ v: "pairings" }), label: "Pairings", active: view === "pairings" },
+              { to: href({ v: "standings" }), label: "Standings", active: view === "standings" },
+              { to: href({ v: "players" }), label: "Players", active: view === "players" },
             ]}
           />
           {view === "pairings" && (
@@ -134,7 +138,10 @@ function Pairings({
   const rounds = section.rounds;
   const newest = rounds.at(-1)?.number ?? 0;
   const number = rounds.some((r) => r.number === wanted) ? wanted : newest;
-  const summary = rounds.find((r) => r.number === number);
+  const at = rounds.findIndex((r) => r.number === number);
+  const summary = rounds[at];
+  const previous = rounds[at - 1]?.number;
+  const next = rounds[at + 1]?.number;
   const live = summary?.state === "open";
   const round = useRound(slug, section.id, number, live);
   const [now, setNow] = useState(() => Date.now());
@@ -151,14 +158,14 @@ function Pairings({
     <Card>
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2">
-          <RoundStep to={href({ r: number - 1 })} disabled={number <= 1} label="Previous round">
+          <RoundStep to={href({ r: previous ?? 0 })} disabled={previous === undefined} label="Previous round">
             <ChevronLeft />
           </RoundStep>
           <h2 className="text-headline-sm">
             Round {number}
             {section.declared_rounds ? <span className="text-ink-3"> / {section.declared_rounds}</span> : null}
           </h2>
-          <RoundStep to={href({ r: number + 1 })} disabled={number >= newest} label="Next round">
+          <RoundStep to={href({ r: next ?? 0 })} disabled={next === undefined} label="Next round">
             <ChevronRight />
           </RoundStep>
         </div>
@@ -296,8 +303,8 @@ function Standings({ slug, section }: { slug: string; section: Section }) {
               <th className="hidden px-2 py-2 sm:table-cell">Fed</th>
               <th className="hidden px-2 py-2 text-right sm:table-cell">Rating</th>
               <th className="px-2 py-2 text-right">Pts</th>
-              {names.map((name) => (
-                <th key={name} className="px-2 py-2 text-right whitespace-nowrap">
+              {names.map((name, i) => (
+                <th key={i} className="px-2 py-2 text-right whitespace-nowrap">
                   {name}
                 </th>
               ))}
@@ -317,8 +324,8 @@ function Standings({ slug, section }: { slug: string; section: Section }) {
                 <td className="hidden px-2 py-1.5 text-ink-2 sm:table-cell">{row.federation}</td>
                 <td className="hidden px-2 py-1.5 text-right font-mono text-ink-2 sm:table-cell">{row.rating ?? ""}</td>
                 <td className="px-2 py-1.5 text-right font-mono font-semibold">{points(row.points)}</td>
-                {names.map((name, i) => (
-                  <td key={name} className="px-2 py-1.5 text-right font-mono text-ink-2">
+                {names.map((_, i) => (
+                  <td key={i} className="px-2 py-1.5 text-right font-mono text-ink-2">
                     {row.tiebreaks[i] ?? ""}
                   </td>
                 ))}

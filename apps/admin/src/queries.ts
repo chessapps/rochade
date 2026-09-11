@@ -452,6 +452,7 @@ export function usePublishTournament() {
       ),
     onSettled: (_data, _error, vars) => {
       void client.invalidateQueries({ queryKey: keys.tournament(vars.tournamentId) });
+      void client.invalidateQueries({ queryKey: keys.tournaments });
     },
   });
 }

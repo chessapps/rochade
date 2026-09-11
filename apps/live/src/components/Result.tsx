@@ -24,8 +24,9 @@ export function Result({
 }) {
   if (state === "pending" || !result) {
     return (
-      <span className={cx("font-mono text-ink-3", className)} aria-label="no result yet">
-        –
+      <span className={cx("font-mono text-ink-3", className)}>
+        <span aria-hidden>–</span>
+        <span className="sr-only">no result yet</span>
       </span>
     );
   }

@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 
 import { toggleWatch } from "../watch";
-import { PATHS, SECTION, SLUG, clearWatchList, renderAt, round, standings, stubApi, tournament } from "../test-utils";
+import { PATHS, SECTION, SLUG, clearWatchList, player, renderAt, round, standings, stubApi, tournament } from "../test-utils";
 import { Tournament } from "./Tournament";
 
 const ROUTES = [{ path: "/:slug", element: <Tournament /> }];
@@ -20,11 +20,20 @@ describe("the tournament page", () => {
     const boards = screen.getAllByRole("listitem");
     expect(boards).toHaveLength(2);
     expect(within(boards[0]!).getByTitle(/preliminary/)).toHaveTextContent("1-0");
-    expect(within(boards[1]!).getByLabelText("no result yet")).toBeInTheDocument();
+    expect(within(boards[1]!).getByText("no result yet")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Baumann, Lukas/ })).toHaveAttribute(
       "href",
       `/${SLUG}/s/${SECTION}/p/1`,
     );
+  });
+
+  it("marks only the chosen view as the current tab and falls back on unknown params", async () => {
+    stubApi({ [PATHS.tournament]: tournament(), [PATHS.standings]: standings() });
+    renderAt(`/${SLUG}?s=nope&v=standings&r=abc`, ROUTES);
+
+    await screen.findByRole("heading", { level: 2, name: "Standings" });
+    const current = screen.getAllByRole("link", { current: "page" });
+    expect(current.map((link) => link.textContent)).toEqual(["Standings"]);
   });
 
   it("shows an earlier round from the URL and steps between rounds", async () => {
@@ -59,15 +68,20 @@ describe("the tournament page", () => {
   it("shows the watched players of this tournament as a strip", async () => {
     toggleWatch({ slug: SLUG, sectionId: SECTION, startRank: 3, name: "Dubois, Elise" });
     toggleWatch({ slug: "other", sectionId: "x", startRank: 1, name: "Somebody Else" });
-    stubApi({ [PATHS.tournament]: tournament(), [PATHS.round(2)]: round(2) });
+    stubApi({
+      [PATHS.tournament]: tournament(),
+      [PATHS.round(2)]: round(2),
+      [PATHS.player(3)]: player({ start_rank: 3, name: "Dubois, Elise", title: "WFM" }),
+    });
     renderAt(`/${SLUG}`, ROUTES);
 
     await screen.findByRole("heading", { level: 1, name: "Club Open" });
     const strip = screen.getByText("Watching").parentElement!;
-    expect(within(strip).getByRole("link", { name: "Dubois, Elise" })).toHaveAttribute(
-      "href",
-      `/${SLUG}/s/${SECTION}/p/3`,
-    );
+    const link = within(strip).getByRole("link", { name: /Dubois, Elise/ });
+    expect(link).toHaveAttribute("href", `/${SLUG}/s/${SECTION}/p/3`);
+    // The latest game, from the player's own page, comes along.
+    await within(strip).findByText("R2");
+    expect(link).toHaveTextContent("1-0");
     expect(screen.queryByText("Somebody Else")).not.toBeInTheDocument();
   });
 });
