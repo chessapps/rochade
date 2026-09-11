@@ -1,9 +1,13 @@
 """Write the round's results back in whatever the section's manager takes, and freeze it.
 
 The adapter decides the file: Vega gets the TRF we imported with this round's
-result cells patched, Swiss-Manager gets its own pairing file. Either way
-nothing is rebuilt, so what the manager wrote and we never modelled goes back
-unchanged.
+result cells patched, Swiss-Manager gets its own pairing file. What the
+manager wrote and we never modelled goes back unchanged -- with one
+exception. A round that came in as the pairing list alone has a source that
+knows nothing of the rounds before it, and Vega's import replaces the whole
+tournament with the file, so such a source is rebuilt from what Rochade holds
+before the results go in. Seen the hard way on 2026-09-11: a round-2 export
+without round 1 wiped round 1 in Vega.
 
 Freezing is the divergence guard. During a round we own the results; between
 rounds the manager owns the pairings. Without the freeze, an arbiter can edit a
@@ -24,12 +28,14 @@ from sqlalchemy.orm import Session
 
 from rochade.features.audit import record
 from rochade.features.locking import lock_round
+from rochade.features.pairing.trf_of import build_document
 from rochade.features.roster import roster_of
 from rochade.features.scoping import tournament_of_round
 from rochade.interchange import (
     InterchangeError,
     Manager,
     ResultEntry,
+    RoundDocument,
     UnknownManager,
     manager_for,
 )
@@ -39,6 +45,8 @@ from rochade.platform.http import get_context
 from rochade.platform.mediator import Access, Command, Context, Query
 from rochade.shared.enums import EventAction, ResultState, RoundState
 from rochade.shared.models import Round
+from rochade.trf import Colour, RoundEntry
+from rochade.trf.build import build
 
 router = APIRouter(prefix="/rounds", tags=["arbiter"])
 
@@ -117,6 +125,7 @@ def render(round_: Round, *, force: bool) -> Rendered:
         # Vega's folder files carry no round count; the section remembers the
         # one the arbiter gave at import, and the file we hand back needs it.
         document = replace(document, declared_rounds=round_.section.declared_rounds)
+    document = _with_history(document, round_)
 
     # What the manager already knows. A bye it allocated, or a result it exported
     # with the round, is not something we write -- it goes back as it came, so it
@@ -158,6 +167,52 @@ def render(round_: Round, *, force: bool) -> Rendered:
         raise ValidationFailed(f"{manager.label} cannot write this round: {exc}") from exc
 
     return Rendered(emitted.filename, emitted.content, manager, len(results), blank)
+
+
+def _with_history(document: RoundDocument, round_: Round) -> RoundDocument:
+    """The stored source, or one rebuilt from the section when it is missing
+    results of earlier rounds that Rochade holds.
+
+    A pairing list alone (Vega's SortedPairs.txt, Swiss-Manager's Auslosung)
+    names the round and nothing before it, so the TRF built from it has blank
+    earlier rounds. A real TRF from the manager carries its history and is
+    left exactly as it came.
+    """
+    section = round_.section
+    earlier = [r for r in section.rounds if r.number < round_.number]
+    if not earlier:
+        return document
+
+    def played(r: Round) -> bool:
+        return any(g.white_result != " " for g in r.games)
+
+    def carried(r: Round) -> bool:
+        return any(row.white_result != " " for row in document.pairings.get(r.number, []))
+
+    if all(carried(r) for r in earlier if played(r)):
+        return document
+
+    built = build_document(section, upto_round=round_.number - 1)
+    entries = {p.start_rank: dict(p.rounds) for p in built.players}
+    for row in document.pairings.get(round_.number, []):
+        if row.black_rank is None:
+            entries[row.white_rank][round_.number] = RoundEntry(
+                round_.number, None, Colour.NONE, row.white_result
+            )
+            continue
+        entries[row.white_rank][round_.number] = RoundEntry(
+            round_.number, row.black_rank, Colour.WHITE, row.white_result
+        )
+        entries[row.black_rank][round_.number] = RoundEntry(
+            round_.number, row.white_rank, Colour.BLACK, row.black_result
+        )
+    rebuilt = replace(
+        built,
+        name=document.tournament_name or built.name,
+        declared_rounds=document.declared_rounds or built.declared_rounds,
+        players=[replace(p, rounds=entries[p.start_rank]) for p in built.players],
+    )
+    return replace(document, source=build(rebuilt))
 
 
 def _result(round_: Round, rendered: Rendered, *, forced: bool) -> ExportRoundResult:

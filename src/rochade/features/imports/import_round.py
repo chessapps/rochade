@@ -467,9 +467,24 @@ def _rebuild(
     file_round: int,
     carried: dict[tuple[str, ...], _Carried],
 ) -> None:
-    """Replace players and rounds from the file. Audit events are untouched."""
+    """Replace players and rounds from the file. Audit events are untouched.
+
+    A round the file says nothing about is kept as it is. The pairing list
+    alone -- Vega's SortedPairs.txt, Swiss-Manager's Auslosung -- describes
+    the round it pairs and no other, and the rounds before it are what Rochade
+    ran: their results live here and nowhere else until the next export.
+    Seen the hard way on 2026-09-11, when a round-2 import from the pairing
+    list emptied round 1, and the export that followed wiped it in Vega too.
+    """
+    kept = {
+        round_.number: round_
+        for round_ in section.rounds
+        if round_.number < file_round and not document.board_rows(round_.number)
+    }
     section.players.clear()
-    section.rounds.clear()
+    for round_ in list(section.rounds):
+        if round_.number not in kept:
+            section.rounds.remove(round_)
     ctx.session.flush()
 
     for rank, player in sorted(document.players.items()):
@@ -493,6 +508,8 @@ def _rebuild(
         section.standings_after_round = file_round - 1
 
     for round_no in range(1, file_round + 1):
+        if round_no in kept:
+            continue
         is_current = round_no == file_round
         round_ = Round(
             number=round_no,

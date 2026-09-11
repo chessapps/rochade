@@ -24,7 +24,7 @@ from rochade.features.rounds.export_round import ExportRound
 from rochade.features.rounds.release_round import ReleaseRound
 from rochade.interchange import InterchangeError, manager_for
 from rochade.platform.errors import ValidationFailed
-from rochade.shared.enums import GameResult
+from rochade.shared.enums import GameResult, RoundState
 from rochade.shared.models import Round, Section, Tournament
 from rochade.trf import parse
 from tests.conftest import Send
@@ -189,6 +189,63 @@ def test_round_four_comes_in_as_the_pairing_list_alone(
         (4, 6, 7),
         (5, 8, None),
     ]
+    # The rounds the list says nothing about are untouched: the history that
+    # came with round 3, and round 3 itself as Rochade ran it.
+    earlier = {r.number: r for r in fourth.section.rounds if r.number < 4}
+    assert sorted(earlier) == [1, 2, 3]
+    assert len(earlier[1].games) == 5 and len(earlier[2].games) == 5
+    assert earlier[3].state is RoundState.EXPORTED
+    assert len(earlier[3].games) == 5
+
+
+def test_a_round_imported_from_the_pairing_list_alone_exports_with_its_history(
+    send: Send, session: Session, tournament: Tournament
+) -> None:
+    """Vega replaces its tournament with the file we hand back, so the file
+    must carry every round -- the pairing list it came from carried none."""
+    send(
+        ImportRound(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=round_three(),
+            declared_rounds=5,
+        )
+    )
+    third = session.scalars(select(Round).where(Round.number == 3)).one()
+    for game in third.games:
+        if game.black_rank is not None:
+            send(SetResult(game_id=game.id, white_result="1", black_result="0"))
+    send(ReleaseRound(round_id=third.id))
+    send(ExportRound(round_id=third.id))
+
+    send(
+        ImportRound(
+            tournament_id=tournament.id,
+            section_name="A",
+            content=read("sorted_pairs_round4.txt"),
+        )
+    )
+    fourth = session.scalars(select(Round).where(Round.number == 4)).one()
+    boards = {g.board: g for g in fourth.games}
+    send(SetResult(game_id=boards[1].id, white_result="=", black_result="="))
+    send(ReleaseRound(round_id=fourth.id, force=True))
+    exported = send(ExportRound(round_id=fourth.id, force=True))
+
+    ours = parse(exported.content)
+    assert ours.rounds_present == 4
+    assert ours.declared_rounds == 5
+    four = ours.players[4]  # Mueller: + 1 1 from the cross table and round 3, then a draw
+    assert {r: (e.opponent, e.result) for r, e in four.rounds.items()} == {
+        1: (8, "+"),
+        2: (9, "1"),
+        3: (2, "1"),
+        4: (1, "="),
+    }
+    assert four.points == 3.5
+    assert ours.players[5].rounds[2].result == "H"
+    assert ours.players[9].rounds[1].result == "U"
+    assert ours.players[8].rounds[4].opponent is None  # the bye Vega gave in round 4
+    assert exported.boards_written == 1
 
 
 def test_a_late_comer_needs_the_cross_table_again(send: Send, tournament: Tournament) -> None:
