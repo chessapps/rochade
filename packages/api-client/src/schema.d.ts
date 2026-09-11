@@ -995,6 +995,8 @@ export interface components {
              * @default false
              */
             force: boolean;
+            /** Declared Rounds */
+            declared_rounds?: number | null;
         };
         /** ImportRoundResult */
         ImportRoundResult: {
@@ -1806,6 +1808,8 @@ export interface components {
              * @default false
              */
             force: boolean;
+            /** Declared Rounds */
+            declared_rounds?: number | null;
         };
         /** PreviewBody */
         rochade__features__pairing__preview_pairing__PreviewBody: {

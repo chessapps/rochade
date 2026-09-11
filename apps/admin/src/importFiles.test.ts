@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { isReady, joinContents, missing, primaryName, readText, rosterNote, sniff, withFile } from "./importFiles";
+import { dropHint, isReady, joinContents, missing, primaryName, readText, rosterNote, sniff, withFile } from "./importFiles";
 
 const PLAYERS = "Nr;Name;Titel;Identnr;EloNat;EloInt;Geburt;Fed;Sex;Nachname;Vorname\r\n1;Brunner Livia;WGM;;0;2447;01.06.1992;SUI;W;Brunner;Livia\r\n";
 const PAIRINGS = "Runde;Brett;IdentW;IdentS;NrW;NrS;ErgW;ErgS;Kontumaz;Erg;Mnr;ErgEloW;ErgEloS\r\n1;1;0;0;1;51;0;0;;0:0;0;;\r\n";
 const TRF = "012 Rochade Open 2026\r\n001    1 m    Baumann, Lukas                 2201 SUI\r\n";
+const CROSSTABLE =
+  "Rochade M0 Spike\r\nRochade - 05/09/2026, 07/09/2026\r\n\r\n Cross Table at round 2\r\n\r\n" +
+  "  N NAME                 Rtg   T  Fed  Pts |   1     2  \r\n";
+const SORTED_PAIRS = "Rochade M0 Spike: Pairing of round 3 sorted by name\n\n====\n";
 
 const pick = (name: string, content: string) => ({ name, content, kind: sniff(content) });
 
@@ -13,6 +17,8 @@ describe("telling the manager's files apart", () => {
     expect(sniff(PLAYERS)).toBe("players");
     expect(sniff(PAIRINGS)).toBe("pairings");
     expect(sniff(TRF)).toBe("trf");
+    expect(sniff(CROSSTABLE)).toBe("crosstable");
+    expect(sniff(SORTED_PAIRS)).toBe("sorted_pairs");
     expect(sniff("hello\nthere")).toBe("unknown");
   });
 
@@ -56,6 +62,38 @@ describe("what is still needed", () => {
   });
 });
 
+describe("what Vega needs", () => {
+  it("takes the cross table and the pairing list together, in either order", () => {
+    const pair = [pick("crosstable.txt", CROSSTABLE), pick("SortedPairs.txt", SORTED_PAIRS)];
+    expect(missing(pair, false, "vega")).toBeNull();
+    expect(isReady([...pair].reverse(), false, "vega")).toBe(true);
+    expect(primaryName(pair)).toBe("SortedPairs.txt");
+    const body = joinContents([...pair].reverse());
+    expect(body.indexOf("Cross Table")).toBeLessThan(body.indexOf("Pairing of round"));
+  });
+
+  it("asks for the cross table when only the pairing list is there, unless the roster is held", () => {
+    const files = [pick("SortedPairs.txt", SORTED_PAIRS)];
+    expect(missing(files, false, "vega")).toMatch(/crosstable.txt/);
+    expect(missing(files, true, "vega")).toBeNull();
+    expect(rosterNote(files, true)).toMatch(/Start numbers come from/);
+    expect(rosterNote([pick("crosstable.txt", CROSSTABLE), ...files], true)).toBeNull();
+  });
+
+  it("asks for the pairing list when only the cross table is there", () => {
+    expect(missing([pick("crosstable.txt", CROSSTABLE)], true, "vega")).toMatch(/SortedPairs.txt/);
+  });
+
+  it("sends each program's files back to the other", () => {
+    expect(missing([pick("players.txt", PLAYERS), pick("pairings.txt", PAIRINGS)], false, "vega")).toMatch(
+      /runs on Vega/,
+    );
+    expect(
+      missing([pick("crosstable.txt", CROSSTABLE), pick("SortedPairs.txt", SORTED_PAIRS)], false, "swiss_manager"),
+    ).toMatch(/runs on Swiss-Manager/);
+  });
+});
+
 describe("collecting the files", () => {
   it("replaces a file of the same kind rather than keeping both", () => {
     const held = withFile([pick("old.txt", PLAYERS)], pick("new.txt", PLAYERS));
@@ -65,6 +103,12 @@ describe("collecting the files", () => {
   it("keeps the two kinds side by side", () => {
     const held = withFile([pick("players.txt", PLAYERS)], pick("pairings.txt", PAIRINGS));
     expect(held).toHaveLength(2);
+  });
+
+  it("a TRF sits beside Vega's pairing list", () => {
+    const held = withFile([pick("SortedPairs.txt", SORTED_PAIRS)], pick("engine26.trf", TRF));
+    expect(held).toHaveLength(2);
+    expect(withFile(held, pick("engine26.trf", TRF))).toHaveLength(2);
   });
 
   it("a TRF replaces the text pair, and the pair replaces the TRF", () => {
@@ -97,5 +141,35 @@ describe("reading the file's bytes", () => {
   it("falls back to Windows-1252 so the half-point glyph survives", async () => {
     const bytes = new Uint8Array([0x4e, 0x72, 0x3b, 0x50, 0x6b, 0x74, 0x0a, 0x31, 0x3b, 0x32, 0xbd, 0x0a]);
     expect(await readText(new Blob([bytes]))).toBe("Nr;Pkt\n1;2\u00bd\n");
+  });
+});
+
+describe("what Vega needs from round one", () => {
+  const ENGINE = "012 TestOpen\r\n142 5\r\n001    1 m FM BaumannLukas                      2201 SUI           0 1990        0.0    1\r\n";
+
+  it("takes the engine file with the pairing list, in either order, and puts the players first", () => {
+    const pair = [pick("SortedPairs.txt", SORTED_PAIRS), pick("engine26.trf", ENGINE)];
+    expect(sniff(ENGINE)).toBe("trf");
+    expect(missing(pair, false, "vega")).toBeNull();
+    expect(primaryName(pair)).toBe("SortedPairs.txt");
+    const body = joinContents(pair);
+    expect(body.indexOf("012 TestOpen")).toBeLessThan(body.indexOf("Pairing of round"));
+    expect(rosterNote(pair, true)).toBeNull();
+  });
+
+  it("names the engine file when the pairing list is alone and nothing is held yet", () => {
+    expect(missing([pick("SortedPairs.txt", SORTED_PAIRS)], false, "vega")).toMatch(/engine26.trf/);
+    expect(dropHint("vega")).toMatch(/engine26.trf and SortedPairs.txt/);
+    expect(dropHint("vega", true)).toMatch(/^or click to choose it — SortedPairs.txt/);
+    expect(dropHint("swiss_manager", true)).toMatch(/Spielerauslosung, from/);
+  });
+});
+
+describe("Vega's standings", () => {
+  const STANDINGS = "TestOpen\r\n - , \r\n\r\nStandings at round 3\r\n\r\nPos   N     NAME   g | FRtg  NRtg  Fed |  Pts      BH\r\n";
+
+  it("is recognised, and sent to the Standings page rather than the round import", () => {
+    expect(sniff(STANDINGS)).toBe("standings");
+    expect(missing([pick("standings.txt", STANDINGS)], true, "vega")).toMatch(/Standings page/);
   });
 });

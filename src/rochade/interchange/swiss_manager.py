@@ -134,7 +134,7 @@ class SwissManager:
             content = render_pairing_file(lines)
         except PairingFileError as exc:
             raise InterchangeError(str(exc)) from exc
-        return ManagerFile(filename=f"{stem}.txt", content=content)
+        return ManagerFile(filename=f"{stem}-round{round_number}.txt", content=content)
 
 
 def _ident(document: RoundDocument, rank: int | None) -> str:

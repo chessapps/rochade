@@ -15,7 +15,7 @@ written until an arbiter has seen what will change.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -156,6 +156,7 @@ def build_plan(
     content: str,
     manager: Manager,
     force: bool = False,
+    declared_rounds: int | None = None,
 ) -> tuple[ImportPlan, RoundDocument]:
     """Diff a file against what we hold. Pure: reads only, writes nothing."""
     existing = _load_existing(session, tournament.id, section_name)
@@ -165,6 +166,11 @@ def build_plan(
         document = manager.read_round(content, roster_of(existing.section))
     except InterchangeError as exc:
         raise ValidationFailed(f"the file could not be read: {exc}", line_no=exc.line_no) from exc
+    if document.declared_rounds is None:
+        # The file does not say how long the tournament is: the arbiter's
+        # answer wins, then what the section already knows.
+        held = existing.section.declared_rounds if existing.section else None
+        document = replace(document, declared_rounds=declared_rounds or held)
 
     if not document.players:
         raise ValidationFailed("the file contains no player rows")
@@ -358,6 +364,10 @@ class ImportRound(Command):
     filename: str = Field(default="", max_length=255)
     #: Set only after the arbiter has read a plan that reported a blocker.
     force: bool = False
+    #: How many rounds the tournament has, when the file does not say. Vega's
+    #: folder files carry no round count, and the file we hand back needs one
+    #: or Vega calls the tournament finished. Kept on the section once given.
+    declared_rounds: int | None = Field(default=None, ge=1, le=30)
 
 
 @bus.register(ImportRound)
@@ -374,6 +384,7 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
         content=command.content,
         manager=manager,
         force=command.force,
+        declared_rounds=command.declared_rounds,
     )
     if not plan.can_import:
         raise Conflict("this file cannot be imported", reasons=plan.blocked_by)
@@ -456,9 +467,24 @@ def _rebuild(
     file_round: int,
     carried: dict[tuple[str, ...], _Carried],
 ) -> None:
-    """Replace players and rounds from the file. Audit events are untouched."""
+    """Replace players and rounds from the file. Audit events are untouched.
+
+    A round the file says nothing about is kept as it is. The pairing list
+    alone -- Vega's SortedPairs.txt, Swiss-Manager's Auslosung -- describes
+    the round it pairs and no other, and the rounds before it are what Rochade
+    ran: their results live here and nowhere else until the next export.
+    Seen the hard way on 2026-09-11, when a round-2 import from the pairing
+    list emptied round 1, and the export that followed wiped it in Vega too.
+    """
+    kept = {
+        round_.number: round_
+        for round_ in section.rounds
+        if round_.number < file_round and not document.board_rows(round_.number)
+    }
     section.players.clear()
-    section.rounds.clear()
+    for round_ in list(section.rounds):
+        if round_.number not in kept:
+            section.rounds.remove(round_)
     ctx.session.flush()
 
     for rank, player in sorted(document.players.items()):
@@ -482,6 +508,8 @@ def _rebuild(
         section.standings_after_round = file_round - 1
 
     for round_no in range(1, file_round + 1):
+        if round_no in kept:
+            continue
         is_current = round_no == file_round
         round_ = Round(
             number=round_no,
@@ -543,6 +571,7 @@ class ImportRoundBody(BaseModel):
     content: str
     filename: str = ""
     force: bool = False
+    declared_rounds: int | None = None
 
 
 @router.post("/{tournament_id}/imports", response_model=ImportRoundResult, status_code=201)

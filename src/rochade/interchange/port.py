@@ -101,7 +101,13 @@ class Manager(Protocol):
         *,
         stem: str,
     ) -> ManagerFile:
-        """Write confirmed results back into something the manager will take."""
+        """Write confirmed results back into something the manager will take.
+
+        `stem` is the section's name made file-safe. The adapter chooses the
+        extension and whether the round goes in the name: a program that keeps
+        one file per round wants it, one that replaces its tournament with
+        each import wants the same name every time.
+        """
         ...
 
 

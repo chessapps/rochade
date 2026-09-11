@@ -692,6 +692,8 @@ function RoundFileSync({
   const next = sections
     .map((section) => nextAction(section))
     .find((action): action is Extract<NextAction, { kind: "import" }> => action.kind === "import");
+  // From round two the pairings alone are the round: the section names them.
+  const rosterHeld = sections.some((section) => section.players > 0);
   const onFiles = (list: FileList | null) => {
     const files = Array.from(list ?? []);
     if (files.length === 0) return;
@@ -709,7 +711,7 @@ function RoundFileSync({
     <Card className="flex flex-col gap-4 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">Round file sync</h2>
-        <Chip tone="neutral">{manager === "vega" ? "TRF16" : "Text export"} · {managerLabel}</Chip>
+        <Chip tone="neutral">{manager === "vega" ? "Tournament folder" : "Text export"} · {managerLabel}</Chip>
       </div>
       <DropZone
         compact
@@ -718,9 +720,14 @@ function RoundFileSync({
         inputLabel="round files"
         onFiles={onFiles}
         title={
-          manager === "vega" ? (
+          manager === "vega" && rosterHeld ? (
             <>
-              Drop the Vega <span className="font-mono text-accent">.trf</span> here
+              Drop Vega's <span className="font-mono text-accent">SortedPairs.txt</span> here
+            </>
+          ) : manager === "vega" ? (
+            <>
+              Drop Vega's <span className="font-mono text-accent">engine26.trf</span> and{" "}
+              <span className="font-mono text-accent">SortedPairs.txt</span> here
             </>
           ) : (
             <>
@@ -728,7 +735,12 @@ function RoundFileSync({
             </>
           )
         }
-        hint={next ? `Drag files here to prepare round ${next.round_number}` : "The preview shows what the file changes"}
+        hint={
+          next
+            ? `Drag files here to prepare round ${next.round_number}` +
+              (manager === "vega" && rosterHeld ? "; engine26.trf too only if a player was added or removed" : "")
+            : "The preview shows what the file changes"
+        }
       />
     </Card>
   );

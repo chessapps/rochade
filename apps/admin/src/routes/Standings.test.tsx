@@ -94,6 +94,47 @@ describe("Standings", () => {
   });
 });
 
+describe("Standings for a tournament on Vega", () => {
+  const vegaTournament = {
+    ...tournament,
+    manager: "vega",
+    manager_label: "Vega",
+    sections: [{ ...tournament.sections[0], manager: "vega", manager_label: "Vega" }],
+  };
+  const STANDINGS =
+    "TestOpen\r\n - , \r\n\r\nStandings at round 3\r\n\r\n" +
+    "Pos   N     NAME                      g | FRtg  NRtg  Fed |  Pts      BH\r\n" +
+    "------------------------------------------------------------------------\r\n" +
+    "  1   6     Gruber, Sarah             m | 1922     0  AUT |  2.5     5.0\r\n\r\nTie Break legend:\r\nBH : Buchholz\r\n";
+
+  it("asks for standings.txt and takes it", async () => {
+    const calls = stubApi({
+      GET: { [`/api/tournaments/${T}/standings`]: { ...standings, sections: [] }, [`/api/tournaments/${T}`]: vegaTournament },
+      POST: {
+        [`/api/tournaments/${T}/standings`]: {
+          section_name: "A", after_round: 3, players_updated: 16, unknown_start_numbers: [],
+          standings: { ...standings.sections[0], manager_label: "Vega" },
+        },
+      },
+    });
+    renderAt(`/t/${T}/standings`, "/t/:tournamentId/standings", <Standings />);
+    await screen.findByText("No standings yet");
+    expect(await screen.findByText(/standings.txt, in the tournament folder/)).toBeInTheDocument();
+
+    const input = screen.getByLabelText("standings file");
+    const wrong = new File(["Nr;Nachname;Vorname;Pkt;Wtg1;Rang\n1;Brunner;Livia;3;12;1\n"], "players.txt", { type: "text/plain" });
+    await userEvent.upload(input, wrong);
+    expect(await screen.findByText(/not Vega's standings/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Import standings" })).toBeDisabled();
+
+    await userEvent.upload(input, new File([STANDINGS], "standings.txt", { type: "text/plain" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Import standings" })).toBeEnabled());
+    await userEvent.click(screen.getByRole("button", { name: "Import standings" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "POST")).toBe(true));
+    expect(calls.find((c) => c.method === "POST")!.body).toMatchObject({ section_name: "A" });
+  });
+});
+
 describe("score", () => {
   it("writes halves the way the wall does", () => {
     expect(score(0)).toBe("0");

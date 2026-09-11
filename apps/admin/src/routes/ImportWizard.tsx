@@ -55,6 +55,7 @@ export function ImportWizard() {
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [forcing, setForcing] = useState(false);
+  const [rounds, setRounds] = useState("");
 
   const sections = tournament.data?.sections ?? [];
   const existing = sections.find((s) => s.name === section);
@@ -63,6 +64,14 @@ export function ImportWizard() {
 
   // The program was chosen when the tournament was created; nothing to ask.
   const manager = tournament.data?.manager;
+  // Vega's pairing list and cross table never say how long the tournament
+  // is, and the file we hand back needs the number or Vega calls the
+  // tournament finished. Its engine26.trf carries it; otherwise ask once and
+  // the section remembers it.
+  const asksRounds =
+    manager === "vega" && !existing?.declared_rounds && !files.some((file) => file.kind === "trf");
+  const roundsNumber = /^\d+$/.test(rounds.trim()) ? Number(rounds.trim()) : null;
+  const roundsOk = !asksRounds || (roundsNumber !== null && roundsNumber >= 1 && roundsNumber <= 30);
   useEffect(() => {
     if (!section && sections.length === 0) setSection("A");
   }, [section, sections.length]);
@@ -88,6 +97,7 @@ export function ImportWizard() {
         // Never forced: the preview must show the block that a forced commit
         // would step over, or the arbiter never reads it.
         force: false,
+        declared_rounds: asksRounds ? roundsNumber : undefined,
       },
       {
         onSuccess: (data) => {
@@ -107,6 +117,7 @@ export function ImportWizard() {
         content: joinContents(files),
         filename: primaryName(files),
         force,
+        declared_rounds: asksRounds ? roundsNumber : undefined,
       });
       toast.success(
         `Round ${data.round_number} imported: ${plural(data.boards, "board")}` +
@@ -151,6 +162,17 @@ export function ImportWizard() {
                 ))}
               </datalist>
             </Field>
+            {asksRounds && (
+              <Field label="Rounds" hint="the whole tournament" className="w-32">
+                <Input
+                  value={rounds}
+                  onChange={(event) => setRounds(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="5"
+                  aria-label="rounds in the tournament"
+                />
+              </Field>
+            )}
             <p className="flex items-center gap-2 pb-1 text-body-sm text-ink-2">
               Files from
               <Chip tone="emerald">{tournament.data?.manager_label ?? manager}</Chip>
@@ -175,7 +197,7 @@ export function ImportWizard() {
               size="lg"
               onClick={runPreview}
               busy={preview.isPending}
-              disabled={!isReady(files, rosterHeld, manager) || !section.trim() || !manager}
+              disabled={!isReady(files, rosterHeld, manager) || !section.trim() || !manager || !roundsOk}
             >
               Preview the changes
             </Button>
@@ -280,8 +302,8 @@ function DropZone({
         accept=".trf,.txt,text/plain"
         onFiles={take}
         ready={files.length > 0 && note === null}
-        title={manager === "vega" ? "Drop the exported file here" : "Drop the exported files here"}
-        hint={dropHint(manager)}
+        title={rosterHeld ? "Drop the pairings here" : "Drop the exported files here"}
+        hint={dropHint(manager, rosterHeld)}
       />
 
       {files.length > 0 && (

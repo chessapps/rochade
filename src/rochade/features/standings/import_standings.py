@@ -1,10 +1,12 @@
 """Bring the manager's standings in on their own.
 
-The round import takes them along whenever the player list is part of the
-hand-over. This is for the moments without a new round to import: after the
-last round, or when the arbiter wants the table refreshed before the next
-pairing. It reads the same player list, matches on the start number, and
-touches nothing but points, tiebreaks and ranks.
+For Swiss-Manager the round import takes them along whenever the player
+list is part of the hand-over; this is for the moments without a new round
+to import: after the last round, or when the arbiter wants the table
+refreshed before the next pairing. It reads the same player list. For Vega
+it reads ``standings.txt``, which Vega writes into the tournament folder at
+every result, tie-break names included. Either way the match is on the
+start number and nothing changes but points, tiebreaks and ranks.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from rochade.platform.mediator import Access, Command, Context
 from rochade.shared.enums import EventAction, RoundState
 from rochade.shared.models import Section
 from rochade.swiss_manager.player_file import PlayerFileError, parse_player_file
+from rochade.vega import StandingsError, looks_like_standings, parse_standings
 
 router = APIRouter(prefix="/tournaments", tags=["standings"])
 
@@ -74,31 +77,24 @@ def handle(command: ImportStandings, ctx: Context) -> ImportStandingsResult:
             section_name=section.name,
         )
 
-    players_text, _pairings = split_blocks(command.content)
-    if players_text is None:
-        raise ValidationFailed(
-            "this is not the player list; standings come with Spielerdaten "
-            "(Extras → Daten Import/Export → Spielerdaten (Text-File))"
-        )
-    try:
-        lines = parse_player_file(players_text)
-    except PlayerFileError as exc:
-        raise ValidationFailed(f"player file: {exc}", line_no=exc.line_no) from exc
-    if not any(line.rank is not None for line in lines):
-        raise ValidationFailed("the player list carries no standings (no Rang column)")
+    rows, names = _read(command.content, section.manager)
 
     held = {p.start_rank: p for p in section.players}
     updated = 0
     unknown: list[int] = []
-    for line in lines:
-        player = held.get(line.start_number)
+    for number, points, tiebreaks, rank in rows:
+        player = held.get(number)
         if player is None:
-            unknown.append(line.start_number)
+            unknown.append(number)
             continue
-        player.points = line.points
-        player.tiebreaks = list(line.tiebreaks)
-        player.rank = line.rank
+        player.points = points
+        player.tiebreaks = list(tiebreaks)
+        player.rank = rank
         updated += 1
+    if names:
+        # Vega's file says what its columns are; Swiss-Manager's only numbers
+        # them and the arbiter names them on the standings page.
+        section.tiebreak_names = list(names)
 
     # Current for the last round whose results went back to the manager.
     after = max((r.number for r in section.rounds if r.state is RoundState.EXPORTED), default=0)
@@ -121,6 +117,42 @@ def handle(command: ImportStandings, ctx: Context) -> ImportStandingsResult:
         unknown_start_numbers=sorted(unknown),
         standings=standings_of(section),
     )
+
+
+_Row = tuple[int, float | None, tuple[float | None, ...], int | None]
+
+
+def _read(content: str, manager: str) -> tuple[list[_Row], tuple[str, ...]]:
+    """Rows of (start number, points, tiebreaks, rank), and the tie-break
+    names when the file carries them."""
+    if any(looks_like_standings(line) for line in content.splitlines()):
+        try:
+            table = parse_standings(content)
+        except StandingsError as exc:
+            raise ValidationFailed(f"standings.txt: {exc}", line_no=exc.line_no) from exc
+        return (
+            [(row.number, row.points, row.tiebreaks, row.position) for row in table.rows],
+            table.tiebreak_names,
+        )
+
+    players_text, _pairings = split_blocks(content)
+    if players_text is None:
+        if manager == "vega":
+            raise ValidationFailed(
+                "this is not Vega's standings; they are standings.txt in the "
+                "tournament folder, rewritten at every result"
+            )
+        raise ValidationFailed(
+            "this is not the player list; standings come with Spielerdaten "
+            "(Extras → Daten Import/Export → Spielerdaten (Text-File))"
+        )
+    try:
+        lines = parse_player_file(players_text)
+    except PlayerFileError as exc:
+        raise ValidationFailed(f"player file: {exc}", line_no=exc.line_no) from exc
+    if not any(line.rank is not None for line in lines):
+        raise ValidationFailed("the player list carries no standings (no Rang column)")
+    return [(line.start_number, line.points, line.tiebreaks, line.rank) for line in lines], ()
 
 
 class ImportStandingsBody(BaseModel):

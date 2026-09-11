@@ -109,7 +109,7 @@ interface ProgramOption {
 
 const BLURB: Record<string, string> = {
   swiss_manager: "Two text exports per round: Spielerdaten and Spielerauslosung.",
-  vega: "One TRF16 export per round.",
+  vega: "Two files from the tournament folder per round: engine26.trf and SortedPairs.txt; the results go back as a TRF it imports.",
   gacrux:
     "Rochade pairs the rounds itself: Dutch system and FIDE tie-breaks by the Gacrux engine. No files.",
 };

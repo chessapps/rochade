@@ -138,7 +138,7 @@ def test_the_whole_flow_over_http(client: TestClient, round1_text: str) -> None:
     exported = client.post(f"/api/rounds/{round_id}/export", json={}, headers=staff(OWNER.subject))
     assert exported.status_code == 200
     body = exported.json()
-    assert body["filename"] == "A-round1.trf"
+    assert body["filename"] == "A.trf"
     assert body["boards_written"] == 4
 
     from rochade.trf import parse

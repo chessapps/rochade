@@ -232,6 +232,8 @@ export interface ImportVars {
   content: string;
   filename: string;
   force: boolean;
+  /** How many rounds the tournament has, when the files do not say (Vega's never do). */
+  declared_rounds?: number | null;
 }
 
 export function usePreviewImport() {

@@ -448,12 +448,12 @@ TanStack Query owns reads, writes, invalidation and polling; react-router serves
 
 | Milestone | Deliverable | Status |
 |---|---|---|
-| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **Swiss-Manager: done, the loop closes** (`docs/m0-swiss-manager.md`). **Vega: not run.** |
+| **M0** | **Manager round-trip spike.** Go/no-go for the whole design. Throwaway code only. Swiss-Manager first, Vega second — both must work. | **Swiss-Manager: done, the loop closes** (`docs/m0-swiss-manager.md`). **Vega: done, the loop closes** (`docs/m0-vega.md`). |
 | **M1** | Repo skeleton, `docker compose`, Alembic baseline, mediator + pipeline, CI (ruff, mypy, pytest), and `trf/` parse + serialize with passthrough fidelity. | done |
 | **M2** | Import: `preview_import` diff → `import_round` populating tournament / section / round / game. Arbiter can load a Vega file and see the boards. | done |
 | **M3** | Device tokens + QR issue/revoke, hall PWA with the 3 screens and the offline queue. **Players can enter results.** | done |
 | **M4** | Arbiter queue, dispute resolution, `release_round`, `export_round` with freeze. **Loop closes — full round-trip working.** | done, against our own files |
-| **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | **unblocked for Swiss-Manager clubs**; Vega clubs wait on the Vega leg of M0 |
+| **M5** | Pilot at a real club event, on a section that does not matter, running in parallel with paper scoresheets. | **unblocked for Swiss-Manager and Vega clubs** |
 
 Zitadel is in the stack (2026-09-08): two containers sharing the stack's Postgres, a setup step that registers the arbiter app and hands its client id to the API, and the admin app signing in with an authorization-code flow against it. Any account in the Zitadel organisation is an arbiter; per-tournament roles are unchanged. The bootstrap mode where the bearer token *is* the subject still exists behind `ROCHADE_DEV_AUTH_ENABLED`, off by default, and beside Zitadel it only takes bearers that are not JWTs — it is how the smoke and browser scripts sign in locally. `deploy/README.md` has the deployment side.
 
@@ -461,13 +461,13 @@ Zitadel is in the stack (2026-09-08): two containers sharing the stack's Postgre
 
 M1–M4 are done in the sense that the loop closes: 180 backend tests, 69 frontend tests, a smoke test that runs the whole cycle against the `docker compose` stack through the API, and `scripts/admin_flow.mjs`, which runs it again through the arbiter app in a real browser — create, import, claims arriving by polling, a dispute resolved, a result from the keyboard, release, export, the file downloaded twice, the next round imported, a QR issued and revoked, and no screen overflowing at 375 px.
 
-With Swiss-Manager it is now done in the sense that matters too: a real manager exported a round it had paired, took our results back into the same tournament, and paired the next one — twice. The Vega end is still unverified, and the admin app says so beside the manager picker.
+With Swiss-Manager it is now done in the sense that matters too: a real manager exported a round it had paired, took our results back into the same tournament, and paired the next one — twice. With Vega likewise, on 2026-09-11 (`docs/m0-vega.md`): it never exports the paired round, but it writes the two files that describe it into its tournament folder, and it takes a TRF back — as a replacement of the open tournament rather than a merge — and pairs the next round on it. Vega's surprise was the mirror of Swiss-Manager's: the import is the documented path and works; the export is the documented path and refuses.
 
 Three questions the code raised that the Swiss-Manager run has now settled:
 
 1. **Board numbers.** TRF does not carry them. They are derived in the FIDE order — higher score of the two players, then the sum, then the higher-ranked player's start rank, byes last — and that reproduced Swiss-Manager's pairing list on every board of every round observed. The hall app shows the same numbers as the printed slip.
 2. **Points on export.** Moved by the delta of what we wrote, never recomputed — and for Swiss-Manager not written at all, since its results go back in a pairing file. The recompute would have overwritten the arbiter's bye setting; Swiss-Manager's TRF import was watched inferring that setting from the points column.
-3. **`XXR` and rounds present.** Swiss-Manager writes neither `XXR` nor honours it; its round count travels as `142 N`, which the parser now reads. The highest round with pairings is the round being imported. Still to confirm against real Vega files.
+3. **`XXR` and rounds present.** Swiss-Manager writes neither `XXR` nor honours it; its round count travels as `142 N`, which the parser now reads. The highest round with pairings is the round being imported. Vega ignores `XXR` too and reads `142`; its folder files carry no round count at all, so the arbiter gives it once at the first import and the section keeps it.
 
 ---
 
@@ -477,7 +477,7 @@ Three questions the code raised that the Swiss-Manager run has now settled:
 - **Corpus** — real TRF files from several completed tournaments checked into the repo as golden fixtures, including messy ones (byes, forfeits, withdrawals, late entries).
 - **Handler tests** — each command and query exercised directly through the mediator against a testcontainers Postgres, bypassing HTTP. This is the main test tier; one file per use case makes it the natural unit.
 - **Loop test** — the full cycle in one integration test: import round 1 → claim results → dispute → resolve → release → export → assert the exported TRF parses and carries exactly the confirmed results.
-- **Differential against Vega** — the manual leg, once per milestone: take our exported TRF into real Vega, confirm it merges and pairs the next round correctly.
+- **Differential against the real programs** — the manual leg, once per milestone: take our exported file into real Swiss-Manager and real Vega, confirm it lands and the next round pairs. Both legs done once (`docs/m0-swiss-manager.md`, `docs/m0-vega.md`); the three engines paired the nine-player seed identically.
 - **End-to-end** — `scripts/admin_flow.mjs`: Playwright driving the arbiter app in the browser already on the machine against the compose stack, the whole round from create to the next import. Not in CI (it needs a browser and the stack); run before a pilot and after any change to the admin app.
 - **Offline drill** — hall PWA throttled offline: submit three results, restore the network, assert exactly three claims arrive and no duplicates.
 
@@ -485,12 +485,12 @@ Three questions the code raised that the Swiss-Manager run has now settled:
 
 ## Risks
 
-1. **The Vega leg of M0.** Swiss-Manager's loop is verified; Vega's is not, and Swiss-Manager showed that the obvious import path can be the wrong one. A Vega club cannot pilot until its spike has run.
+1. **Vega replaces rather than merges.** Its TRF import swaps the open tournament for the file, renamed after it, with tie-breaks reset; anything the arbiter changed in Vega since the last export that the file does not carry is lost. The guide says so; the file is named after the section so at least the tournament keeps one name.
 2. **Manual handoff under time pressure.** Two file operations per round, in a hall, between rounds. Mitigated by explicit round state in the UI ("round 3 ready to export", "round 4 pairings loaded"), the import diff, and freeze-on-export. Still the most likely place a real event goes wrong.
 3. **Divergence between the two systems.** An arbiter editing results in Vega after we exported. Freeze-on-export plus the import diff surfacing prior-round mismatches is the guard; it detects rather than prevents.
 4. **Anonymous claims.** Bounded by device revocation, the audit log, and the arbiter release gate. If abuse appears in practice, the escalation path is a per-board PIN printed on the pairing slip.
 5. **Churn during an open round.** Between-round churn is free — Vega handles it and we absorb a fresh state. What is *not* free: a no-show forfeit (nobody is at the board to enter it, so the arbiter must, which makes `set_result` with forfeit kinds an M4 requirement, not a nice-to-have), and a mid-round re-pair that invalidates boards we already hold claims on.
-6. **TRF16 vs TRF06 dialects** — Vega writes one and reads the other within limits. The serializer must target a named dialect, never "TRF" generically.
+6. **Vega counts bytes.** A UTF-8 name padded by character hangs its import outright; `rochade.vega.to_vega` pads by byte. Any other writer of a TRF for Vega has to do the same, which is why the serializer targets a named dialect, never "TRF" generically.
 7. **A stale results file re-pairs Swiss-Manager.** Its pairing-file import takes the pairings in the file, so results exported from a round the arbiter has since re-paired in Swiss-Manager would undo that re-pairing silently. Nothing on our side can see the manager's state; the guard is the instruction, given at the hand-off and in the guide, to re-export and re-import before sending results back after any re-pairing. Worth a stronger guard if it bites in a pilot — e.g. refusing to export a round whose import is older than a configurable age.
 
 ---

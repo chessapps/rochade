@@ -1,0 +1,24 @@
+012 TestOpen
+022 VEGA
+042 2126-02-01
+052 2126-02-01
+142 5
+092 Individual: Swiss-System
+152 W
+162  W 1.0    D 0.5    L 0.0    P 1.0
+001    1 m FM BaumannLukas                      2201 SUI           0 1990        0.0    1
+001    2 m    ChenWei                           2150 SUI           0 1995        0.0    2
+001    3 wWFM DuboisElise                       2098 FRA           0 2001        0.0    3
+001    4 m    MuellerTobias                     2044 SUI           0 1988        0.0    4
+001    5 m    FischerJonas                      1987 GER           0 2003        0.0    5
+001    6 w    GruberSarah                       1922 AUT           0 1999        0.0    6
+001    7 m    HuberMarco                        1870 SUI           0 1975        0.0    7
+001    8 w    ItenNadia                         1804 SUI           0 2007        0.0    8
+001    9 m    JenniRafael                       1755 SUI           0 2010        0.0    9
+001   10 m    KellerSimon                       1702 SUI           0 1982        0.0   10
+001   11 w    LehmannPetra                      1650 SUI           0 1978        0.0   11
+001   12 m    MoserDavid                        1598 SUI           0 2009        0.0   12
+001   13 w    NaefLaura                         1540 SUI           0 2011        0.0   13
+001   14 m    OberliFabian                      1488 SUI           0 1969        0.0   14
+001   15 w    PeterAnna                            0 SUI           0 2012        0.0   15
+001   16 m    RossiLuca                            0 ITA           0 2008        0.0   16
