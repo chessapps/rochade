@@ -15,7 +15,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from rochade.interchange import UnknownManager, available, manager_for
 from rochade.platform.bus import bus
@@ -48,6 +48,14 @@ class CreateTournament(Command):
     def tournament_scope(self, session: object) -> uuid.UUID | None:
         # Nothing to scope to yet -- the creator becomes its owner below.
         return None
+
+    @field_validator("name", "city", "federation", mode="before")
+    @classmethod
+    def _one_line(cls, value: object) -> object:
+        # These land on TRF header lines when Rochade pairs the event itself.
+        if isinstance(value, str):
+            return " ".join("".join(c for c in value if c.isprintable()).split())
+        return value
 
     def check(self) -> None:
         try:

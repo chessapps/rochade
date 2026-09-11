@@ -110,11 +110,13 @@ interface ProgramOption {
 const BLURB: Record<string, string> = {
   swiss_manager: "Two text exports per round: Spielerdaten and Spielerauslosung.",
   vega: "One TRF16 export per round.",
+  gacrux:
+    "Rochade pairs the rounds itself: Dutch system and FIDE tie-breaks by the Gacrux engine. No files.",
 };
 
 function programOptions(managers: ManagerSummary[] | undefined): ProgramOption[] {
   const known = new Map((managers ?? []).map((m) => [m.key, m]));
-  const listed = ["swiss_manager", "vega"]
+  return ["swiss_manager", "vega", "gacrux"]
     .filter((key) => known.has(key))
     .map((key) => {
       const m = known.get(key)!;
@@ -125,15 +127,6 @@ function programOptions(managers: ManagerSummary[] | undefined): ProgramOption[]
         available: true,
       };
     });
-  return [
-    ...listed,
-    {
-      key: "custom",
-      label: "Custom",
-      blurb: "Your own pairing program or a spreadsheet, through a format you define.",
-      available: false,
-    },
-  ];
 }
 
 function CreateTournamentDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -258,8 +251,9 @@ function CreateTournamentDialog({ open, onClose }: { open: boolean; onClose: () 
             </Field>
           </div>
           <p className="text-body-sm text-ink-2">
-            Only the name matters here. Players, pairings and rounds come from {chosen?.label},
-            one export per round.
+            {chosen?.key === "gacrux"
+              ? "Next: open a section, enter the players, and pair round 1 from the desk."
+              : `Only the name matters here. Players, pairings and rounds come from ${chosen?.label}, one export per round.`}
           </p>
           {create.isError && <Banner tone="error">{errorMessage(create.error)}</Banner>}
         </form>

@@ -33,6 +33,7 @@ function round(state: RoundDetail["state"] = "open"): RoundDetail {
     state,
     section_id: "s1",
     section_name: "A",
+    native: false,
     source_filename: "FIDE_Export.TXT",
     imported_at: "2026-09-02T11:00:00Z",
     released_at: null,
@@ -57,12 +58,14 @@ function tournament(state: RoundDetail["state"] = "open", counts = { empty: 1, c
     end_date: null,
     manager: "swiss_manager",
     manager_label: "Swiss-Manager",
+    native: false,
     sections: [
       {
         id: "s1",
         name: "A",
         manager: "swiss_manager",
         manager_label: "Swiss-Manager",
+        native: false,
         players: 9,
         declared_rounds: 5,
         rounds: [
@@ -262,6 +265,7 @@ describe("RoundBoard", () => {
           content: "x",
           manager: "swiss_manager",
           manager_label: "Swiss-Manager",
+    native: false,
           file_format: "pairing file",
           next_step: "Extras → Daten Import/Export",
           boards_written: 4,
@@ -278,5 +282,88 @@ describe("RoundBoard", () => {
     expect(screen.queryByRole("group", { name: "set result" })).toBeNull();
     expect(screen.getByRole("link", { name: "Import round 4" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Release/ })).toBeNull();
+  });
+});
+
+describe("RoundBoard for a round Rochade paired itself", () => {
+  function mountNative(
+    state: RoundDetail["state"],
+    boards: BoardDetail[],
+    counts = { empty: 0, claimed: 0, disputed: 0, confirmed: 4 },
+  ) {
+    const detail = { ...round(state), native: true, source_filename: "gacrux", boards };
+    const summary = tournament(state, counts);
+    summary.native = true;
+    summary.manager = "gacrux";
+    summary.manager_label = "Rochade (Gacrux engine)";
+    summary.sections[0]!.native = true;
+    summary.sections[0]!.manager = "gacrux";
+    summary.sections[0]!.manager_label = "Rochade (Gacrux engine)";
+    const calls = stubApi({
+      GET: {
+        [`/api/rounds/${R}/events`]: [],
+        [`/api/rounds/${R}`]: detail,
+        [`/api/tournaments/${T}`]: summary,
+        "/api/sections/s1/players": {
+          section_id: "s1", section_name: "A", editable: true, seeded: true, rounds_held: 3, players: [],
+        },
+      },
+      POST: {
+        "/api/sections/s1/pairings/preview": {
+          section_id: "s1", section_name: "A", round_number: 4, declared_rounds: 5, seeds: false, players_in: 9,
+          boards: [], byes: [], withdrawn: [], warnings: [], blocked_by: [],
+        },
+      },
+      PUT: {
+        "/api/games/": (_path: string, init?: { body?: { white_result: string; black_result: string } }) => ({
+          game_id: "g2", state: "confirmed", white_result: init?.body?.white_result, black_result: init?.body?.black_result,
+        }),
+      },
+      DELETE: { [`/api/rounds/${R}`]: { section_id: "s1", round_number: 3, previous_round_reopened: 2 } },
+    });
+    renderAt(`/t/${T}/rounds/${R}`, "/t/:tournamentId/rounds/:roundId", <RoundBoard />);
+    return calls;
+  }
+
+  it("offers to unpair an untouched round", async () => {
+    const user = userEvent.setup();
+    const untouched = [
+      board(1),
+      board(2),
+      board(5, { is_bye: true, black_rank: null, black_name: null, white_result: "U", state: "confirmed" }),
+    ];
+    const calls = mountNative("open", untouched, { empty: 2, claimed: 0, disputed: 0, confirmed: 0 });
+    await user.click(await screen.findByRole("button", { name: "Unpair…" }));
+    const dialog = screen.getByRole("dialog", { name: "Unpair round 3?" });
+    await user.click(within(dialog).getByRole("button", { name: "Unpair" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "DELETE")).toBe(true));
+  });
+
+  it("hides the unpair once a board has a result", async () => {
+    mountNative(
+      "open",
+      [board(1, { state: "claimed", white_result: "1", black_result: "0" }), board(2)],
+      { empty: 1, claimed: 1, disputed: 0, confirmed: 0 },
+    );
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByRole("button", { name: "Unpair…" })).not.toBeInTheDocument();
+  });
+
+  it("a released round offers the next pairing instead of an export, once every board is in", async () => {
+    mountNative(
+      "confirmed",
+      [board(1, { state: "confirmed", white_result: "1", black_result: "0" }), board(2)],
+      { empty: 1, claimed: 0, disputed: 0, confirmed: 1 },
+    );
+    const pairButton = await screen.findByRole("button", { name: /Pair round 4/ });
+    expect(pairButton).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Export for/ })).not.toBeInTheDocument();
+  });
+
+  it("a closed round says the next one stands on it and offers no hand-off", async () => {
+    mountNative("exported", [board(1, { state: "confirmed", white_result: "1", black_result: "0" })]);
+    expect(await screen.findByText(/round 4 was paired on these results/)).toBeInTheDocument();
+    expect(screen.queryByText(/Download the file/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Release/ })).not.toBeInTheDocument();
   });
 });

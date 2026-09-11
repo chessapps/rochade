@@ -9,11 +9,12 @@ from typing import Final
 
 
 class RoundState(StrEnum):
-    """Where a round sits in the Vega round-trip.
+    """Where a round sits in its life.
 
-    OPEN     pairings imported, players may claim results
-    CONFIRMED the arbiter has released it; results are final
-    EXPORTED  written back to Vega and frozen -- read-only from here on
+    OPEN      paired (imported from the manager, or by our own engine); players may claim
+    CONFIRMED the arbiter has released it; results are final, standings stand on them
+    EXPORTED  closed: written back to the manager, or the next round has been paired
+              on it -- read-only from here on
     """
 
     OPEN = "open"
@@ -91,6 +92,15 @@ class EventAction(StrEnum):
     DEVICE_REVOKED = "device_revoked"
     DEVICE_REMOVED = "device_removed"
     STANDINGS_IMPORTED = "standings_imported"
+    # A section Rochade pairs itself.
+    SECTION_CREATED = "section_created"
+    PLAYER_ADDED = "player_added"
+    PLAYER_UPDATED = "player_updated"
+    PLAYER_WITHDRAWN = "player_withdrawn"
+    PLAYER_REINSTATED = "player_reinstated"
+    ROUND_PAIRED = "round_paired"
+    ROUND_UNPAIRED = "round_unpaired"
+    STANDINGS_COMPUTED = "standings_computed"
 
 
 #: (white, black) TRF codes for each player-enterable outcome. The pair form is

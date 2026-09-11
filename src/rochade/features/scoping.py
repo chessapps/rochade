@@ -12,7 +12,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from rochade.shared.models import Device, Game, Round, Section
+from rochade.shared.models import Device, Game, Round, Section, SectionPlayer
 
 
 def tournament_of_game(session: Session, game_id: uuid.UUID) -> uuid.UUID | None:
@@ -38,3 +38,11 @@ def tournament_of_section(session: Session, section_id: uuid.UUID) -> uuid.UUID 
 
 def tournament_of_device(session: Session, device_id: uuid.UUID) -> uuid.UUID | None:
     return session.scalar(select(Device.tournament_id).where(Device.id == device_id))
+
+
+def tournament_of_player(session: Session, player_id: uuid.UUID) -> uuid.UUID | None:
+    return session.scalar(
+        select(Section.tournament_id)
+        .join(SectionPlayer, SectionPlayer.section_id == Section.id)
+        .where(SectionPlayer.id == player_id)
+    )

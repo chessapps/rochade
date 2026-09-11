@@ -120,7 +120,11 @@ export type NextAction =
   | { kind: "import"; round_number: number }
   | { kind: "fix"; round: RoundSummary }
   | { kind: "release"; round: RoundSummary }
-  | { kind: "export"; round: RoundSummary };
+  | { kind: "export"; round: RoundSummary }
+  // A section Rochade pairs itself: no files, a pairing instead.
+  | { kind: "players" }
+  | { kind: "pair"; round_number: number; round: RoundSummary | null }
+  | { kind: "finished"; round: RoundSummary };
 
 /**
  * The one thing to do next for a section. Computed, never chosen: the arbiter
@@ -128,6 +132,7 @@ export type NextAction =
  */
 export function nextAction(section: SectionSummary): NextAction {
   const round = currentRound(section);
+  if (section.native) return nativeAction(section, round);
   if (round === null) return { kind: "import", round_number: 1 };
   switch (round.state) {
     case "open":
@@ -137,6 +142,36 @@ export function nextAction(section: SectionSummary): NextAction {
     case "exported":
       return { kind: "import", round_number: round.number + 1 };
   }
+}
+
+/**
+ * The native loop: enter players, pair, entry, release, pair the next one.
+ * A released round with every board confirmed is what the next pairing
+ * stands on; a forced release leaves boards to fix first.
+ */
+function nativeAction(section: SectionSummary, round: RoundSummary | null): NextAction {
+  if (round === null) {
+    return section.players < 2 ? { kind: "players" } : { kind: "pair", round_number: 1, round };
+  }
+  switch (round.state) {
+    case "open":
+      return readyToRelease(round) ? { kind: "release", round } : { kind: "fix", round };
+    case "confirmed":
+    case "exported": {
+      if (!readyToRelease(round)) return { kind: "fix", round };
+      const last = section.declared_rounds !== null && round.number >= section.declared_rounds;
+      return last
+        ? { kind: "finished", round }
+        : { kind: "pair", round_number: round.number + 1, round };
+    }
+  }
+}
+
+/** The stepper's labels: a manager's round is imported and exported, ours is paired and closed. */
+export function stepLabels(native: boolean): readonly [string, string, string, string] {
+  return native
+    ? ["Paired", "Entry open", "Released", "Closed"]
+    : ["Imported", "Entry open", "Released", "Exported"];
 }
 
 /** The stepper's position for a round, 0..3: import → entry → released → exported. */

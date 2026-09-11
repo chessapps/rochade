@@ -27,6 +27,7 @@ const exported = {
   content: "Runde;Brett",
   manager: "swiss_manager",
   manager_label: "Swiss-Manager",
+    native: false,
   file_format: "pairing file",
   next_step: "Extras → Daten Import/Export",
   boards_written: 4,

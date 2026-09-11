@@ -56,6 +56,16 @@ def resolve_manager(key: str) -> Manager:
         raise ValidationFailed(str(exc), manager=key) from exc
 
 
+def require_file_driven(manager: Manager) -> Manager:
+    """The file use cases have nothing to do for a tournament Rochade pairs itself."""
+    if manager.capabilities.native:
+        raise Conflict(
+            "this tournament is paired in Rochade; there is no file to import or export",
+            manager=manager.key,
+        )
+    return manager
+
+
 # --- the plan ---------------------------------------------------------------
 
 
@@ -356,7 +366,7 @@ def handle(command: ImportRound, ctx: Context) -> ImportRoundResult:
     if tournament is None:
         raise NotFound("tournament not found", tournament_id=str(command.tournament_id))
 
-    manager = resolve_manager(tournament.manager)
+    manager = require_file_driven(resolve_manager(tournament.manager))
     plan, document = build_plan(
         ctx.session,
         tournament=tournament,

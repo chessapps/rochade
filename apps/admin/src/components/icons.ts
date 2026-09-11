@@ -20,6 +20,7 @@ export {
   MapPin,
   Monitor,
   Moon,
+  Plus,
   Printer,
   QrCode,
   RefreshCw,

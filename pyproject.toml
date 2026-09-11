@@ -14,6 +14,8 @@ dependencies = [
     "python-jose[cryptography]>=3.3",
     "python-multipart>=0.0.17",
     "httpx>=0.28",
+    # The vendored pairing engine (src/rochade/gacrux/vendor) needs it.
+    "networkx>=2.6",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +39,8 @@ packages = ["src/rochade"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+# Upstream code, kept verbatim so it stays diffable against its origin.
+extend-exclude = ["src/rochade/gacrux/vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
@@ -45,11 +49,12 @@ ignore = ["B008"]
 [tool.mypy]
 python_version = "3.12"
 files = ["src/rochade"]
+exclude = ["src/rochade/gacrux/vendor/"]
 strict = true
 plugins = []
 
 [[tool.mypy.overrides]]
-module = ["jose.*", "testcontainers.*"]
+module = ["jose.*", "testcontainers.*", "rochade.gacrux.vendor.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

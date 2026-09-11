@@ -100,6 +100,11 @@ def render(round_: Round, *, force: bool) -> Rendered:
         manager = manager_for(round_.section.manager)
     except UnknownManager as exc:  # pragma: no cover - written by import
         raise ValidationFailed(str(exc), manager=round_.section.manager) from exc
+    if manager.capabilities.native:
+        raise Conflict(
+            "this section is paired in Rochade; there is no file to export",
+            round_number=round_.number,
+        )
 
     # The source may be the pairings alone, named from the roster we hold; the
     # roster is the one that import saw, since the next round cannot come in

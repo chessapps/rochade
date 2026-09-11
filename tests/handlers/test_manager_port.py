@@ -129,9 +129,15 @@ def simple_manager() -> Iterator[SimpleManager]:
 
 def test_an_adapter_can_be_registered_and_listed(send: Send, simple_manager: SimpleManager) -> None:
     listed = {m.key: m for m in send(ListManagers())}
-    assert set(listed) == {"vega", "swiss_manager", "simple"}
+    assert set(listed) == {"vega", "swiss_manager", "gacrux", "simple"}
     assert listed["simple"].writes_format == "simple-lines"
     assert listed["simple"].verified is True
+    assert listed["simple"].native is False
+    # Rochade's own program: nothing to import or export, so it is "verified"
+    # in the only sense that matters -- there is no other program to check.
+    assert listed["gacrux"].native is True
+    assert listed["gacrux"].verified is True
+    assert listed["gacrux"].writes_format == ""
     # Vega's flags are honest about never having been checked against the real
     # program -- that is what M0 is for. Swiss-Manager's were.
     assert listed["vega"].verified is False

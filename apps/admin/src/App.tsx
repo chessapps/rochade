@@ -17,6 +17,8 @@ import { Shell } from "./components/Shell";
 import { Button, Input } from "./components/ui";
 import { Devices } from "./routes/Devices";
 import { ImportWizard } from "./routes/ImportWizard";
+import { NewSection } from "./routes/NewSection";
+import { Players } from "./routes/Players";
 import { Poster } from "./routes/Poster";
 import { RoundBoard } from "./routes/RoundBoard";
 import { Standings } from "./routes/Standings";
@@ -115,6 +117,8 @@ export function App() {
         <Route index element={<TournamentList />} />
         <Route path="/t/:tournamentId" element={<TournamentHome />} />
         <Route path="/t/:tournamentId/import" element={<ImportWizard />} />
+        <Route path="/t/:tournamentId/players" element={<Players />} />
+        <Route path="/t/:tournamentId/sections/new" element={<NewSection />} />
         <Route path="/t/:tournamentId/rounds/:roundId" element={<RoundBoard />} />
         <Route path="/t/:tournamentId/standings" element={<Standings />} />
         <Route path="/t/:tournamentId/devices" element={<Devices />} />

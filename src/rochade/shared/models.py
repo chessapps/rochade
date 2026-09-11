@@ -116,8 +116,14 @@ class Section(Base):
     #: The round the players' points, tiebreaks and ranks are current for;
     #: None until a manager export carrying standings has been imported.
     standings_after_round: Mapped[int | None] = mapped_column(Integer(), default=None)
-    #: What the manager's unnamed tiebreak columns are, typed in by the arbiter.
+    #: What the tiebreak columns are. For a manager's file: typed in by the
+    #: arbiter, since the export numbers them and says nothing else. For a
+    #: section Rochade pairs itself: the engine's own tie-break codes, in
+    #: order, `PTS` first -- exactly what is handed to it at every release.
     tiebreak_names: Mapped[list[str]] = mapped_column(Json, default=list)
+    #: "white" or "black" on board one of round 1, for a section Rochade pairs
+    #: itself. None lets the engine draw lots. Unused for a manager's section.
+    top_board_colour: Mapped[str | None] = mapped_column(String(8), default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     tournament: Mapped[Tournament] = relationship(back_populates="sections")
@@ -150,7 +156,16 @@ class SectionPlayer(Base):
     rating: Mapped[int | None] = mapped_column(Integer(), default=None)
     federation: Mapped[str] = mapped_column(String(8), default="")
     fide_id: Mapped[str] = mapped_column(String(16), default="")
-    #: The manager's standings for this player, as last imported. Display only.
+    #: TRF's own spellings: one letter, and a date as `YYYY/MM/DD` text. Only
+    #: a section Rochade pairs itself fills them; a manager's export does not
+    #: travel through these columns.
+    sex: Mapped[str] = mapped_column(String(1), default="", server_default="")
+    birth_date: Mapped[str] = mapped_column(String(10), default="", server_default="")
+    #: Set when the player leaves: they are not paired from this round on and
+    #: their later rounds are absences. None while they are in the event.
+    withdrawn_from_round: Mapped[int | None] = mapped_column(Integer(), default=None)
+    #: The standings for this player: the manager's, as last imported, or
+    #: ours, as last computed at a release. Display only either way.
     points: Mapped[float | None] = mapped_column(Float(), default=None)
     tiebreaks: Mapped[list[float | None]] = mapped_column(Json, default=list)
     rank: Mapped[int | None] = mapped_column(Integer(), default=None)

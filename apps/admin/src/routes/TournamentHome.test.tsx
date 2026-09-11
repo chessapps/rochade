@@ -35,12 +35,14 @@ function tournament(): TournamentDetail {
     end_date: "2026-09-04",
     manager: "swiss_manager",
     manager_label: "Swiss-Manager",
+    native: false,
     sections: [
       {
         id: "sA",
         name: "A",
         manager: "swiss_manager",
         manager_label: "Swiss-Manager",
+    native: false,
         players: 9,
         declared_rounds: 5,
         rounds: [
@@ -53,6 +55,7 @@ function tournament(): TournamentDetail {
         name: "B",
         manager: "swiss_manager",
         manager_label: "Swiss-Manager",
+    native: false,
         players: 6,
         declared_rounds: 5,
         rounds: [round("r2", 2, { state: "exported", boards: 3, confirmed: 3, exported_at: "2026-09-02T12:00:00Z" })],
@@ -96,7 +99,8 @@ function mount(role: "owner" | "arbiter" = "owner") {
       "/api/rounds/r2/events": [],
       // Last: a bare prefix would otherwise answer every tournament route.
       "/api/tournaments": [
-        { id: T, name: "Test Open", city: "Zürich", federation: "SUI", start_date: null, end_date: null, manager: "swiss_manager", manager_label: "Swiss-Manager", role },
+        { id: T, name: "Test Open", city: "Zürich", federation: "SUI", start_date: null, end_date: null, manager: "swiss_manager", manager_label: "Swiss-Manager",
+    native: false, role },
       ],
     },
   });
@@ -182,5 +186,74 @@ describe("TournamentHome", () => {
     await screen.findByRole("heading", { level: 1, name: "Test Open" });
     await screen.findByText("Phones admitted");
     expect(screen.queryByRole("button", { name: /Delete…/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("TournamentHome for a tournament Rochade pairs itself", () => {
+  function native(rounds: RoundSummary[], players = 9): TournamentDetail {
+    const base = tournament();
+    return {
+      ...base,
+      manager: "gacrux",
+      manager_label: "Rochade (Gacrux engine)",
+      native: true,
+      sections: [
+        { ...base.sections[0]!, manager: "gacrux", manager_label: "Rochade (Gacrux engine)", native: true, players, rounds },
+      ],
+    };
+  }
+
+  function mountNative(detail: TournamentDetail) {
+    const calls = stubApi({
+      GET: {
+        [`/api/tournaments/${T}/devices`]: [],
+        [`/api/tournaments/${T}`]: detail,
+        "/api/rounds/": [],
+        "/api/tournaments": [
+          { id: T, name: "Test Open", city: "", federation: "", start_date: null, end_date: null, manager: "gacrux", manager_label: "Rochade (Gacrux engine)", native: true, role: "owner" },
+        ],
+      },
+      POST: {
+        "/api/sections/sA/pairings/preview": {
+          section_id: "sA", section_name: "A", round_number: 1, declared_rounds: 5, seeds: true, players_in: 9,
+          boards: [{ board: 1, white_rank: 1, white_name: "Baumann, Lukas", black_rank: 5, black_name: "Fischer, Jonas" }],
+          byes: [], withdrawn: [], warnings: [], blocked_by: [],
+        },
+      },
+    });
+    renderAt(`/t/${T}`, "/t/:tournamentId", <TournamentHome />);
+    return calls;
+  }
+
+  it("offers players and a new section instead of an import, and pairs from the card", async () => {
+    const user = userEvent.setup();
+    mountNative(native([]));
+    await screen.findByRole("heading", { level: 1, name: "Test Open" });
+    expect(screen.queryByRole("link", { name: /Import a round/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /New section/ })).toHaveAttribute("href", `/t/${T}/sections/new`);
+    expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("href", `/t/${T}/players`);
+    expect(screen.queryByText("Round file sync")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Pair round 1/ }));
+    const dialog = await screen.findByRole("dialog", { name: /Pair round 1 of section A/ });
+    expect(await within(dialog).findByText("Baumann, Lukas")).toBeInTheDocument();
+  });
+
+  it("asks for players first when the section is empty", async () => {
+    mountNative(native([], 0));
+    await screen.findByRole("heading", { level: 1, name: "Test Open" });
+    expect(screen.getByRole("button", { name: /Enter players/ })).toBeInTheDocument();
+  });
+
+  it("names the steps paired and closed, and pairs the next round on a released one", async () => {
+    mountNative(native([round("r1", 1, { state: "exported", exported_at: "2026-09-02T18:40:00Z" }), round("r2", 2, { state: "confirmed" })]));
+    await screen.findByRole("heading", { level: 1, name: "Test Open" });
+    const stepper = screen.getByRole("list", { name: "round 2 progress" });
+    expect(within(stepper).getByText(/1\. Paired/)).toBeInTheDocument();
+    expect(within(stepper).getByText(/4\. Closed/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pair round 3/ })).toBeInTheDocument();
+    const earlier = screen.getByText(/Earlier rounds/).closest("details")!;
+    expect(within(earlier).getByText(/Closed/)).toBeInTheDocument();
+    expect(within(earlier).queryByRole("button", { name: /Download/ })).not.toBeInTheDocument();
   });
 });

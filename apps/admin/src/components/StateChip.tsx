@@ -8,7 +8,7 @@
 import type { ReactNode } from "react";
 
 import type { ResultState, RoundState } from "../api";
-import { ROUND_STATE_LABEL } from "../format";
+import { roundStateLabel } from "../format";
 import { Check, TriangleAlert } from "./icons";
 import { cx } from "./ui";
 
@@ -90,10 +90,13 @@ const ROUND: Record<RoundState, { tone: "blue" | "amber" | "neutral"; dot: strin
 /** Where a round is: cobalt while open for entry, amber once released, slate when frozen. */
 export function RoundChip({
   state,
+  native = false,
   className,
   children,
 }: {
   state: RoundState;
+  /** A section Rochade pairs itself: "closed", never "exported". */
+  native?: boolean;
   className?: string;
   /** Anything to say after the state, e.g. how often it polls. */
   children?: ReactNode;
@@ -102,7 +105,7 @@ export function RoundChip({
   return (
     <Chip tone={spec.tone} className={className}>
       <Dot className={spec.dot} />
-      {ROUND_STATE_LABEL[state]}
+      {roundStateLabel(state, native)}
       {children}
     </Chip>
   );

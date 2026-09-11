@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from rochade.interchange import label_of
+from rochade.interchange import label_of, native_of
 from rochade.platform.bus import bus
 from rochade.platform.http import get_context
 from rochade.platform.mediator import Access, Context, Query
@@ -28,6 +28,7 @@ class TournamentSummary(BaseModel):
     #: The pairing program the tournament runs on, key and display name.
     manager: str
     manager_label: str
+    native: bool
     role: Role
 
 
@@ -53,7 +54,11 @@ def handle(query: ListTournaments, ctx: Context) -> list[TournamentSummary]:
     ).all()
     return [
         TournamentSummary.model_validate(
-            {**row._mapping, "manager_label": label_of(row._mapping["manager"])}
+            {
+                **row._mapping,
+                "manager_label": label_of(row._mapping["manager"]),
+                "native": native_of(row._mapping["manager"]),
+            }
         )
         for row in rows
     ]

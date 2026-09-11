@@ -39,15 +39,18 @@ def lock_round_of_game(ctx: Context, game_id: uuid.UUID) -> tuple[Round, Game]:
 def require_open(round_: Round, *, arbiter: bool = False) -> None:
     """Results may only move while the round is open.
 
-    Once exported the round is frozen: between rounds the manager owns the
-    state, and letting both systems edit it is exactly the divergence the
-    freeze prevents. Release closes the round to the phones only: the arbiter
+    Once closed the round is frozen. For a manager's section that is the
+    export: between rounds the manager owns the state, and letting both
+    systems edit it is exactly the divergence the freeze prevents. For a
+    section Rochade pairs itself it is the next pairing, which stands on
+    these results. Release closes the round to the phones only: the arbiter
     keeps the boards a forced release left open, and can still correct one
-    from the scoresheet, until the export.
+    from the scoresheet, until then.
     """
     if round_.state is RoundState.EXPORTED:
         raise RoundFrozen(
-            "this round has been exported to the manager and is read-only",
+            "this round has been closed (exported, or the next round paired on it) "
+            "and is read-only",
             round_number=round_.number,
         )
     if round_.state is not RoundState.OPEN and not arbiter:

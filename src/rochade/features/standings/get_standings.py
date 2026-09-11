@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from rochade.interchange import UnknownManager, manager_for
+from rochade.interchange import UnknownManager, manager_for, native_of
 from rochade.platform.bus import bus
 from rochade.platform.errors import NotFound
 from rochade.platform.http import get_context
@@ -109,6 +109,11 @@ def standings_of(section: Section) -> SectionStandings:
         for p in sorted(ranked, key=lambda p: (p.rank or 0, p.start_rank))
     ]
     columns = max((len(r.tiebreaks) for r in rows), default=0)
+    # A section Rochade pairs itself stores the engine spec, `PTS` first; the
+    # points have their own column, so the tie-break headings start after it.
+    names = list(section.tiebreak_names or [])
+    if native_of(section.manager) and names[:1] == ["PTS"]:
+        names = names[1:]
     after = section.standings_after_round or 0
     exported = max((r.number for r in section.rounds if r.state is RoundState.EXPORTED), default=0)
     return SectionStandings(
@@ -118,7 +123,7 @@ def standings_of(section: Section) -> SectionStandings:
         after_round=after,
         rounds_held=max((r.number for r in section.rounds), default=0),
         stale=exported > after,
-        tiebreak_names=list(section.tiebreak_names or []),
+        tiebreak_names=names,
         tiebreak_columns=columns,
         rows=rows,
     )

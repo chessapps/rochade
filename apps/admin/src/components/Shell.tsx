@@ -55,6 +55,7 @@ export function Shell({
                 <Tab to={`/t/${tournamentId}`} end>
                   Rounds
                 </Tab>
+                <Tab to={`/t/${tournamentId}/players`}>Players</Tab>
                 <Tab to={`/t/${tournamentId}/standings`}>Standings</Tab>
                 <Tab to={`/t/${tournamentId}/devices`}>Devices</Tab>
               </nav>

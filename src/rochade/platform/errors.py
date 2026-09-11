@@ -50,8 +50,15 @@ class ValidationFailed(DomainError):
     code = "validation_failed"
 
 
+class Unavailable(DomainError):
+    """Something on our side did not answer: the pairing engine, for instance."""
+
+    status_code = 503
+    code = "unavailable"
+
+
 class RoundFrozen(Conflict):
-    """The round has been exported to Vega; from here on Vega owns it."""
+    """The round is closed: exported to the manager, or the next round was paired on it."""
 
     code = "round_frozen"
 

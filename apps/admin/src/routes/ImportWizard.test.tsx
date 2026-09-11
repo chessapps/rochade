@@ -16,6 +16,7 @@ const managers: ManagerSummary[] = [
     exports_unplayed_round: "unverified",
     merges_on_import: "unverified",
     verified: false,
+    native: false,
     result_codes_out: [],
     export_howto: "",
     import_howto: "",
@@ -29,6 +30,7 @@ const managers: ManagerSummary[] = [
     exports_unplayed_round: "yes",
     merges_on_import: "yes",
     verified: true,
+    native: false,
     result_codes_out: [],
     export_howto: "Extras → FIDE-Daten-Export TRF16",
     import_howto: "",
@@ -45,6 +47,7 @@ const tournament: TournamentDetail = {
   end_date: null,
   manager: "swiss_manager",
   manager_label: "Swiss-Manager",
+    native: false,
   sections: [],
 };
 

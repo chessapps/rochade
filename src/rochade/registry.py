@@ -22,6 +22,13 @@ from rochade.features.devices import (
 from rochade.features.games import claim_result, resolve_dispute, set_result
 from rochade.features.imports import import_round, preview_import
 from rochade.features.managers import list_managers
+from rochade.features.pairing import (
+    compute_standings,
+    pair_round,
+    preview_pairing,
+    unpair_round,
+)
+from rochade.features.players import add_player, list_players, update_player, withdraw_player
 from rochade.features.queue import get_arbiter_queue
 from rochade.features.rounds import (
     confirm_boards,
@@ -30,6 +37,7 @@ from rochade.features.rounds import (
     get_round_events,
     release_round,
 )
+from rochade.features.sections import create_section
 from rochade.features.standings import get_standings, import_standings, name_tiebreaks
 from rochade.features.tournaments import (
     add_member,
@@ -54,6 +62,8 @@ MODULES = (
     # /api/tournaments/{id}/imports
     preview_import,
     import_round,
+    # /api/tournaments/{id}/sections -- a section Rochade pairs itself
+    create_section,
     # /api/tournaments/{id}/boards
     get_board_list,
     # /api/tournaments/{id}/queue
@@ -69,12 +79,22 @@ MODULES = (
     name_tiebreaks,
     join_code,
     join_device,
+    # /api/sections/{id}/players, /api/players/{id}
+    list_players,
+    add_player,
+    update_player,
+    withdraw_player,
+    # /api/sections/{id}/pairings, /api/sections/{id}/standings
+    preview_pairing,
+    pair_round,
+    compute_standings,
     # /api/rounds/{id}
     get_round,
     get_round_events,
     confirm_boards,
     release_round,
     export_round,
+    unpair_round,
     # /api/games/{id}
     claim_result,
     set_result,

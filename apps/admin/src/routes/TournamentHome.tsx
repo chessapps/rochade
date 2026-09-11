@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Download,
   MapPin,
+  Plus,
   QrCode,
   RefreshCw,
   Trash2,
@@ -30,6 +31,7 @@ import {
   Users,
 } from "../components/icons";
 import { Metric } from "../components/Metric";
+import { PairDialog } from "../components/PairDialog";
 import { ProgressBar } from "../components/ProgressBar";
 import { download, ExportDialog, ReleaseDialog } from "../components/RoundDialogs";
 import { RoundStepper } from "../components/RoundStepper";
@@ -134,9 +136,18 @@ export function TournamentHome() {
           <Button size="sm" to={`/t/${tournamentId}/devices`} icon={<QrCode />}>
             Hall QR posters
           </Button>
-          <Button size="sm" tone="dark" to={`/t/${tournamentId}/import`} icon={<Upload />}>
-            Import a round…
+          <Button size="sm" to={`/t/${tournamentId}/players`} icon={<Users />}>
+            Players
           </Button>
+          {detail.native ? (
+            <Button size="sm" tone="dark" to={`/t/${tournamentId}/sections/new`} icon={<Plus />}>
+              New section…
+            </Button>
+          ) : (
+            <Button size="sm" tone="dark" to={`/t/${tournamentId}/import`} icon={<Upload />}>
+              Import a round…
+            </Button>
+          )}
           {owner && (
             <Button
               size="sm"
@@ -231,17 +242,31 @@ export function TournamentHome() {
       )}
 
       {sections.length === 0 ? (
-        <EmptyState
-          title="No sections yet"
-          action={
-            <Button tone="primary" to={`/t/${tournamentId}/import`} icon={<Upload />}>
-              Import the paired round
-            </Button>
-          }
-        >
-          Pair round 1 in your tournament manager, export it, and import the file here. Each
-          file becomes a section; a tournament can hold several.
-        </EmptyState>
+        detail.native ? (
+          <EmptyState
+            title="No sections yet"
+            action={
+              <Button tone="primary" to={`/t/${tournamentId}/sections/new`} icon={<Plus />}>
+                Open the first section
+              </Button>
+            }
+          >
+            A section is one field paired on its own: an Open, a U12, a B group. Open one, enter
+            its players, and pair round 1 from here.
+          </EmptyState>
+        ) : (
+          <EmptyState
+            title="No sections yet"
+            action={
+              <Button tone="primary" to={`/t/${tournamentId}/import`} icon={<Upload />}>
+                Import the paired round
+              </Button>
+            }
+          >
+            Pair round 1 in your tournament manager, export it, and import the file here. Each
+            file becomes a section; a tournament can hold several.
+          </EmptyState>
+        )
       ) : (
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
           <div className="flex flex-col gap-6 lg:col-span-8">
@@ -267,12 +292,14 @@ export function TournamentHome() {
               tournamentId={tournamentId}
               now={now}
             />
-            <RoundFileSync
-              tournamentId={tournamentId}
-              sections={sections}
-              manager={detail.manager}
-              managerLabel={detail.manager_label}
-            />
+            {!detail.native && (
+              <RoundFileSync
+                tournamentId={tournamentId}
+                sections={sections}
+                manager={detail.manager}
+                managerLabel={detail.manager_label}
+              />
+            )}
           </div>
         </div>
       )}
@@ -294,9 +321,10 @@ function SectionCard({
   now: number;
 }) {
   const navigate = useNavigate();
-  const [dialog, setDialog] = useState<"release" | "export" | null>(null);
+  const [dialog, setDialog] = useState<"release" | "export" | "pair" | null>(null);
   const round = currentRound(section);
   const action = nextAction(section);
+  const native = section.native;
   const past = (section.rounds ?? [])
     .filter((r) => r.id !== round?.id)
     .sort((a, b) => b.number - a.number);
@@ -312,6 +340,12 @@ function SectionCard({
         return setDialog("release");
       case "export":
         return setDialog("export");
+      case "players":
+        return navigate(`/t/${tournamentId}/players?section=${encodeURIComponent(section.id)}`);
+      case "pair":
+        return setDialog("pair");
+      case "finished":
+        return navigate(`/t/${tournamentId}/standings`);
     }
   };
 
@@ -345,7 +379,7 @@ function SectionCard({
             <Link to={roundUrl} className="font-mono text-sm font-semibold hover:underline">
               Round {round.number}
             </Link>
-            <RoundChip state={round.state} />
+            <RoundChip state={round.state} native={native} />
           </div>
         )}
       </header>
@@ -373,7 +407,7 @@ function SectionCard({
       <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         {round && counts ? (
           <>
-            <RoundStepper round={round} />
+            <RoundStepper round={round} native={native} />
             <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="flex flex-wrap items-baseline gap-2">
@@ -385,7 +419,9 @@ function SectionCard({
                 </p>
                 <p className="text-body-sm text-ink-2">
                   {round.state === "exported"
-                    ? `Exported ${clockTime(round.exported_at)} and frozen`
+                    ? native
+                      ? `Closed ${clockTime(round.exported_at)}: round ${round.number + 1} is paired on it`
+                      : `Exported ${clockTime(round.exported_at)} and frozen`
                     : joinNonEmpty([
                         unresolved > 0 ? `${plural(unresolved, "board")} unresolved` : "every board has a result",
                         round.disputed > 0 && `${plural(round.disputed, "dispute")} pending resolution`,
@@ -396,14 +432,20 @@ function SectionCard({
             <ProgressBar counts={counts} legend caption={false} />
           </>
         ) : (
-          <p className="text-body-sm text-ink-2">Nothing imported yet.</p>
+          <p className="text-body-sm text-ink-2">
+            {native
+              ? section.players < 2
+                ? "Enter the players, then pair round 1."
+                : `${plural(section.players, "player")} entered. Round 1 is ready to pair.`
+              : "Nothing imported yet."}
+          </p>
         )}
 
         <div className="mt-auto flex flex-col items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
           <div className="flex flex-wrap items-center gap-2.5">
             <Button tone={toneOf(action)} size="lg" onClick={() => void go()}>
               {labelOf(action, section.manager_label)}
-              {action.kind !== "export" && <ArrowRight />}
+              {action.kind !== "export" && action.kind !== "finished" && <ArrowRight />}
             </Button>
             {round && action.kind !== "fix" && (
               <Button size="lg" to={roundUrl}>
@@ -415,7 +457,7 @@ function SectionCard({
             <span className="font-mono text-[11px] text-ink-3 sm:text-right">
               {lastEntryAt
                 ? `Last entry ${relativeTime(lastEntryAt, now)}`
-                : `Imported ${clockTime(round.imported_at)}`}
+                : `${native ? "Paired" : "Imported"} ${clockTime(round.imported_at)}`}
             </span>
           )}
         </div>
@@ -434,36 +476,54 @@ function SectionCard({
           </summary>
           <div className="mt-3 flex flex-col gap-2 pb-2 pl-6 text-xs">
             {past.map((r) => (
-              <EarlierRound key={r.id} round={r} tournamentId={tournamentId} />
+              <EarlierRound key={r.id} round={r} tournamentId={tournamentId} native={native} />
             ))}
           </div>
         </details>
       )}
 
       {round && (
-        <>
-          <ReleaseDialog
-            round={round}
-            tournamentId={tournamentId}
-            open={dialog === "release"}
-            onClose={() => setDialog(null)}
-          />
-          <ExportDialog
-            round={round}
-            tournamentId={tournamentId}
-            managerLabel={section.manager_label}
-            open={dialog === "export"}
-            onClose={() => setDialog(null)}
-          />
-        </>
+        <ReleaseDialog
+          round={round}
+          tournamentId={tournamentId}
+          native={native}
+          open={dialog === "release"}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {round && !native && (
+        <ExportDialog
+          round={round}
+          tournamentId={tournamentId}
+          managerLabel={section.manager_label}
+          open={dialog === "export"}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {native && action.kind === "pair" && (
+        <PairDialog
+          section={section}
+          tournamentId={tournamentId}
+          roundNumber={action.round_number}
+          open={dialog === "pair"}
+          onClose={() => setDialog(null)}
+        />
       )}
     </Card>
   );
 }
 
-function EarlierRound({ round, tournamentId }: { round: RoundSummary; tournamentId: string }) {
+function EarlierRound({
+  round,
+  tournamentId,
+  native,
+}: {
+  round: RoundSummary;
+  tournamentId: string;
+  native: boolean;
+}) {
   const [wanted, setWanted] = useState(false);
-  const file = useExportFile(round.id, wanted);
+  const file = useExportFile(round.id, wanted && !native);
   useEffect(() => {
     if (wanted && file.data) {
       download(file.data);
@@ -481,12 +541,14 @@ function EarlierRound({ round, tournamentId }: { round: RoundSummary; tournament
           {round.confirmed}/{round.boards} boards confirmed
         </span>
         {exported ? (
-          <Chip tone="emerald">Exported {clockTime(round.exported_at)}</Chip>
+          <Chip tone="emerald">
+            {native ? "Closed" : "Exported"} {clockTime(round.exported_at)}
+          </Chip>
         ) : (
-          <RoundChip state={round.state} />
+          <RoundChip state={round.state} native={native} />
         )}
       </div>
-      {exported && (
+      {exported && !native && (
         <button
           type="button"
           onClick={() => setWanted(true)}
@@ -685,6 +747,12 @@ function labelOf(action: NextAction, managerLabel: string): string {
       return `Release round ${action.round.number}`;
     case "export":
       return `Export for ${managerLabel}`;
+    case "players":
+      return "Enter players";
+    case "pair":
+      return `Pair round ${action.round_number}`;
+    case "finished":
+      return "All rounds played · standings";
   }
 }
 
@@ -693,6 +761,7 @@ function toneOf(action: NextAction): "primary" | "danger" | "success" {
     case "fix":
       return action.round.disputed > 0 ? "danger" : "primary";
     case "export":
+    case "finished":
       return "success";
     default:
       return "primary";

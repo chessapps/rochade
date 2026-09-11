@@ -26,6 +26,7 @@ export function ReleaseDialog({
   round,
   tournamentId,
   boards,
+  native = false,
   open,
   onClose,
 }: {
@@ -33,6 +34,8 @@ export function ReleaseDialog({
   tournamentId: string;
   /** Board numbers still open, when the caller has them; the counts otherwise. */
   boards?: { empty: number[]; disputed: number[] };
+  /** A section Rochade pairs itself: the release computes the standings. */
+  native?: boolean;
   open: boolean;
   onClose: () => void;
 }) {
@@ -46,7 +49,12 @@ export function ReleaseDialog({
     once(async () => {
       const data = await release.mutateAsync({ roundId: round.id, tournamentId, force: !ready });
       toast.success(
-        `Round ${data.round_number} released: ${plural(data.confirmed, "result")} confirmed.`,
+        `Round ${data.round_number} released: ${plural(data.confirmed, "result")} confirmed.` +
+          (data.standings_computed
+            ? " Standings updated."
+            : data.standings_computed === false
+              ? ` Standings not updated: ${data.standings_note}.`
+              : ""),
       );
       onClose();
     });
@@ -69,7 +77,8 @@ export function ReleaseDialog({
       <p>
         Releasing confirms every result the players entered — {plural(round.claimed, "board")} —
         and closes the round for entry. Phones can no longer change anything; you still can,
-        here, until the round is exported.
+        here, until {native ? "the next round is paired" : "the round is exported"}.
+        {native && " The standings are computed from the released results."}
       </p>
       {!ready && (
         <>
@@ -84,8 +93,9 @@ export function ReleaseDialog({
               </p>
             )}
             <p className="mt-1">
-              They stay open for you to set here, and go into the export blank if you do not.
-              The release is recorded as forced.
+              {native
+                ? "They stay open for you to set here. The standings wait, and the next round cannot be paired, until every board has a result. The release is recorded as forced."
+                : "They stay open for you to set here, and go into the export blank if you do not. The release is recorded as forced."}
             </p>
           </Banner>
           <label className="mt-3 flex items-start gap-2">

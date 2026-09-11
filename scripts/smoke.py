@@ -200,4 +200,92 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     check("results spelt for Swiss-Manager", all(";1;0;;1:0;" in ln for ln in lines[1:5]), lines[1])
     check("hand-off names the menu", "Daten Import/Export" in body["next_step"], body["next_step"])
 
-print("\nthe loop closes end to end against the compose stack, for both managers")
+    # --- a third tournament Rochade pairs itself -------------------------------
+    # No files anywhere: players in, a pairing out, the vendored engine inside
+    # the image doing the work.
+    check("Rochade's own program is listed", "gacrux" in keys, str(keys))
+    gx_created = http.post(
+        "/api/tournaments",
+        json={"name": "Smoke Open (Rochade)", "manager": "gacrux"},
+        headers=staff,
+    )
+    check("create a Rochade-paired tournament", gx_created.status_code == 201, gx_created.text)
+    tournament = gx_created.json()["id"]
+    refused = http.post(
+        f"/api/tournaments/{tournament}/imports",
+        json={"section_name": "A", "content": content},
+        headers=staff,
+    )
+    check("an import is refused", refused.status_code == 409, refused.text)
+
+    opened = http.post(
+        f"/api/tournaments/{tournament}/sections",
+        json={"name": "A", "declared_rounds": 3, "top_board_colour": "white"},
+        headers=staff,
+    )
+    check("open a section", opened.status_code == 201, opened.text)
+    section = opened.json()["section_id"]
+    roster = [
+        ("Baumann, Lukas", 2201),
+        ("Chen, Wei", 2150),
+        ("Dubois, Elise", 2098),
+        ("Egger, Tobias", 2044),
+        ("Fischer, Jonas", 1987),
+        ("Gruber, Sarah", 1922),
+        ("Huber, Marco", 1870),
+        ("Iten, Nadia", 1804),
+        ("Jenni, Rafael", 1755),
+    ]
+    for name, rating in roster:
+        added = http.post(
+            f"/api/sections/{section}/players", json={"name": name, "rating": rating}, headers=staff
+        )
+        check(f"enter {name}", added.status_code == 201, added.text)
+
+    plan = http.post(f"/api/sections/{section}/pairings/preview", json={}, headers=staff)
+    check("pairing preview", plan.status_code == 200 and len(plan.json()["boards"]) == 4, plan.text)
+    paired = http.post(f"/api/sections/{section}/pairings", json={}, headers=staff)
+    check("pair round 1", paired.status_code == 201 and paired.json()["byes"] == 1, paired.text)
+    gx_round = paired.json()["round_id"]
+
+    gx_issued = http.post(f"/api/tournaments/{tournament}/devices", json={}, headers=staff)
+    phone = {"Authorization": f"Device {gx_issued.json()['token']}"}
+    hall = http.get(f"/api/tournaments/{tournament}/boards", headers=phone).json()["boards"]
+    check("hall shows the paired round", len(hall) == 5, str(len(hall)))
+    for board in (b for b in hall if not b["is_bye"]):
+        http.post(
+            f"/api/games/{board['game_id']}/claim",
+            json={"result": "white_win"},
+            headers={**phone, "Idempotency-Key": f"smoke-gx-{board['game_id']}"},
+        )
+    released = http.post(f"/api/rounds/{gx_round}/release", json={}, headers=staff)
+    check(
+        "release computes the standings",
+        released.status_code == 200 and released.json()["standings_computed"] is True,
+        released.text,
+    )
+    table = http.get(f"/api/tournaments/{tournament}/standings", headers=staff).json()
+    rows = table["sections"][0]["rows"]
+    check(
+        "nine players ranked after round 1", len(rows) == 9 and rows[0]["rank"] == 1, str(rows[:2])
+    )
+    check(
+        "tie-break columns are labelled",
+        table["sections"][0]["tiebreak_names"] == ["BH/C1", "BH", "SB"],
+        str(table["sections"][0]["tiebreak_names"]),
+    )
+
+    paired2 = http.post(f"/api/sections/{section}/pairings", json={}, headers=staff)
+    check(
+        "pair round 2 closes round 1",
+        paired2.json().get("previous_round_closed") == 1,
+        paired2.text,
+    )
+    undone = http.delete(f"/api/rounds/{paired2.json()['round_id']}", headers=staff)
+    check("unpair round 2", undone.status_code == 200, undone.text)
+    again = http.post(f"/api/sections/{section}/pairings", json={}, headers=staff)
+    check("pair round 2 again", again.status_code == 201, again.text)
+    no_export = http.post(f"/api/rounds/{gx_round}/export", json={}, headers=staff)
+    check("nothing to export", no_export.status_code == 409, no_export.text)
+
+print("\nthe loop closes end to end against the compose stack, for all three programs")
