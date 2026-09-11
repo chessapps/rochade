@@ -36,7 +36,7 @@ export function VegaGuide() {
             title: "Import, play, release",
             body: (
               <>
-                Drop the two files. Phones enter the results. Release, then <b>Export for Vega</b>{" "}
+                Drop the two files. Enter the results. Release, then <b>Export for Vega</b>{" "}
                 downloads <Code>&lt;section&gt;.trf</Code>.
               </>
             ),
@@ -65,11 +65,11 @@ export function VegaGuide() {
             pairs it. That choice is fixed for the tournament: every import and export from then on
             is Vega&rsquo;s.
           </Step>
-          <Step title="Let the phones in">
-            <b>Devices → Issue a QR code</b>. Print it as a poster or show it on the arbiter&rsquo;s
-            screen. One code admits any number of phones for as long as the tournament runs, and
-            you can revoke it at any time. If a phone cannot scan, <b>Open joining with a code</b>{" "}
-            shows six characters to read out in the hall.
+          <Step title="Set up the hall device">
+            <b>Devices → Issue a QR code</b> and scan it with the tablet at the desk where results
+            are entered. The code admits that device for as long as the tournament runs, and you
+            can revoke it at any time. If the tablet cannot scan, <b>Open joining with a code</b>{" "}
+            shows six characters to type instead.
           </Step>
         </Steps>
       </Section>
@@ -117,9 +117,9 @@ export function VegaGuide() {
           </Step>
 
           <Step n={3} title="Play">
-            Players enter results on their phones. The round board updates every few seconds and
-            opens on <b>Attention</b>: the boards with no result and the ones two phones disagree
-            about. A no-show is yours: <b>more…</b> on the board, then <b>+:−</b>, <b>−:+</b> or{" "}
+            Results are entered on the hall device at the desk, or by you on the round board.
+            The board updates every few seconds and opens on <b>Attention</b>: the boards with no
+            result yet. A no-show is yours: <b>more…</b> on the board, then <b>+:−</b>, <b>−:+</b> or{" "}
             <b>−:−</b>. With a board focused, <Kbd>1</Kbd> <Kbd>=</Kbd> <Kbd>0</Kbd> on the
             keyboard set it too. <b>Entered → Confirm all</b> confirms checked results without
             releasing the round.
