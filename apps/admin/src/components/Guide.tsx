@@ -61,8 +61,8 @@ export function Step({ n, title, children }: { n?: number; title: string; childr
       >
         {n ?? "·"}
       </span>
-      <div className="flex flex-col gap-2 text-body-md text-ink-2 [&>p]:m-0">
-        <h3 className="text-base font-semibold text-ink">{title}</h3>
+      <div className="min-w-0 text-body-md text-ink-2 [&>*+div]:mt-2 [&>*+p]:mt-2 [&>*+ul]:mt-2 [&>div+*]:mt-2 [&>p+*]:mt-2 [&>ul+*]:mt-2">
+        <h3 className="mb-1 text-base font-semibold text-ink">{title}</h3>
         {children}
       </div>
     </li>
