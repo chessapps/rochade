@@ -15,9 +15,14 @@ Run on 2026-09-11 against the synthetic nine-player tournament in
 **The loop closes, with two files in and one file out per round, and the
 arbiter stays in the tournament they already have open — under a new name.**
 
+(Amended the same evening: `crosstable.txt` turned out to exist only once a
+result has been entered, so a fresh tournament's round 1 had no players file.
+`engine26.trf`, which Vega writes at every engine pairing, took its place —
+see *The tournament folder*.)
+
 | Leg | Menu | Format | Verdict |
 |---|---|---|---|
-| manager → us | none: `crosstable.txt` + `SortedPairs.txt` from the tournament folder | two plain text files, UTF-8 | **the way in**; rewritten by Vega at every pairing and at every manual change to one |
+| manager → us | none: `engine26.trf` (or `crosstable.txt`) + `SortedPairs.txt` from the tournament folder | a TRF and a plain text file, UTF-8 | **the way in**; the pairing list is rewritten at every pairing and every manual change to one, the TRF at every engine pairing |
 | manager → us (documented) | `Rating Report → FIDE → Rating Report to FIDE` | TRF16 / TRF26 | **refuses**: "In round 3 table 1 there is an unfinished game. Please insert the result or no report will be saved" |
 | us → manager | `File → Import tournament in FIDE format - TRF2026` | TRF16 with two Vega adjustments (below) | **the way back**: results, forfeits and byes land on the boards; the next round pairs |
 
@@ -52,9 +57,9 @@ Automatic` for round 3 the folder held, all with the same timestamp:
 | File | Written when | What it carries | Read by Rochade |
 |---|---|---|---|
 | `SortedPairs.txt` | every pairing, every manual change | the boards of the round just paired, by name, both sides listed | **yes** |
-| `crosstable.txt` | every import, pairing and result | every player with start number and one cell per round played | **yes** |
+| `crosstable.txt` | every import, pairing and result — **but only once a result exists**: a fresh tournament with round 1 paired has none (seen 2026-09-11 evening, `VegaTournaments`) | every player with start number and one cell per round played | yes, in the TRF's place |
 | `engine.man` | every *engine* pairing | the engine's raw pairs, `white black` per line, bye as `0` | no — **stale after a manual change** |
-| `engine26.trf` | every engine pairing | the TRF Vega hands the Gacrux plugin: names without the comma (`BaumannLukas`), rounds as `142 N` | no |
+| `engine26.trf` | every engine pairing, from round 1 on | the TRF Vega hands the Gacrux plugin, the state *before* the pairing: every player, every result with colour, byes as `U`/`H`, forfeits as `+`/`-`, rounds as `142 N`, birth dates; names squashed (`BaumannLukas`) | **yes** — the players and the history; the boards come from `SortedPairs.txt` |
 | `pairingsN.qtf`, `standings.qtf` | every pairing / result | the same in U++ rich text, for printing | no |
 | `www<name>/<name>N.pgn` | every pairing | a PGN skeleton per board, `[Round "3.1"]` | no |
 | `standings.TXT` | every result | Vega's own standings with its tie-breaks | no (standings stay in Vega) |
@@ -198,16 +203,23 @@ results on the boards and saved `A.vegz` -- round 4 paired there with
 
 ## Consequences for the code
 
-- `interchange/vega.py`: reads the two folder files (`formats/vega_text.py`,
-  built on `rochade.vega`), still reads a TRF, writes a TRF passed through
-  `rochade.vega.to_vega` (byte-padded names, `142 N`). `exports_unplayed_round
+- `interchange/vega.py`: reads the folder files (`formats/vega_text.py`,
+  built on `rochade.vega`) — `SortedPairs.txt` for the boards, `engine26.trf`
+  or `crosstable.txt` for the players and the history — still reads a TRF
+  alone, writes a TRF passed through `rochade.vega.to_vega` (byte-padded
+  names, `142 N`). Names from the engine file are matched to the pairing
+  list by letters alone and take the list's spelling; an engine file that
+  ends more than one round before the list (a manual pairing) is refused
+  with a pointer to the cross table. `exports_unplayed_round
   = YES`, `merges_on_import = YES` (a replace, said so in the notes),
   `result_codes_out = {1, =, 0, +, -, U, H, Z}`.
 - The export file is named after the section alone (`A.trf`), so Vega keeps
   one tournament name across rounds. The port's `stem` is now the section;
   each adapter decides whether the round goes in the name.
 - `ImportRound` / `PreviewImport` take `declared_rounds` for files that carry
-  none; the section remembers it and the export writes it.
+  none (the cross table, the pairing list); `engine26.trf` carries it as
+  `142 N`, so with that file nobody is asked. The section remembers it and
+  the export writes it.
 - Board numbers of the imported round come from `SortedPairs.txt`, not from
   the FIDE rule; earlier rounds (first import mid-tournament) are numbered
   by the rule, as for every adapter.

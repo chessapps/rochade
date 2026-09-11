@@ -720,7 +720,7 @@ function RoundFileSync({
         title={
           manager === "vega" ? (
             <>
-              Drop Vega's <span className="font-mono text-accent">crosstable.txt</span> and{" "}
+              Drop Vega's <span className="font-mono text-accent">engine26.trf</span> and{" "}
               <span className="font-mono text-accent">SortedPairs.txt</span> here
             </>
           ) : (

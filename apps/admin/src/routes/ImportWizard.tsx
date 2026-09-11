@@ -64,10 +64,12 @@ export function ImportWizard() {
 
   // The program was chosen when the tournament was created; nothing to ask.
   const manager = tournament.data?.manager;
-  // Vega's folder files never say how long the tournament is, and the file
-  // we hand back needs the number or Vega calls the tournament finished. Ask
-  // once; the section remembers it.
-  const asksRounds = manager === "vega" && !existing?.declared_rounds;
+  // Vega's pairing list and cross table never say how long the tournament
+  // is, and the file we hand back needs the number or Vega calls the
+  // tournament finished. Its engine26.trf carries it; otherwise ask once and
+  // the section remembers it.
+  const asksRounds =
+    manager === "vega" && !existing?.declared_rounds && !files.some((file) => file.kind === "trf");
   const roundsNumber = /^\d+$/.test(rounds.trim()) ? Number(rounds.trim()) : null;
   const roundsOk = !asksRounds || (roundsNumber !== null && roundsNumber >= 1 && roundsNumber <= 30);
   useEffect(() => {

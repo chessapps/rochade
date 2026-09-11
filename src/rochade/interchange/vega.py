@@ -7,8 +7,12 @@ The documented path in, `Rating Report -> FIDE`, is **not** the way: it
 refuses to save while a paired round has no results ("In round 3 table 1
 there is an unfinished game. Please insert the result or no report will be
 saved"). What Vega does write, at every pairing and every manual change to
-one, is `crosstable.txt` and `SortedPairs.txt` in the tournament folder, and
-those two files are the round. `engine.man` beside them is the pairing
+one, is `SortedPairs.txt` in the tournament folder -- the boards of the new
+round -- and beside it, every time its engine runs, `engine26.trf`: the TRF
+it hands the engine, with every player and every result so far, the colours,
+the byes and the round count, from round 1 on. Those two files are the
+round. `crosstable.txt` is taken in the TRF's place, but Vega writes it only
+once a result exists, so it cannot start a tournament. `engine.man` is the
 engine's raw output and goes stale the moment the arbiter edits a board, so
 it is not read.
 
@@ -45,11 +49,11 @@ class VegaManager:
         exports_unplayed_round=Support.YES,
         merges_on_import=Support.YES,
         result_codes_out=WRITABLE_CODES,
-        reads_format="vega tournament folder: crosstable.txt + SortedPairs.txt (trf16 also read)",
+        reads_format="vega tournament folder: engine26.trf (or crosstable.txt) + SortedPairs.txt",
         writes_format="trf16 for Vega",
         export_howto=(
-            "Pair the round, then take crosstable.txt and SortedPairs.txt from the "
-            "tournament folder (both are rewritten at every pairing)."
+            "Pair the round, then take engine26.trf and SortedPairs.txt from the "
+            "tournament folder (both are rewritten when the engine pairs)."
         ),
         import_howto=(
             "File → Import tournament in FIDE format - TRF2026, choose the file; the "

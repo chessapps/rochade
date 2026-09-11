@@ -34,20 +34,28 @@ them).
 
 Vega has already written them; there is nothing to export:
 
-1. **`crosstable.txt`** — the players with their start numbers and every
-   result so far.
+1. **`engine26.trf`** — the players with their start numbers, every result
+   so far and the number of rounds. Vega writes it each time its engine
+   pairs, from round 1 on.
 2. **`SortedPairs.txt`** — the boards of the round you just paired.
 
 In Rochade the section card says **Import round N** — press it, drop **both**
 files on the page, **Preview the changes**, read what they change, **Import**.
-The first time, Rochade also asks **how many rounds** the tournament has:
-Vega's files do not say, and the file you hand back later needs the number.
-The section remembers it.
 
 **From round 2 on, `SortedPairs.txt` alone is enough**: Rochade names the
-boards from the players it already holds. Add `crosstable.txt` again when a
+boards from the players it already holds. Add `engine26.trf` again when a
 player was added or removed; Rochade tells you if the list names somebody it
 does not know.
+
+`crosstable.txt` does the same job as `engine26.trf` and Rochade takes it
+too — but Vega only starts writing it once a result has been entered, so it
+cannot start a tournament. If you paired a round **by hand** (`Manual`) the
+engine did not run and `engine26.trf` is still the previous round's; hand
+over `crosstable.txt` then, or `SortedPairs.txt` alone if Rochade already
+holds the players. Rochade refuses an engine file that is behind, and says
+so. If you hand over a cross table or a pairing list without the engine
+file, Rochade asks **how many rounds** the tournament has, once; the section
+remembers it.
 
 > **Not `Rating Report → FIDE`.** It refuses to write anything while a paired
 > round has no results — which is exactly when you need it — with "In round N
@@ -106,13 +114,14 @@ lists). Rochade shows no table for a Vega tournament.
   correction), hand `SortedPairs.txt` over again **before** sending results
   back; Rochade's preview shows which boards moved and which entered
   results would be dropped, and applies nothing until you accept it. A
-  late-comer needs `crosstable.txt` too.
+  late-comer needs `engine26.trf` too.
 - A half-point bye or a withdrawal is set in Vega before pairing, as always;
   the player is simply not on the list. Rochade shows the bye and writes it
   back as it came.
-- Vega's forfeit cells (`+F8`) do not say who had white. For rounds Rochade
-  ran itself that is known; for rounds imported from history the lower start
-  number is written as white, which the pairing rules never look at for an
-  unplayed game.
+- Vega's forfeit cells in `crosstable.txt` (`+F8`) do not say who had
+  white; `engine26.trf` does. For rounds Rochade ran itself that is known
+  anyway; for history read from the cross table the lower start number is
+  written as white, which the pairing rules never look at for an unplayed
+  game.
 - An unregistered Vega is limited to 20 players; the club's own licence
   applies as usual.

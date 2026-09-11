@@ -246,7 +246,7 @@ def test_the_first_round_still_needs_both_files(send: Send, tournament: Tourname
                 content=read("sorted_pairs_round3.txt"),
             )
         )
-    assert "crosstable.txt" in str(caught.value)
+    assert "engine26.trf" in str(caught.value)
 
     with pytest.raises(ValidationFailed) as caught:
         send(
@@ -269,3 +269,69 @@ def test_the_pairing_list_naming_a_stranger_is_a_readable_error() -> None:
     text = read("crosstable_round2.txt") + "\n" + stranger
     with pytest.raises(InterchangeError, match="Chan, Wei"):
         manager_for("vega").read_round(text)
+
+
+# --- engine26.trf: the players from round 1 on ------------------------------
+
+
+def round_one() -> str:
+    return read("engine26_round1.trf") + "\n" + read("sorted_pairs_round1.txt")
+
+
+def test_round_one_comes_in_from_the_engine_file_and_the_pairing_list(
+    send: Send, tournament: Tournament
+) -> None:
+    """A fresh Vega tournament has no crosstable.txt until a result exists;
+    engine26.trf is there from the first pairing, round count included."""
+    plan = send(PreviewImport(tournament_id=tournament.id, section_name="A", content=round_one()))
+    assert plan.tournament_name == "TestOpen"
+    assert plan.file_round == 1
+    assert plan.declared_rounds == 5  # from the file's 142 line: nobody was asked
+    assert plan.boards == 8
+    assert plan.byes == 0
+    assert len(plan.players_added) == 16
+
+
+def test_names_take_the_pairing_lists_spelling_not_the_engine_files() -> None:
+    document = manager_for("vega").read_round(round_one())
+    assert document.players[1].name == "Baumann, Lukas"  # the TRF says BaumannLukas
+    assert document.players[3].title == "WFM"
+    assert document.players[16].rating is None  # unrated: 0 in the file
+    board = document.pairings[1][1]
+    assert (board.white_rank, board.black_rank) == (10, 2)
+    # The TRF we build for the export leg carries the sex and birth year Vega wrote.
+    line = next(ln for ln in document.source.splitlines() if ln.startswith("001    3 "))
+    assert " w" in line[8:12] and "2001" in line
+
+
+def test_the_engine_file_carries_history_with_colours_byes_and_forfeits() -> None:
+    text = read("engine26_after_import.trf") + "\n" + read("sorted_pairs_round4.txt")
+    document = manager_for("vega").read_round(text)
+    assert document.round_number == 4
+    assert document.declared_rounds == 5
+    assert sorted(document.pairings) == [1, 2, 3, 4]
+    by_pair = {(p.white_rank, p.black_rank): p for p in document.pairings[1]}
+    assert by_pair[(4, 8)].white_result == "+"  # the forfeit keeps its colour here
+    assert by_pair[(9, None)].white_result == "U"
+    by_pair = {(p.white_rank, p.black_rank): p for p in document.pairings[2]}
+    assert by_pair[(5, None)].white_result == "H"
+    assert [p.board for p in document.pairings[4]] == [1, 2, 3, 4, 5]
+
+
+def test_an_engine_file_that_is_behind_the_pairing_list_is_refused() -> None:
+    """engine26.trf is written when the engine pairs; after a manual pairing it
+    still describes the round before. Its history would be short one round."""
+    text = read("engine26_round1.trf") + "\n" + read("sorted_pairs_round3.txt")
+    with pytest.raises(InterchangeError, match=r"crosstable.txt"):
+        manager_for("vega").read_round(text)
+
+
+def test_a_player_the_list_does_not_name_gets_an_unsquashed_name() -> None:
+    """Whoever sits the round out is only in the TRF, as ``GruberSarah``."""
+    pairs = read("sorted_pairs_round1.txt").replace("Gruber, Sarah", "Peter, Anna")
+    pairs = "\n".join(
+        ln for ln in pairs.splitlines() if "in board    7" not in ln
+    )  # Huber and Peter's board is gone; Peter now plays Oberli's board
+    document = manager_for("vega").read_round(read("engine26_round1.trf") + "\n" + pairs)
+    assert document.players[6].name == "Gruber, Sarah"
+    assert document.players[7].name == "Huber, Marco"

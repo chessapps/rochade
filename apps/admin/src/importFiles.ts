@@ -4,9 +4,9 @@
  * Swiss-Manager hands over two plain text files -- the players and the
  * pairings, from `Extras → Daten Import/Export` -- which mean nothing apart:
  * one names nobody, the other pairs nobody. Vega hands over two files from
- * its tournament folder: `crosstable.txt`, the players with every result so
- * far, and `SortedPairs.txt`, the boards of the round just paired. Either
- * program's TRF is taken too. The files travel to the API as one body,
+ * its tournament folder: `engine26.trf` (or `crosstable.txt`), the players
+ * with every result so far, and `SortedPairs.txt`, the boards of the round
+ * just paired. A TRF on its own is taken for either program. The files travel to the API as one body,
  * joined, and the backend tells them apart by their own header lines, so the
  * only thing this file decides is what to say to the arbiter while they are
  * still choosing.
@@ -47,11 +47,21 @@ export const KIND_LABEL: Record<FileKind, string> = {
   unknown: "not recognised",
 };
 
-/** Add a file, replacing one of the same kind rather than piling them up. */
+/**
+ * Add a file, replacing one of the same kind rather than piling them up. A
+ * TRF and Swiss-Manager's text pair replace each other -- each is the whole
+ * round on its own -- while Vega's engine file is a TRF that belongs beside
+ * the pairing list.
+ */
 export function withFile(files: PickedFile[], picked: PickedFile): PickedFile[] {
-  const kept = files.filter(
-    (file) => file.kind !== picked.kind && !(picked.kind === "trf" || file.kind === "trf"),
-  );
+  const isSwissManager = (kind: FileKind) => SWISS_MANAGER_KINDS.includes(kind);
+  const kept = files.filter((file) => {
+    if (file.kind === picked.kind) return false;
+    const swap =
+      (picked.kind === "trf" && isSwissManager(file.kind)) ||
+      (file.kind === "trf" && isSwissManager(picked.kind));
+    return !swap;
+  });
   return [...kept, picked];
 }
 
@@ -65,7 +75,7 @@ export function dropHint(manager: string | undefined): string {
     case "swiss_manager":
       return "or click to choose them — Spielerdaten and Spielerauslosung, from Extras → Daten Import/Export";
     case "vega":
-      return "or click to choose them — crosstable.txt and SortedPairs.txt, from the tournament folder";
+      return "or click to choose them — engine26.trf and SortedPairs.txt, from the tournament folder";
     default:
       return "or click to choose them";
   }
@@ -86,7 +96,7 @@ export function missing(
   const kinds = new Set(files.map((file) => file.kind));
   // Each program's text files have one home. A TRF reads for either.
   if (manager === "vega" && SWISS_MANAGER_KINDS.some((kind) => kinds.has(kind))) {
-    return "These are Swiss-Manager's text exports, and this tournament runs on Vega. Hand over crosstable.txt and SortedPairs.txt from Vega's tournament folder instead.";
+    return "These are Swiss-Manager's text exports, and this tournament runs on Vega. Hand over engine26.trf and SortedPairs.txt from Vega's tournament folder instead.";
   }
   if (manager === "swiss_manager" && VEGA_KINDS.some((kind) => kinds.has(kind))) {
     return "These are Vega's tournament-folder files, and this tournament runs on Swiss-Manager. Export Spielerdaten and Spielerauslosung instead.";
@@ -105,7 +115,7 @@ export function missing(
   }
   if (kinds.has("sorted_pairs")) {
     if (rosterHeld) return null;
-    return "The pairing list names the players but not their start numbers. Add crosstable.txt from the same tournament folder.";
+    return "The pairing list names the players but not their start numbers. Add engine26.trf (or crosstable.txt) from the same tournament folder.";
   }
   if (kinds.has("crosstable")) {
     return "The cross table pairs nobody on its own. Add SortedPairs.txt, which Vega writes when it pairs the round.";
@@ -120,8 +130,8 @@ export function rosterNote(files: PickedFile[], rosterHeld: boolean): string | n
   if (kinds.has("pairings") && !kinds.has("players")) {
     return "Names come from the players already held for this section. Add Spielerdaten only if a player was added or removed.";
   }
-  if (kinds.has("sorted_pairs") && !kinds.has("crosstable")) {
-    return "Start numbers come from the players already held for this section. Add crosstable.txt only if a player was added or removed.";
+  if (kinds.has("sorted_pairs") && !kinds.has("crosstable") && !kinds.has("trf")) {
+    return "Start numbers come from the players already held for this section. Add engine26.trf only if a player was added or removed.";
   }
   return null;
 }
@@ -161,14 +171,14 @@ export function joinContents(files: PickedFile[]): string {
 /** The name worth recording: the one that carries the round. */
 export function primaryName(files: PickedFile[]): string {
   const carrier =
-    files.find((file) => file.kind === "trf") ??
     files.find((file) => file.kind === "pairings") ??
-    files.find((file) => file.kind === "sorted_pairs");
+    files.find((file) => file.kind === "sorted_pairs") ??
+    files.find((file) => file.kind === "trf");
   return (carrier ?? files[0])?.name ?? "";
 }
 
 function order(kind: FileKind): number {
-  return kind === "players" || kind === "crosstable" ? 0 : 1;
+  return kind === "players" || kind === "crosstable" || kind === "trf" ? 0 : 1;
 }
 
 function firstLine(content: string): string {

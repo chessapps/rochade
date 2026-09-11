@@ -253,7 +253,7 @@ describe("a tournament on Vega", () => {
     await screen.findByText("Vega");
     expect(screen.queryByText(/Not yet verified/)).not.toBeInTheDocument();
     await upload("SortedPairs.txt", SORTED_PAIRS);
-    expect(screen.getByText(/Add crosstable.txt/)).toBeInTheDocument();
+    expect(screen.getByText(/Add engine26.trf/)).toBeInTheDocument();
     await upload("crosstable.txt", CROSSTABLE);
     const preview = screen.getByRole("button", { name: "Preview the changes" });
     expect(preview).toBeDisabled();
@@ -263,6 +263,31 @@ describe("a tournament on Vega", () => {
     const body = calls.find((c) => c.method === "POST")!.body as { declared_rounds: number; content: string };
     expect(body.declared_rounds).toBe(5);
     expect(body.content.indexOf("Cross Table")).toBeLessThan(body.content.indexOf("Pairing of round"));
+  });
+
+  it("does not ask for the rounds when the engine file carries them", async () => {
+    const ENGINE =
+      "012 TestOpen\r\n142 5\r\n001    1 m FM BaumannLukas                      2201 SUI           0 1990        0.0    1\r\n";
+    const calls = stubApi({
+      GET: {
+        "/api/managers": managers,
+        [`/api/tournaments/${T}`]: { ...tournament, manager: "vega", manager_label: "Vega", sections: [] },
+      },
+      POST: { [`/api/tournaments/${T}/imports/preview`]: plan() },
+    });
+    renderAt(`/t/${T}/import`, "/t/:tournamentId/import", <ImportWizard />);
+    await screen.findByText("Vega");
+    await upload("SortedPairs.txt", SORTED_PAIRS);
+    expect(screen.getByLabelText("rounds in the tournament")).toBeInTheDocument();
+    await upload("engine26.trf", ENGINE);
+    expect(screen.queryByLabelText("rounds in the tournament")).not.toBeInTheDocument();
+    const preview = screen.getByRole("button", { name: "Preview the changes" });
+    expect(preview).toBeEnabled();
+    await userEvent.click(preview);
+    await waitFor(() => expect(calls.some((c) => c.method === "POST")).toBe(true));
+    const body = calls.find((c) => c.method === "POST")!.body as { declared_rounds?: number; content: string };
+    expect(body.declared_rounds).toBeUndefined();
+    expect(body.content.indexOf("012 TestOpen")).toBeLessThan(body.content.indexOf("Pairing of round"));
   });
 
   it("refuses Swiss-Manager's text files and asks for the folder files", async () => {

@@ -112,7 +112,7 @@ always names the next step:
 
 1. Pair the round in Swiss-Manager or Vega and hand it over — Swiss-Manager
    exports the players and the pairings as two text files, Vega has already
-   written `crosstable.txt` and `SortedPairs.txt` into its tournament folder;
+   written `engine26.trf` and `SortedPairs.txt` into its tournament folder;
    **Import round N** shows what they change before anything is written.
 2. Players enter results on their phones — scanning the QR, or typing the join
    code when a camera will not do. The round board updates every few
