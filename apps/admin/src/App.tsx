@@ -23,7 +23,9 @@ import { Poster } from "./routes/Poster";
 import { RoundBoard } from "./routes/RoundBoard";
 import { Standings } from "./routes/Standings";
 import { TournamentHome } from "./routes/TournamentHome";
+import { SwissManagerGuide } from "./routes/SwissManagerGuide";
 import { TournamentList } from "./routes/TournamentList";
+import { VegaGuide } from "./routes/VegaGuide";
 
 type State =
   | { status: "loading" }
@@ -115,6 +117,8 @@ export function App() {
         }
       >
         <Route index element={<TournamentList />} />
+        <Route path="/guides/swiss-manager" element={<SwissManagerGuide />} />
+        <Route path="/guides/vega" element={<VegaGuide />} />
         <Route path="/t/:tournamentId" element={<TournamentHome />} />
         <Route path="/t/:tournamentId/import" element={<ImportWizard />} />
         <Route path="/t/:tournamentId/players" element={<Players />} />

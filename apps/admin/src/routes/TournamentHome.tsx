@@ -18,6 +18,7 @@ import { DeleteTournamentDialog } from "../components/DeleteTournamentDialog";
 import { DropZone } from "../components/DropZone";
 import {
   ArrowRight,
+  BookOpen,
   Calendar,
   ChevronRight,
   Download,
@@ -48,6 +49,12 @@ import {
   type FeedEvent,
 } from "../queries";
 import { useNow } from "../useNow";
+
+/** The guide page for the programs that have one. */
+const GUIDE: Record<string, string> = {
+  swiss_manager: "/guides/swiss-manager",
+  vega: "/guides/vega",
+};
 
 export function TournamentHome() {
   const { tournamentId = "" } = useParams();
@@ -139,6 +146,11 @@ export function TournamentHome() {
           <Button size="sm" to={`/t/${tournamentId}/players`} icon={<Users />}>
             Players
           </Button>
+          {GUIDE[detail.manager] && (
+            <Button size="sm" to={GUIDE[detail.manager]} icon={<BookOpen />}>
+              {detail.manager_label} guide
+            </Button>
+          )}
           {detail.native ? (
             <Button size="sm" tone="dark" to={`/t/${tournamentId}/sections/new`} icon={<Plus />}>
               New section…
