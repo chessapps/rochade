@@ -6,6 +6,7 @@
     "api:types": "pnpm --filter @rochade/api-client run generate",
     "dev:hall": "pnpm --filter @rochade/hall run dev",
     "dev:admin": "pnpm --filter @rochade/admin run dev",
+    "dev:live": "pnpm --filter @rochade/live run dev",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck"
