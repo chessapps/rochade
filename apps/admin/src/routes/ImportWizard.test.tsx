@@ -41,6 +41,8 @@ const managers: ManagerSummary[] = [
 const tournament: TournamentDetail = {
   id: T,
   name: "Test Open",
+  published: false,
+  slug: null,
   city: "",
   federation: "",
   start_date: null,

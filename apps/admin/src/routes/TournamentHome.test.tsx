@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import type { RoundEvent, RoundSummary, TournamentDetail } from "../api";
+import { api, type RoundEvent, type RoundSummary, type TournamentDetail } from "../api";
 import { renderAt, stubApi } from "../test-utils";
 import { TournamentHome } from "./TournamentHome";
 
@@ -30,6 +30,8 @@ function tournament(): TournamentDetail {
     id: T,
     name: "Test Open",
     city: "Zürich",
+    published: false,
+    slug: null,
     federation: "SUI",
     start_date: "2026-09-02",
     end_date: "2026-09-04",
@@ -178,6 +180,25 @@ describe("TournamentHome", () => {
 
     await waitFor(() =>
       expect(calls.some((c) => c.method === "DELETE" && c.path === `/api/tournaments/${T}`)).toBe(true),
+    );
+  });
+
+  it("publishes the tournament from the command bar and shows the public link", async () => {
+    const user = userEvent.setup();
+    const calls = mount("arbiter");
+    vi.spyOn(api, "PUT").mockImplementation((async (_path: string, init?: { body?: { published: boolean; slug: string | null } }) => {
+      calls.push({ method: "PUT", path: `/api/tournaments/${T}/publication`, body: init?.body });
+      return { data: { published: init?.body?.published ?? false, slug: "test-open" }, response: new Response(null, { status: 200 }) };
+    }) as never);
+    await screen.findByRole("heading", { level: 1, name: "Test Open" });
+    await user.click(screen.getByRole("button", { name: /Publish…/ }));
+
+    const dialog = screen.getByRole("dialog", { name: "Publish this tournament" });
+    await user.type(within(dialog).getByLabelText("public address"), "open-2026");
+    await user.click(within(dialog).getByRole("button", { name: "Publish" }));
+
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "PUT")?.body).toEqual({ published: true, slug: "open-2026" }),
     );
   });
 

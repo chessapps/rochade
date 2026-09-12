@@ -11,6 +11,8 @@ function tournament(native = true): TournamentDetail {
   return {
     id: T,
     name: "Club Open",
+    published: false,
+    slug: null,
     city: "",
     federation: "",
     start_date: null,

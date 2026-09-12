@@ -16,6 +16,7 @@ export {
   Download,
   FileText,
   Gavel,
+  Globe,
   Keyboard,
   LogOut,
   MapPin,

@@ -73,6 +73,10 @@ class TournamentDetail(BaseModel):
     #: The code a phone may type instead of scanning; None when that is closed.
     #: Staff-only, like everything else on this query.
     join_code: str | None = None
+    #: Readable by anyone at /live/<slug> while published. The slug stays
+    #: once set, so the link can be shown even while the tournament is hidden.
+    published: bool = False
+    slug: str | None = None
     sections: list[SectionSummary]
 
 
@@ -133,6 +137,8 @@ def handle(query: GetTournament, ctx: Context) -> TournamentDetail:
         manager_label=label_of(tournament.manager),
         native=native_of(tournament.manager),
         join_code=tournament.join_code,
+        published=tournament.published,
+        slug=tournament.slug,
         start_date=tournament.start_date,
         end_date=tournament.end_date,
         sections=sections,

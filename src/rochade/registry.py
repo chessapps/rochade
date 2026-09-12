@@ -45,6 +45,7 @@ from rochade.features.tournaments import (
     delete_tournament,
     get_tournament,
     list_tournaments,
+    publish_tournament,
 )
 
 #: Every module that owns routes, in REST order.
@@ -58,6 +59,7 @@ MODULES = (
     list_tournaments,
     get_tournament,
     add_member,
+    publish_tournament,
     delete_tournament,
     # /api/tournaments/{id}/imports
     preview_import,

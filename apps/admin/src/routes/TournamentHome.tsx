@@ -15,6 +15,7 @@ import { errorMessage, type RoundSummary, type SectionSummary } from "../api";
 import { countsOfRound, currentRound, nextAction, readyToRelease, type NextAction } from "../boards";
 import { BoardNumber } from "../components/BoardNumber";
 import { DeleteTournamentDialog } from "../components/DeleteTournamentDialog";
+import { PublishDialog } from "../components/PublishDialog";
 import { DropZone } from "../components/DropZone";
 import {
   ArrowRight,
@@ -22,6 +23,7 @@ import {
   Calendar,
   ChevronRight,
   Download,
+  Globe,
   MapPin,
   Plus,
   QrCode,
@@ -64,6 +66,7 @@ export function TournamentHome() {
   // owner gets to see the delete button at all.
   const tournaments = useTournaments();
   const [deleting, setDeleting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   // Once a minute, so "last entry 4 min ago" stays true between fetches.
   const now = useNow(60_000);
 
@@ -151,6 +154,15 @@ export function TournamentHome() {
               {detail.manager_label} guide
             </Button>
           )}
+          <Button
+            size="sm"
+            onClick={() => setPublishing(true)}
+            icon={<Globe />}
+            className={detail.published ? "text-emerald-text" : undefined}
+            title={detail.published ? `Public at /live/${detail.slug ?? ""}` : "Not public"}
+          >
+            {detail.published ? "Public" : "Publish…"}
+          </Button>
           {detail.native ? (
             <Button size="sm" tone="dark" to={`/t/${tournamentId}/sections/new`} icon={<Plus />}>
               New section…
@@ -174,6 +186,16 @@ export function TournamentHome() {
           )}
         </div>
       </Card>
+      <PublishDialog
+        open={publishing}
+        onClose={() => setPublishing(false)}
+        tournament={{
+          id: detail.id,
+          name: detail.name,
+          published: detail.published ?? false,
+          slug: detail.slug ?? null,
+        }}
+      />
       {owner && (
         <DeleteTournamentDialog
           open={deleting}
