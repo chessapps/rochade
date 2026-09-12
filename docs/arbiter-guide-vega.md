@@ -16,6 +16,11 @@ appear there. What was watched, and what was not, is in `docs/m0-vega.md`.
   it on the arbiter's screen. One code admits any number of phones for as long
   as the tournament runs; revoke it at any time.
 
+- **Publish** on the tournament home if the public may follow: anyone then
+  sees pairings, results and standings at `/live/<slug>`, results marked
+  preliminary until you confirm them or release the round. Nothing is public
+  until you press it; **Hide** takes it down at once.
+
 ### If a phone cannot scan
 
 Under **Devices**, **Open joining with a code** shows six characters you can

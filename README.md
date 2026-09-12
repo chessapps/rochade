@@ -126,6 +126,13 @@ always names the next step:
 `docs/arbiter-guide-swiss-manager.md` and `docs/arbiter-guide-vega.md` have
 the menus for each step.
 
+**Publish** on the tournament home makes it readable by anyone at
+`/live/<slug>`: the pairings of every round, results as they come in (marked
+preliminary until confirmed or released), the standings as the manager gave
+them, and every game of a player, with a watch list kept in the visitor's
+browser. Nothing is public until you press it, and **Hide** takes it down at
+once. Design: `docs/plans/2026-09-11-live-public-app-design.md`.
+
 A tournament on **Rochade (Gacrux engine)** skips the files: enter the players
 under **Players**, **Pair round N** from the section card (the preview shows
 the boards first), release, and pair the next one. The standings are computed
@@ -191,6 +198,7 @@ src/rochade/
     devices/       /api/tournaments/{id}/devices        QR issue, list, revoke, remove
     rounds/        /api/rounds/{id}                     release, export
     games/         /api/games/{id}                      claim, override, resolve
+    public/        /api/public/tournaments/{slug}       published tournaments, for anyone
     audit.py locking.py scoping.py    shared mechanics, named for what they do
   platform/        mediator + pipeline, db, auth, migrations
   registry.py      every route module, in REST order
@@ -199,6 +207,7 @@ src/rochade/
 spikes/            M0: throwaway tooling for the manager round-trip spike
 apps/hall          the player PWA: board list -> result (one tap sends) -> done, offline-first
 apps/admin         the arbiter app: tournament home, round board, import wizard, phones
+apps/live          the public view: pairings, results, standings, a player's games, watch list
 packages/api-client        generated from the OpenAPI schema
 ```
 
