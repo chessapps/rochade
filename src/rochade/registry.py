@@ -29,6 +29,13 @@ from rochade.features.pairing import (
     unpair_round,
 )
 from rochade.features.players import add_player, list_players, update_player, withdraw_player
+from rochade.features.public import (
+    get_public_player,
+    get_public_round,
+    get_public_standings,
+    get_public_tournament,
+    list_public_tournaments,
+)
 from rochade.features.queue import get_arbiter_queue
 from rochade.features.rounds import (
     confirm_boards,
@@ -101,6 +108,12 @@ MODULES = (
     claim_result,
     set_result,
     resolve_dispute,
+    # /api/public -- anyone, published tournaments only
+    list_public_tournaments,
+    get_public_tournament,
+    get_public_round,
+    get_public_standings,
+    get_public_player,
 )
 
 
