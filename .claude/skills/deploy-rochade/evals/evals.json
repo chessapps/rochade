@@ -1,0 +1,53 @@
+{
+  "skill_name": "deploy-rochade",
+  "evals": [
+    {
+      "id": 0,
+      "name": "fresh-deploy-hetzner",
+      "prompt": "Hi, I'm the treasurer of Schachklub Winterthur and not really a tech person. We rented a small Hetzner server (Ubuntu 24.04) for the club, the IP is 203.0.113.42 and I log in as root with an ssh key. We own schachklub-winterthur.ch and can add DNS records at Hostpoint. Please set up Rochade on it so we can use it at rochade.schachklub-winterthur.ch with https, our own database on that server, and me (kassier@schachklub-winterthur.ch) as the first arbiter. We don't have an email sending service yet.",
+      "expected_output": "A plan.md that asks for or confirms the inputs (IP, user, domain, two hostnames, Let's Encrypt email, first arbiter, SMTP skipped), checks SSH and sudo, prepares the box (docker, firewall, log caps, proxy network), tells the person to set two A records and waits for DNS, clones the repo on the server, sets up the shared Caddy with Let's Encrypt for both names, writes an env file with generated secrets (Postgres password, 32-char master key, arbiter password, all four AUTH_* values consistent), builds from source on the server with the prod overlay, verifies /health, /api/auth/config and openid-configuration over https, installs a nightly backup, and ends with a hand-over note listing URLs, paths, first login and how to update. Plain language throughout.",
+      "files": [],
+      "assertions": [
+        "Tells the person to create DNS A records for BOTH rochade.<domain> and auth.<domain> and waits for them to resolve before the proxy or app asks for certificates",
+        "Clones github.com/chessapps/rochade on the server and builds there with docker compose up -d --build using docker-compose.prod.yml (no docker context from the laptop, no registry)",
+        "Obtains Let's Encrypt certificates through the shared Caddy proxy with an ACME email; no manual certbot",
+        "Writes an env file with generated secrets: a POSTGRES_PASSWORD, a 32-character ZITADEL_MASTERKEY, and AUTH_URL/AUTH_DOMAIN/AUTH_PORT=443/AUTH_SCHEME=https/AUTH_SECURE=true all describing https://auth.<domain>",
+        "Prepares the server: Docker Engine with compose plugin, a firewall allowing only 22/80/443, and the shared 'proxy' docker network",
+        "Verifies over https from outside: /health, /api/auth/config, and the openid-configuration on the auth host",
+        "Installs a nightly database backup (pg_dump in cron) and says it lives on the same server",
+        "Ends with a hand-over note that lists the app URL, the /admin/ or auth console URL, the first arbiter login, where the env file and data live, and how to update",
+        "Never depends on typing a password into ssh or sudo interactively (uses key-based ssh and either root or passwordless sudo, or hands that one command to the person)",
+        "Treats SMTP as optional and skipped, telling the person how arbiters get accounts without email"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "instance-not-found-after-env-edit",
+      "prompt": "Our self-hosted Rochade at rochade.sgzuerich.ch stopped letting arbiters sign in since yesterday. Clicking Sign in ends on auth.sgzuerich.ch with the text 'Instance not found'. I had edited the settings file on the server yesterday because I wanted to change the auth address to login.sgzuerich.ch. Server is ubuntu@198.51.100.7. What do I do?",
+      "expected_output": "Diagnoses that the four AUTH_* values (AUTH_URL, AUTH_DOMAIN, AUTH_PORT/SCHEME/SECURE) must describe one URL and that Zitadel's external domain cannot simply be renamed on a running instance; asks to see the relevant env lines (without pasting secrets), recommends reverting AUTH_* to auth.sgzuerich.ch and redeploying via deploy_on_box.sh (or docker compose up), checks the Caddyfile site block matches, and gives the verification curls. Does not suggest deleting the data directory as a first step.",
+      "files": [],
+      "assertions": [
+        "Identifies that the four AUTH_* values (AUTH_URL, AUTH_DOMAIN, AUTH_PORT, AUTH_SCHEME, AUTH_SECURE) must describe one URL and that the edit made them disagree",
+        "Says that Zitadel's auth hostname cannot simply be renamed on a running instance and recommends reverting to auth.sgzuerich.ch",
+        "The fix is: revert the AUTH_* lines, keep the Caddyfile block for auth.sgzuerich.ch, redeploy (docker compose up -d with the prod overlay or the deploy script); it does NOT propose deleting the data directory or reinstalling as a first step",
+        "Verifies with curl of https://auth.sgzuerich.ch/.well-known/openid-configuration and https://rochade.sgzuerich.ch/api/auth/config and a browser sign-in",
+        "Keeps secrets out of the transcript (greps or shows only the AUTH_* lines, never cats the whole env file into the conversation)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "update-and-add-smtp",
+      "prompt": "we run rochade for our club on our own box (user rochade at 192.0.2.99, domain rochade.schachfreunde-basel.ch). two things: 1) update it to the newest version 2) we now got a brevo smtp account (smtp-relay.brevo.com port 587, login 8a1b2c@smtp-brevo.com, key xkeysib-REDACTED, send from turnier@schachfreunde-basel.ch) so arbiters can get invite emails. please do both",
+      "expected_output": "Edits SMTP_HOST/SMTP_USER/SMTP_PASSWORD/SMTP_FROM in ~/stacks/rochade/rochade.prod.env on the server (not creating a new env file, not regenerating secrets), notes port 587 vs SMTP_TLS, runs the deploy step which pulls main, rebuilds and restarts and thereby reconfigures Zitadel's SMTP on the same run, warns to do it between rounds, verifies the stack is healthy and suggests a test email from the Zitadel console. Never echoes the password back in cleartext beyond what the user gave.",
+      "files": [],
+      "assertions": [
+        "Edits the EXISTING env file on the server (~/stacks/rochade/rochade.prod.env or the deploy's env file) rather than writing a new one or regenerating POSTGRES_PASSWORD/ZITADEL_MASTERKEY",
+        "Sets SMTP_HOST to smtp-relay.brevo.com:587, SMTP_USER to 8a1b2c@smtp-brevo.com, SMTP_PASSWORD to the key, SMTP_FROM to turnier@schachfreunde-basel.ch",
+        "Addresses the port 587 vs TLS question (SMTP_TLS setting / STARTTLS) explicitly",
+        "Updates by pulling the latest main on the server and running docker compose up -d --build with the production overlay, and notes that the same run reconfigures Zitadel's SMTP",
+        "Warns that the update means a short downtime and should happen between rounds",
+        "Verifies the stack is healthy afterwards (compose ps / curl health) and suggests a test email or invitation from the Zitadel console"
+      ]
+    }
+  ]
+}
