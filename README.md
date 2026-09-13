@@ -160,17 +160,18 @@ migrates as its own step). Settings are read from the environment or from a
 
 ```sh
 docker compose up -d postgres            # or any Postgres with a database named rochade
-ROCHADE_DEV_AUTH_ENABLED=true uv run uvicorn rochade.app:app --reload
+ROCHADE_DEV_AUTH_ENABLED=true uv run uvicorn rochade.app:app --reload --port 8001
 pnpm run dev:hall     # :5173
 pnpm run dev:admin    # :5174/admin/
 ```
 
-Uvicorn defaults to :8000. If that one is taken too, pass `--port` and point the
-Vite dev proxy at it with `ROCHADE_API_URL`:
+The API runs on :8001 and the Vite dev proxies look there -- uvicorn's own
+default, :8000, is crowded enough that it is worth stepping around. Somewhere
+else, pass `--port` and point the proxy at it with `ROCHADE_API_URL`:
 
 ```sh
-ROCHADE_DEV_AUTH_ENABLED=true uv run uvicorn rochade.app:app --reload --port 8001
-ROCHADE_API_URL=http://localhost:8001 pnpm run dev:hall
+ROCHADE_DEV_AUTH_ENABLED=true uv run uvicorn rochade.app:app --reload --port 8002
+ROCHADE_API_URL=http://localhost:8002 pnpm run dev:hall
 ```
 
 The TypeScript client is generated from the API and checked in, so a change to

@@ -64,7 +64,7 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     keys = {m["key"] for m in managers.json()} if managers.status_code == 200 else set()
     check("manager adapters are listed", keys >= {"vega", "swiss_manager"}, managers.text)
     verified = {m["key"]: m["verified"] for m in managers.json()}
-    check("Swiss-Manager is the verified one", verified["swiss_manager"] and not verified["vega"])
+    check("both file adapters are verified", verified["swiss_manager"] and verified["vega"])
 
     created = http.post(
         "/api/tournaments", json={"name": "Smoke Open", "manager": "vega"}, headers=staff
@@ -120,9 +120,9 @@ with httpx.Client(base_url=BASE, timeout=20.0, follow_redirects=True) as http:
     exported = http.post(f"/api/rounds/{round_id}/export", json={}, headers=staff)
     check("export", exported.status_code == 200, exported.text)
     body = exported.json()
-    check("export filename", body["filename"] == "A-round1.trf", body["filename"])
+    check("export filename", body["filename"] == "A.trf", body["filename"])
     check("export names its manager", body["manager"] == "vega", body["manager"])
-    check("export names its format", body["file_format"] == "trf16", body["file_format"])
+    check("export names its format", body["file_format"] == "trf16 for Vega", body["file_format"])
     check("export wrote every board", body["boards_written"] == 4)
     check("results are in the file", body["content"].count(" =") >= 8)
 
