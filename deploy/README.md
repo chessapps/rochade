@@ -232,11 +232,30 @@ file) and the proxy gets two server blocks, one per hostname, pointing at
 `rochade-web:8080` and `rochade-web:8081`.
 
 That is how `workbench` (rochade.app) runs: the bognerchess production nginx
-owns the ports, its two rochade blocks are the reference copy in
-`deploy/nginx-rochade.conf`, and the `rochade.app` certificate was issued
-through that stack's certbot webroot so its renewal timer covers it. Two
-things learned there:
+owns the ports, and the `rochade.app` certificate was issued through that
+stack's certbot webroot so its renewal timer covers it. Four things learned
+there:
 
+- **The two rochade server blocks belong in the owning project's repo, not on
+  the box.** They live in `bognerchess/infra` at `compose/nginx.conf`;
+  `deploy/nginx-rochade.conf` here is only the reference copy. That repo's
+  pipeline rsyncs the whole file over `/home/bogner/app/nginx.conf` on every
+  infra deploy, so blocks added by hand on the box survive until the next one
+  and no longer. They were added by hand in September and silently dropped by
+  the infra deploy on 2026-10-04; rochade.app then fell through SNI to the
+  first `443` block and served the `bognerchess.com` certificate, which looks
+  exactly like an expired certificate in a browser. Change them in that repo
+  and let its CI (`nginx -t` against every referenced lineage) and its deploy
+  apply them.
+- Those blocks must **not** include `/etc/nginx/maintenance/*.conf`. That glob
+  is bognerchess's cutover gate, which denies the public internet; including it
+  would take rochade.app down with it.
+- The certbot renewal unit's nginx reload must not hang off `ExecStartPost`.
+  `certbot renew` exits non-zero if any one lineage on the box fails, systemd
+  then skips `ExecStartPost`, and a freshly renewed `rochade.app` certificate
+  would sit on disk while nginx kept serving the previous one from memory until
+  it really did expire. It hangs off `ExecStopPost=-` instead, which runs on
+  success and failure alike.
 - The nginx config is a single-file bind mount. If the host file is ever
   replaced rather than edited in place, the container keeps the old inode
   and a reload changes nothing; test the new file with `nginx -t` in a
